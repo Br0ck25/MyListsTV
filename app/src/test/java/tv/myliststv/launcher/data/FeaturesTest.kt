@@ -104,3 +104,15 @@ class PosterShapeTest {
         Prefs.horizontalPosters = false
     }
 }
+
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+class HomeLayoutTest {
+    @Test fun ownerOrderWinsAndDefaultsKeepAppsLast() {
+        val c = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        Prefs.init(c)
+        assertTrue(Prefs.homeRank("Continue watching") < Prefs.homeRank("Popular") && Prefs.homeRank("Popular") < Prefs.homeRank("Your apps"))
+        Prefs.homeOrder = listOf("Your apps", "Popular")
+        assertTrue(Prefs.homeRank("Your apps") < Prefs.homeRank("Popular"))
+        Prefs.homeOrder = emptyList()
+    }
+}

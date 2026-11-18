@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import tv.myliststv.launcher.data.Prefs
 
 /**
  * Lists launchable apps. TV apps come from the LEANBACK_LAUNCHER query and phone-style apps
@@ -20,6 +21,12 @@ object AppRepository {
         return (tv + phone)
             .filter { it.component.packageName != own && seen.add(it.component.packageName) }
             .sortedBy { it.label.lowercase() }
+    }
+
+    /** The apps for the Home row: the owner's order, without the ones they hid. */
+    fun forHome(context: Context): List<AppEntry> {
+        val order = Prefs.appOrder; val hidden = Prefs.appHidden
+        return load(context).filter { it.component.packageName !in hidden }.sortedBy { order.indexOf(it.component.packageName).let { i -> if (i < 0) Int.MAX_VALUE else i } }
     }
 
     /** What to draw for an app: its TV banner if it has one (a wide picture), else its icon. */

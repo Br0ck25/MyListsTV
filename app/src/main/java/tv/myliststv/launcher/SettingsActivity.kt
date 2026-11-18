@@ -48,6 +48,40 @@ class SettingsActivity : Activity() {
 
     private fun askName(kids: Boolean) = Ui.askText(this, if (kids) "New kids profile" else "New profile", "Name", "Add") { Profiles.add(it, kids); refresh() }
 
+    /**
+     * One dialog for ordering and hiding anything in a list (Home rows, apps). OK on an item opens its menu; the dialog
+     * comes back afterwards so several moves are quick. [save] gets the full order and the hidden ones.
+     */
+    private fun arrange(title: String, keys: List<Pair<String, String>>, hidden: List<String>, at: Int = 0, save: (List<String>, List<String>) -> Unit) {
+        val order = keys.map { it.first }
+        val names = keys.associate { it }
+        android.app.AlertDialog.Builder(this).setTitle(title)
+            .setItems(order.map { names[it] + if (it in hidden) "  (hidden)" else "" }.toTypedArray()) { _, i ->
+                val k = order[i]
+                android.app.AlertDialog.Builder(this).setTitle(names[k]).setItems(arrayOf("Move up", "Move down", if (k in hidden) "Show on Home" else "Hide from Home")) { _, m ->
+                    val o = order.toMutableList(); var h = hidden
+                    when (m) {
+                        0 -> if (i > 0) o.add(i - 1, o.removeAt(i))
+                        1 -> if (i < o.size - 1) o.add(i + 1, o.removeAt(i))
+                        else -> h = if (k in h) h - k else h + k
+                    }
+                    save(o, h)
+                    arrange(title, o.map { it to names[it]!! }, h, if (m == 0) i - 1 else if (m == 1) i + 1 else i, save)
+                }.show()
+            }.setPositiveButton("Done") { _, _ -> refresh() }.setOnCancelListener { refresh() }.create().also { it.listView.setSelection(at.coerceAtLeast(0)); it.show() }
+    }
+
+    private fun arrangeRows() {
+        val titles = listOf("Continue watching") + Catalogs.browseRows(null, 8).map { (_, c) -> Catalogs.rowTitle(null, c) } + "Your apps"
+        arrange("Home rows", titles.distinct().sortedBy { Prefs.homeRank(it) }.map { it to it }, Prefs.homeHidden) { o, h -> Prefs.homeOrder = o; Prefs.homeHidden = h }
+    }
+
+    private fun arrangeApps() = Http.background {
+        val order = Prefs.appOrder
+        val apps = AppRepository.load(this).sortedBy { order.indexOf(it.component.packageName).let { i -> if (i < 0) Int.MAX_VALUE else i } }
+        Http.post { arrange("Apps row", apps.map { it.component.packageName to it.label }, Prefs.appHidden) { o, h -> Prefs.appOrder = o; Prefs.appHidden = h } }
+    }
+
     private fun backupNow() {
         val first = Prefs.backupCode.isEmpty()
         val code = Backup.codeForThisBox()
@@ -110,6 +144,9 @@ class SettingsActivity : Activity() {
         add(header("Home"))
         add(toggle("Show cast, logos and episodes from Cinemeta", "Asks Cinemeta, the standard Stremio metadata addon, for details your catalog addon lacks.", { Prefs.extraDetails }, { Prefs.extraDetails = it }))
         add(toggle("Wide posters", "Show catalog items as wide pictures instead of tall posters.", { Prefs.horizontalPosters }, { Prefs.horizontalPosters = it }))
+        add(choice("Card size", "Posters, wide cards and app tiles grow or shrink together.", listOf(0, 1, 2), { Prefs.cardSize }, { Prefs.cardSize = it }, { listOf("Small", "Medium", "Large")[it] }))
+        add(action("Arrange Home rows", "Move lists and the apps row up or down, or hide them from Home.") { arrangeRows() })
+        add(action("Arrange apps row", "Reorder the apps on Home or hide some. The Apps tab still shows all of them.") { arrangeApps() })
         add(toggle("Show Continue watching", "", { Prefs.showContinue }, { Prefs.showContinue = it }))
         add(toggle("Show apps row", "", { Prefs.showAppsRow }, { Prefs.showAppsRow = it }))
         add(header("Backup"))

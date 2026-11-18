@@ -20,6 +20,12 @@ object Catalogs {
         return out
     }
 
+    /** Title of a browse row; also the key the owner's order and hidden lists use. */
+    fun rowTitle(type: String?, cat: CatalogDef): String {
+        val label = if (cat.type == "movie") "Movies" else "Series"
+        return if (type == null && !cat.name.contains(label, true)) "${cat.name} \u00b7 $label" else cat.name
+    }
+
     /** [cb] may run twice: once from the cache, once with fresh data. */
     fun load(addon: Addon, cat: CatalogDef, cb: (List<Meta>?, Boolean) -> Unit) {
         val url = Urls.catalog(addon.baseUrl, cat.type, cat.id)

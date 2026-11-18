@@ -46,18 +46,15 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
     private var wPx = 0; private var hPx = 0
 
     init {
-        val w: Int; val h: Int
-        when (kind) {
-            CardKind.POSTER -> { w = Ui.dp(c, 118); h = Ui.dp(c, 177) }
-            CardKind.WIDE -> { w = Ui.dp(c, 208); h = Ui.dp(c, 117) }
-            CardKind.APP -> { w = Ui.dp(c, 192); h = Ui.dp(c, 108) }
-        }
+        // App tiles are the same size as wide cards; the size setting scales all of them together.
+        val w = (Ui.dp(c, if (kind == CardKind.POSTER) 118 else 208) * Prefs.cardScale).toInt()
+        val h = (Ui.dp(c, if (kind == CardKind.POSTER) 177 else 117) * Prefs.cardScale).toInt()
         wPx = w; hPx = h
         layoutParams = RecyclerView.LayoutParams(w, h).also { it.setMargins(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6)) }
         isFocusable = true; isClickable = true
         background = Ui.rounded(c, Ui.CARD, Ui.R_CARD); clipToOutline = true
         if (kind == CardKind.APP) {
-            addView(appIcon, LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = Ui.dp(c, 14) })
+            addView(appIcon, LayoutParams((Ui.dp(c, 48) * Prefs.cardScale).toInt(), (Ui.dp(c, 48) * Prefs.cardScale).toInt(), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = Ui.dp(c, 14) })
             label.gravity = Gravity.CENTER; label.maxLines = 2
             addView(label, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM).apply { setMargins(Ui.dp(c, 4), 0, Ui.dp(c, 4), Ui.dp(c, 8)) })
         } else {
@@ -80,7 +77,7 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
             appIcon.setImageDrawable(m.icon)
             appIcon.scaleType = if (m.banner) ImageView.ScaleType.CENTER_CROP else ImageView.ScaleType.FIT_CENTER
             appIcon.layoutParams = if (m.banner) LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-                else LayoutParams(Ui.dp(context, 48), Ui.dp(context, 48), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = Ui.dp(context, 14) }
+                else LayoutParams((Ui.dp(context, 48) * Prefs.cardScale).toInt(), (Ui.dp(context, 48) * Prefs.cardScale).toInt(), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = Ui.dp(context, 14) }
             label.text = m.title; label.visibility = if (m.banner) GONE else VISIBLE
             return
         }

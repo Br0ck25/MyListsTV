@@ -51,7 +51,8 @@ class BrowseScreen(
     fun start() {
         rows.clear()
         if (withContinue) addContinue()
-        val defs = Catalogs.browseRows(type, 8)
+        val hidden = Prefs.homeHidden
+        val defs = Catalogs.browseRows(type, 8).filter { (_, cat) -> Catalogs.rowTitle(type, cat) !in hidden }
         if (defs.isEmpty() && Catalogs.enabled().isEmpty()) {
             heroTitle.text = "No catalog addon is on"
             heroDesc.text = "Turn one on in the Addons tab."
@@ -62,11 +63,11 @@ class BrowseScreen(
             heroDesc.text = "Install a stream addon in the Addons tab. You can paste its link from your phone."
         }
         for ((addon, cat) in defs) {
-            val label = if (cat.type == "movie") "Movies" else "Series"
-            val title = if (type == null && !cat.name.contains(label, true)) "${cat.name} · $label" else cat.name
+            val title = Catalogs.rowTitle(type, cat)
             val wide = Prefs.horizontalPosters
             val row = RowModel(title, "via ${addon.name}", if (wide) CardKind.WIDE else CardKind.POSTER, emptyList(), loaded = false)
             rows += row
+            rows.sortBy { Prefs.homeRank(it.title) }
             Catalogs.load(addon, cat) { metas, _ ->
                 val idx = rows.indexOf(row)
                 if (idx < 0) return@load
@@ -79,25 +80,26 @@ class BrowseScreen(
             }
         }
         list.changedAll()
-        if (withApps && Prefs.showAppsRow) {
+        if (withApps && Prefs.showAppsRow && "Your apps" !in hidden) {
             Http.background {
-                val apps = AppRepository.load(act)
+                val apps = AppRepository.forHome(act)
                 Http.post {
                     val row = RowModel("Your apps", "Installed", CardKind.APP, apps.map { a ->
                         AppRepository.look(act.packageManager, a.component).let { (icon, banner) -> CardModel(a.label, null, payload = a, icon = icon, banner = banner) }
                     })
                     rows += row
-                    list.inserted(rows.size - 1)
+                    rows.sortBy { Prefs.homeRank(it.title) }
+                    list.changedAll()
                 }
             }
         }
     }
 
     private fun addContinue() {
-        if (!Prefs.showContinue) return
+        if (!Prefs.showContinue || "Continue watching" in Prefs.homeHidden) return
         val cw = WatchStore.continueWatching()
         if (cw.isEmpty()) return
-        rows.add(0, RowModel("Continue watching", "This device", CardKind.WIDE, cw.map { e ->
+        rows.add(RowModel("Continue watching", "This device", CardKind.WIDE, cw.map { e ->
             val sub = if (e.type == "series" && e.season >= 0) "S${e.season} · E${e.episode}" else "Movie"
             CardModel(e.name, e.background ?: e.poster, "$sub · ${(e.fraction * 100).toInt()}% watched", e.fraction, e)
         }))
@@ -106,9 +108,9 @@ class BrowseScreen(
     /** Called when coming back from the player so the progress shows without reloading catalogs. */
     fun refreshContinue() {
         if (!withContinue) return
-        val had = rows.isNotEmpty() && rows[0].title == "Continue watching"
-        if (had) rows.removeAt(0)
+        rows.removeAll { it.title == "Continue watching" }
         addContinue()
+        rows.sortBy { Prefs.homeRank(it.title) }
         list.changedAll()
     }
 

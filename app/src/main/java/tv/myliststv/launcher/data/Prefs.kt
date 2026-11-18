@@ -69,6 +69,22 @@ object Prefs {
         get() = sp.getBoolean("horizontalPosters", false)
         set(v) { sp.edit().putBoolean("horizontalPosters", v).apply(); epoch++ }
 
+    /** Size of posters, wide cards and app tiles together: 0 small, 1 medium, 2 large. */
+    var cardSize: Int
+        get() = sp.getInt("cardSize", 1)
+        set(v) { sp.edit().putInt("cardSize", v).apply(); epoch++ }
+    val cardScale get() = floatArrayOf(0.85f, 1f, 1.2f)[cardSize.coerceIn(0, 2)]
+
+    private fun strings(k: String) = (sp.getString(k, "") ?: "").split('\n').filter { it.isNotEmpty() }
+    private fun putStrings(k: String, v: List<String>) { sp.edit().putString(k, v.joinToString("\n")).apply(); epoch++ }
+    /** Home rows (by title) and apps in the order the owner chose, and the ones hidden from Home. Unlisted ones go after, in their usual order. */
+    var homeOrder: List<String> get() = strings("homeOrder"); set(v) = putStrings("homeOrder", v)
+    var homeHidden: List<String> get() = strings("homeHidden"); set(v) = putStrings("homeHidden", v)
+    var appOrder: List<String> get() = strings("appOrder"); set(v) = putStrings("appOrder", v)
+    var appHidden: List<String> get() = strings("appHidden"); set(v) = putStrings("appHidden", v)
+    /** Sort key for a home row: its place in [homeOrder], else Continue watching first, apps last, catalogs between. */
+    fun homeRank(title: String): Int = homeOrder.indexOf(title).let { if (it >= 0) it else when (title) { "Continue watching" -> -1; "Your apps" -> 10000; else -> 5000 } }
+
     var showContinue: Boolean
         get() = sp.getBoolean("showCw", true)
         set(v) { sp.edit().putBoolean("showCw", v).apply(); epoch++ }
