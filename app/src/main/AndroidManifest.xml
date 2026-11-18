@@ -65,6 +65,10 @@
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" />
         <activity android:name=".SearchActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" android:windowSoftInputMode="stateHidden|adjustPan" />
+        <service android:name=".HomeButtonService" android:exported="false" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/home_button_service" />
+        </service>
         <activity android:name=".SettingsActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" />
         <activity android:name=".PlayerActivity" android:exported="false" android:screenOrientation="landscape"

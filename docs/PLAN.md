@@ -31,4 +31,4 @@ Not done by the owner's choice: PIN lock.
 Not done yet: skip intro for movies (IntroDB has none; TheIntroDB covers few), QR code for sign-in (the code and link are shown as text), watch-history sync from the account.
 Not tested: anything on a real TV box (including the Keystore path and Watch Next). First job after sideloading: confirm the home role (see below) and note per-device results here.
 
-- Progress sync (signed in only): part-watched titles go to My Lists `/api/nuvio-tv/progress` (website Continue Watching), finished ones to `/api/nuvio-tv/history`. Needs the addon branch `tv-backup-endpoint` deployed. Next: Home-app setup page, accessibility Home fallback, phone setup page.
+- Progress sync (signed in only): part-watched titles go to My Lists `/api/nuvio-tv/progress` (website Continue Watching), finished ones to `/api/nuvio-tv/history`. Needs the addon branch `tv-backup-endpoint` deployed. Home screen setup (Settings): make Home app, Home-button fallback (HomeButtonService, accessibility, sees only which app came forward), phone/computer steps page. Later, optional: on-TV adb pairing over Wireless debugging (needs an adb library).

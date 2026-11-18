@@ -1,7 +1,9 @@
 package tv.myliststv.launcher
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
@@ -32,6 +34,25 @@ class SettingsActivity : Activity() {
     private lateinit var col: LinearLayout
     private var cat = 0
     private var groups: List<Pair<String, List<Row>>> = emptyList()
+
+    override fun onResume() { super.onResume(); if (::rail.isInitialized) refresh() }
+
+    private fun requestHome() {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 29) startActivityForResult(getSystemService(android.app.role.RoleManager::class.java).createRequestRoleIntent(android.app.role.RoleManager.ROLE_HOME), 1)
+            else startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
+        } catch (_: Exception) {
+            try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) { Toast.makeText(this, "This TV has no Home setting. Use the phone or computer steps.", Toast.LENGTH_LONG).show() }
+        }
+    }
+
+    private fun setupPage() {
+        val server = PhoneServer { _, done -> done("Nothing to add here.") }
+        server.start()
+        val a = server.address()?.let { "$it/setup" } ?: "Connect the TV to Wi-Fi first."
+        android.app.AlertDialog.Builder(this).setTitle("Open this on your phone").setMessage(a)
+            .setPositiveButton("Done", null).setOnDismissListener { server.stop() }.show()
+    }
 
     private fun profileMenu() {
         val l = Profiles.all()
@@ -156,6 +177,15 @@ class SettingsActivity : Activity() {
         add(header("Performance"))
         add(choice("Lite mode", "Less motion and memory. Auto turns on for weak boxes.", listOf("Auto", "On", "Off"), { Prefs.liteMode }, { Prefs.liteMode = it }))
         add(action("Clear caches", "Frees stored images and catalog data (${Http.cacheBytes() / 1_048_576} MB now).") { Http.clear(); ImageLoader.clearDisk(); Toast.makeText(this@SettingsActivity, "Caches cleared", Toast.LENGTH_SHORT).show() })
+        add(header("Home screen"))
+        add(info("Home app", if (HomeSetup.isHome(this@SettingsActivity)) "This launcher" else "Another launcher"))
+        add(action("Make this my Home app", "Opens the system choice. Pick My Lists TV and choose Always.") { requestHome() })
+        add(info("Home button fallback", if (HomeSetup.fallbackOn(this@SettingsActivity)) "On" else "Off"))
+        add(action("Turn on the Home button fallback", "For TVs that keep their own launcher as Home. Opens the system accessibility page if needed. It only sees which app came forward.") {
+            if (HomeSetup.enableFallback(this@SettingsActivity)) refresh()
+            else try { Toast.makeText(this@SettingsActivity, "Turn on My Lists TV Home button", Toast.LENGTH_LONG).show(); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
+        })
+        add(action("Set up from a phone or computer", "Shows an address with the exact steps and commands for TVs that block the buttons above.") { setupPage() })
         add(header("About"))
         add(action("Check for updates", "Version 0.1.${Updater.installedBuild(this@SettingsActivity)} installed.") { checkUpdate() })
         add(info("Make this your home screen", "adb shell cmd package set-home-activity tv.myliststv.launcher/.MainActivity"))

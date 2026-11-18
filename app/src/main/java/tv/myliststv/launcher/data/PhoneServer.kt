@@ -43,7 +43,7 @@ class PhoneServer(private val port: Int = 8765, private val onAdd: (String, (Str
                 latch.await(15, java.util.concurrent.TimeUnit.SECONDS)
                 msg = result
             } else msg = ""
-            val body = page(msg).toByteArray()
+            val body = (if (request.contains(" /setup")) setupPage() else page(msg)).toByteArray()
             c.getOutputStream().apply {
                 write("HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: ${body.size}\r\nConnection: close\r\n\r\n".toByteArray()); write(body); flush()
             }
@@ -56,6 +56,16 @@ class PhoneServer(private val port: Int = 8765, private val onAdd: (String, (Str
 <form method=post><input name=link style="width:100%;padding:14px;font-size:18px;border-radius:8px;border:0" placeholder="https://.../manifest.json" autofocus>
 <p><button style="padding:14px 24px;font-size:18px;border-radius:30px;border:0;background:#ffc65c;font-weight:700">Install on TV</button></p></form>
 ${if (msg.isNotEmpty()) "<p style='color:#59e0ae;font-weight:700'>$msg</p>" else ""}"""
+
+    private fun setupPage(): String {
+        val cmds = HomeSetup.commands(localIp() ?: "TV-ADDRESS").joinToString("\n")
+        return """<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><title>My Lists TV setup</title>
+<body style="font:18px system-ui;background:#000;color:#fff;padding:24px;max-width:640px;margin:auto">
+<h2>Make My Lists TV your Home screen</h2>
+<p>On the TV: Settings, then Set up as Home screen. Try the buttons there first. If your TV will not allow it, turn on <b>Developer options, then USB debugging</b> (and Network debugging if it has it), then run these on a computer on the same Wi-Fi:</p>
+<pre style="background:#1c1c1e;padding:14px;border-radius:14px;overflow:auto;font-size:15px">${cmds}</pre>
+<p style="color:#aeaeb2">The third command lets the app turn on its Home button fallback itself. Nothing here leaves your network.</p>"""
+    }
 
     private fun localIp(): String? = try {
         NetworkInterface.getNetworkInterfaces().toList().filter { it.isUp && !it.isLoopback }

@@ -131,3 +131,18 @@ class ProgressTest {
         assertNull(Progress.request(link, e("live:abc", "tv", 50_000)))
     }
 }
+
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+class HomeSetupTest {
+    @Test fun commandsUseThisBoxAndTheRealServiceName() {
+        val c = HomeSetup.commands("192.168.1.9")
+        assertTrue(c[0] == "adb connect 192.168.1.9:5555")
+        assertTrue(c.any { it.contains("tv.myliststv.launcher/tv.myliststv.launcher.HomeButtonService") })
+        // The service class named in the commands must exist, or the fallback could never be switched on.
+        Class.forName("tv.myliststv.launcher.HomeButtonService")
+    }
+    @Test fun fallbackIsOffUntilEnabled() {
+        val c = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        assertFalse(HomeSetup.fallbackOn(c))
+    }
+}
