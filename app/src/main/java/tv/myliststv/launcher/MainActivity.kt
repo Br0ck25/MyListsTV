@@ -1,134 +1,149 @@
 package tv.myliststv.launcher
 
 import android.app.Activity
-import android.content.Context
+import android.app.AlertDialog
+import android.content.ComponentName
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.StateListDrawable
+import android.net.Uri
 import android.os.Bundle
-import android.util.LruCache
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
-import android.view.ViewGroup
-import android.widget.ImageView
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import tv.myliststv.launcher.data.*
+import tv.myliststv.launcher.ui.*
 
 /**
- * Phase 0 spike: prove the app can take the Home button and list apps, using plain Views only.
- * No Compose, no WebView, no AppCompat. See docs/PLAN.md.
+ * The home screen. Plain Views only: a top bar with tabs, and one screen at a time below it.
+ * Screens are rebuilt when selected, because their data comes from the cache and a screen left in memory costs RAM.
  */
 class MainActivity : Activity() {
 
-    private lateinit var list: RecyclerView
+    private val tabs = listOf("Home", "Movies", "Series", "Apps", "Addons")
+    private val tabViews = ArrayList<TextView>()
+    private lateinit var content: FrameLayout
+    private lateinit var searchBtn: TextView
+    private lateinit var settingsBtn: TextView
+    private var current = -1
+    private var screen: Any? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private var pendingSelect: Runnable? = null
+    private var ready = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.BLACK)
-            setPadding(dp(48), dp(32), dp(48), 0)
+        val root = Ui.vbox(this).apply { setBackgroundColor(Ui.BG) }
+        val bar = Ui.hbox(this, 8).apply { setPadding(Ui.dp(this@MainActivity, 40), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 40), Ui.dp(this@MainActivity, 8)) }
+        val logo = Ui.hbox(this, 8)
+        logo.addView(View(this).apply { background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(Ui.ACCENT) } },
+            LinearLayout.LayoutParams(Ui.dp(this, 16), Ui.dp(this, 16)))
+        logo.addView(Ui.text(this, "My Lists TV", 20f, Ui.TEXT, true))
+        bar.addView(logo, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { rightMargin = Ui.dp(this@MainActivity, 24) })
+        tabs.forEachIndexed { i, t ->
+            val v = tabView(t)
+            v.setOnFocusChangeListener { view, f ->
+                (view as TextView).setTextColor(if (f) 0xFF12131A.toInt() else if (i == current) Ui.TEXT else Ui.DIM)
+                if (f) { pendingSelect?.let { handler.removeCallbacks(it) }; pendingSelect = Runnable { select(i) }.also { handler.postDelayed(it, 140) } }
+            }
+            v.setOnClickListener { select(i, force = true) }
+            tabViews += v
+            bar.addView(v)
         }
-        root.addView(TextView(this).apply {
-            text = getString(R.string.app_name)
-            setTextColor(Color.WHITE)
-            textSize = 28f
-        })
-        list = RecyclerView(this).apply {
-            layoutManager = GridLayoutManager(this@MainActivity, 6)
-            clipToPadding = false
-            setPadding(0, dp(24), 0, dp(24))
-            setHasFixedSize(true)
-            itemAnimator = null
-        }
-        root.addView(list, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        bar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        searchBtn = Ui.button(this, "Search") { startActivity(Intent(this, SearchActivity::class.java)) }
+        settingsBtn = Ui.button(this, "Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }
+        bar.addView(searchBtn); bar.addView(settingsBtn)
+        root.addView(bar, Ui.matchWrap())
+        content = FrameLayout(this)
+        root.addView(content, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         setContentView(root)
+        content.addView(Ui.text(this, "Loading…", 16f, Ui.DIM).apply { gravity = Gravity.CENTER }, FrameLayout.LayoutParams(-1, -1))
+        AddonStore.load { ready = true; select(0, force = true); tabViews[0].requestFocus() }
+    }
+
+    private fun tabView(t: String) = TextView(this).apply {
+        text = t; textSize = 15f; setTextColor(Ui.DIM); typeface = android.graphics.Typeface.DEFAULT_BOLD
+        setPadding(Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 8), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 8))
+        background = Ui.pillBg(this@MainActivity, 0x00000000); isFocusable = true; isClickable = true
+    }
+
+    private fun select(i: Int, force: Boolean = false) {
+        if (!ready) return
+        if (i == current && !force) return
+        current = i
+        tabViews.forEachIndexed { idx, v -> if (!v.isFocused) v.setTextColor(if (idx == i) Ui.TEXT else Ui.DIM) }
+        content.removeAllViews()
+        screen = null
+        when (i) {
+            0, 1, 2 -> {
+                val s = BrowseScreen(this, type = when (i) { 1 -> "movie"; 2 -> "series"; else -> null }, withContinue = i == 0, withApps = i == 0,
+                    onMeta = ::openMeta, onResume = ::resumeEntry, onApp = ::launch, onAppMenu = ::appMenu)
+                screen = s; content.addView(s.view); s.start()
+            }
+            3 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
+            4 -> { val s = AddonsScreen(this) { }; screen = s; content.addView(s.view); s.start() }
+        }
+    }
+
+    private fun openMeta(m: Meta) {
+        startActivity(Intent(this, DetailsActivity::class.java).putExtra("meta", Json.metaToJson(m)))
+    }
+
+    private fun resumeEntry(e: WatchStore.Entry) {
+        val m = Meta(e.metaId, e.type, e.name, e.poster, e.background)
+        startActivity(Intent(this, DetailsActivity::class.java).putExtra("meta", Json.metaToJson(m)).putExtra("play", e.videoId))
+    }
+
+    private fun launch(a: AppEntry) {
+        val intent = Intent(Intent.ACTION_MAIN).apply {
+            component = a.component
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+            addCategory(if (a.sideloaded) Intent.CATEGORY_LAUNCHER else Intent.CATEGORY_LEANBACK_LAUNCHER)
+        }
+        try { startActivity(intent) } catch (e: Exception) { Toast.makeText(this, "Could not open ${a.label}", Toast.LENGTH_SHORT).show() }
+    }
+
+    private fun appMenu(a: AppEntry) {
+        AlertDialog.Builder(this).setTitle(a.label).setItems(arrayOf("App info", "Uninstall")) { _, which ->
+            val pkg = a.component.packageName
+            try {
+                if (which == 0) startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg")))
+                else startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg")))
+            } catch (e: Exception) { Toast.makeText(this, "Not available on this device", Toast.LENGTH_SHORT).show() }
+        }.show()
     }
 
     override fun onResume() {
         super.onResume()
-        list.adapter = AppAdapter(this, AppRepository.load(this)) { entry -> launch(entry) }
+        (screen as? BrowseScreen)?.refreshContinue()
     }
 
-    // Home pressed while we are already on top: go back to the first item.
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.hasCategory(Intent.CATEGORY_HOME)) list.scrollToPosition(0)
-    }
-
-    private fun launch(entry: AppEntry) {
-        val intent = Intent(Intent.ACTION_MAIN).apply {
-            component = entry.component
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
-            addCategory(if (entry.sideloaded) Intent.CATEGORY_LAUNCHER else Intent.CATEGORY_LEANBACK_LAUNCHER)
-        }
-        try {
-            startActivity(intent)
-        } catch (e: Exception) {
-            Toast.makeText(this, "Could not open ${entry.label}", Toast.LENGTH_SHORT).show()
+        if (intent.hasCategory(Intent.CATEGORY_HOME)) {
+            if (current != 0) select(0, force = true)
+            tabViews[0].requestFocus()
         }
     }
 
-    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
-}
-
-private class AppAdapter(
-    private val context: Context,
-    private val items: List<AppEntry>,
-    private val onClick: (AppEntry) -> Unit,
-) : RecyclerView.Adapter<AppAdapter.Holder>() {
-
-    // Small byte-bounded-ish cache: 64 icons. Icons load only when a tile binds.
-    private val icons = LruCache<String, Drawable>(64)
-    private val pm: PackageManager = context.packageManager
-
-    class Holder(val root: LinearLayout, val icon: ImageView, val label: TextView) : RecyclerView.ViewHolder(root)
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
-        val d = context.resources.displayMetrics.density
-        val root = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            isFocusable = true
-            isClickable = true
-            setPadding((8 * d).toInt(), (16 * d).toInt(), (8 * d).toInt(), (16 * d).toInt())
-            layoutParams = RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (132 * d).toInt())
-            background = StateListDrawable().apply {
-                addState(intArrayOf(android.R.attr.state_focused), GradientDrawable().apply {
-                    setColor(Color.parseColor("#26FFFFFF")); setStroke((3 * d).toInt(), Color.WHITE); cornerRadius = 12 * d
-                })
-                addState(intArrayOf(), ColorDrawable(Color.TRANSPARENT))
-            }
-        }
-        val icon = ImageView(context).apply {
-            scaleType = ImageView.ScaleType.FIT_CENTER
-            layoutParams = LinearLayout.LayoutParams((64 * d).toInt(), (64 * d).toInt())
-        }
-        val label = TextView(context).apply {
-            setTextColor(Color.WHITE); textSize = 14f; gravity = Gravity.CENTER
-            maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
-        }
-        root.addView(icon); root.addView(label)
-        return Holder(root, icon, label)
+    @Deprecated("Back moves to the tabs; the launcher itself never closes.")
+    override fun onBackPressed() {
+        val f = currentFocus
+        val inBar = f != null && (f.parent === tabViews[0].parent)
+        if (!inBar && current >= 0) tabViews[current.coerceIn(0, tabViews.size - 1)].requestFocus()
+        // On the tab bar, Back does nothing: this is the home screen.
     }
 
-    override fun onBindViewHolder(h: Holder, position: Int) {
-        val e = items[position]
-        h.label.text = e.label
-        val key = e.component.flattenToShortString()
-        val icon = icons.get(key) ?: try {
-            pm.getActivityIcon(e.component).also { icons.put(key, it) }
-        } catch (_: Exception) { null }
-        h.icon.setImageDrawable(icon)
-        h.root.setOnClickListener { onClick(e) }
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_SEARCH) { startActivity(Intent(this, SearchActivity::class.java)); return true }
+        return super.onKeyDown(keyCode, event)
     }
 
-    override fun getItemCount() = items.size
+    override fun onTrimMemory(level: Int) { super.onTrimMemory(level); if (level >= TRIM_MEMORY_UI_HIDDEN) ImageLoader.trim() }
 }
