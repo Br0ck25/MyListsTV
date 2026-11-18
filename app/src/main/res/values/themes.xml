@@ -1,0 +1,7 @@
+<resources>
+    <!-- Framework theme on purpose: no AppCompat, no Material, no Compose on Home (1 GB rules). -->
+    <style name="Theme.MyListsTV" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+</resources>
