@@ -202,3 +202,26 @@ class LibraryTest {
         Library.remove("tt2")
     }
 }
+
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34], application = tv.myliststv.launcher.App::class)
+class AlertsAndWatchedTest {
+    private val show = Meta("tt1", "series", "Show")
+    private fun v(s: Int, e: Int, date: String?) = Video("tt1:$s:$e", "T", s, e, released = date)
+
+    @Test fun alertsOnlyForAnEpisodeNewerThanTheLastSeen() {
+        val vs = listOf(v(1, 1, "2020-01-01T00:00:00.000Z"), v(1, 2, "2020-01-08T00:00:00.000Z"), v(1, 3, "2999-01-01T00:00:00.000Z"))
+        assertEquals(10002, Alerts.newestAired(vs))                    // the future episode does not count
+        assertNull("first look only notes where the show is", Alerts.compare(show, 0, 10002))
+        assertNull("nothing new", Alerts.compare(show, 10002, 10002))
+        assertEquals("S1 · E3 is out", Alerts.compare(show, 10002, 10003)?.text)
+        assertEquals("S2 · E1 is out", Alerts.compare(show, 10009, 20001)?.text)
+    }
+
+    @Test fun watchedEpisodesAreRememberedPerShow() {
+        Watched.set("tt1", "tt1:1:1", true); Watched.set("tt1", "tt1:1:2", true); Watched.set("tt2", "tt2:1:1", true)
+        assertEquals(setOf("tt1:1:1", "tt1:1:2"), Watched.of("tt1")); assertTrue(Watched.has("tt2", "tt2:1:1"))
+        Watched.set("tt1", "tt1:1:1", false); assertFalse(Watched.has("tt1", "tt1:1:1")); assertTrue(Watched.has("tt1", "tt1:1:2"))
+        Watched.set("tt1", "tt1:1:2", false); Watched.set("tt2", "tt2:1:1", false); assertTrue(Watched.of("tt1").isEmpty())
+    }
+}

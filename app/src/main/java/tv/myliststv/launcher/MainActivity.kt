@@ -51,7 +51,7 @@ class MainActivity : Activity() {
     private lateinit var bellBadge: TextView
     private var backdropUrl: String? = null
 
-    private fun updateBell() { val n = Notices.list(this).size; bellBadge.text = n.toString(); bellBadge.visibility = if (n > 0) View.VISIBLE else View.GONE }
+    private fun updateBell() { val n = Notices.list(this).size + Alerts.all().size; bellBadge.text = n.toString(); bellBadge.visibility = if (n > 0) View.VISIBLE else View.GONE }
 
     private fun updateProfile() { val n = Profiles.active().name; profileName.text = n; profileAvatar.text = n.take(1).uppercase() }
 
@@ -75,20 +75,22 @@ class MainActivity : Activity() {
         }.show()
     }
 
+    /** The bell: new-episode alerts for your Library first, then the TV's own notifications when access is given. */
     private fun showNotices() {
-        if (!Notices.allowed(this)) {
-            AlertDialog.Builder(this).setTitle("Notifications").setMessage("To show your TV's notifications here, give My Lists TV Notification access. They stay on this box and are not stored or sent anywhere.")
-                .setPositiveButton("Open the setting") { _, _ -> try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { android.widget.Toast.makeText(this, "This TV has no such setting. See Settings, Home screen, for the phone steps.", android.widget.Toast.LENGTH_LONG).show() } }
-                .setNegativeButton("Not now", null).show()
-            return
-        }
-        val l = Notices.list(this)
-        if (l.isEmpty()) { AlertDialog.Builder(this).setTitle("Notifications").setMessage("Nothing new.").setPositiveButton("OK", null).show(); return }
-        AlertDialog.Builder(this).setTitle("Notifications")
-            .setItems(l.map { "${it.app}: ${it.title}\n${it.text}".trim() }.toTypedArray()) { _, i ->
-                try { l[i].open?.send() } catch (_: Exception) {}
-                Notices.dismiss(l[i].key); updateBell()
-            }.setNeutralButton("Clear all") { _, _ -> Notices.dismissAll(); updateBell() }.setPositiveButton("Close", null).show()
+        val own = Alerts.all()
+        val allowed = Notices.allowed(this)
+        val sys = if (allowed) Notices.list(this) else emptyList()
+        val labels = own.map { "${it.title}\n${it.text}" } + sys.map { "${it.app}: ${it.title}\n${it.text}".trim() } + (if (allowed) emptyList() else listOf("Show the TV's own notifications here too\u2026"))
+        val b = AlertDialog.Builder(this).setTitle("Notifications")
+        if (own.isEmpty() && sys.isEmpty() && allowed) { b.setMessage("Nothing new. New episodes of series in your Library show up here.").setPositiveButton("OK", null).show(); return }
+        b.setItems(labels.toTypedArray()) { _, i ->
+            when {
+                i < own.size -> { Alerts.remove(own[i].id); openMeta(Library.all().firstOrNull { it.id == own[i].metaId } ?: Meta(own[i].metaId, own[i].type, own[i].title)) }
+                i < own.size + sys.size -> { val n = sys[i - own.size]; try { n.open?.send() } catch (_: Exception) {}; Notices.dismiss(n.key) }
+                else -> try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { android.widget.Toast.makeText(this, "This TV has no such setting. See Settings, Launcher setup, for the phone steps.", android.widget.Toast.LENGTH_LONG).show() }
+            }
+            updateBell()
+        }.setNeutralButton("Clear all") { _, _ -> Alerts.clear(); Notices.dismissAll(); updateBell() }.setPositiveButton("Close", null).show()
     }
     private var backdropJob: Runnable? = null
 
@@ -272,6 +274,10 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         if (Prefs.navStyle != navStyle) { recreate(); return }
+        if (ready) {
+            Alerts.check { if (::bellBadge.isInitialized) updateBell() }
+            Library.pull { if (current == 3) select(3, force = true) }
+        }
         if (::bellBadge.isInitialized) updateBell()
         if (::profileName.isInitialized) updateProfile()
         if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; if (ready && current >= 0) select(current, force = true) }

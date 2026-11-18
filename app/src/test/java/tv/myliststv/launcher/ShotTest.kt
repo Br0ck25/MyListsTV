@@ -89,4 +89,20 @@ class ShotTest {
         screen.start(); settle(3000); shot(a, "library")
         tv.myliststv.launcher.data.Library.all().forEach { tv.myliststv.launcher.data.Library.remove(it.id) }
     }
+
+    @Test fun episodes() {
+        Assume.assumeTrue(dir != null)
+        val a = Robolectric.buildActivity(Activity::class.java).setup().get()
+        a.setTheme(R.style.Theme_MyListsTV)
+        val img = "https://image.tmdb.org/t/p/w500/qVgZu5BTx6pu4owCvVOm4zjTfOi.jpg"
+        val models = listOf(
+            tv.myliststv.launcher.ui.CardModel("Racket Club", img, "Dwight battles Turco's rising demands while racing to protect the ranch.", 0f, null, badge = "EPISODE 6  \u00b7  Nov 12, 2026", done = true),
+            tv.myliststv.launcher.ui.CardModel("Black Diamonds", img, "Dwight expands his operation while seeking stronger backing abroad.", 0.4f, null, badge = "EPISODE 7  \u00b7  AIRS Nov 26, 2026"))
+        val rv = androidx.recyclerview.widget.RecyclerView(a).apply {
+            layoutManager = androidx.recyclerview.widget.LinearLayoutManager(a, androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
+            adapter = tv.myliststv.launcher.ui.CardAdapter(tv.myliststv.launcher.ui.CardKind.EPISODE, models, false, { }, { })
+        }
+        a.setContentView(android.widget.FrameLayout(a).apply { setBackgroundColor(tv.myliststv.launcher.ui.Ui.BG); addView(rv, android.widget.FrameLayout.LayoutParams(-1, 420)) })
+        settle(3000); shot(a, "episodes")
+    }
 }

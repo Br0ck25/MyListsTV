@@ -97,11 +97,13 @@ class DetailsActivity : Activity() {
         val resume = WatchStore.forMeta(meta.id)
         val resumable = resume != null && resume.fraction in 0.02f..0.93f
         val watched = resume != null && resume.fraction > 0.93f
-        val sig = "$resumable|$watched|${meta.trailers.firstOrNull()}|${meta.type}|${Library.has(meta.id)}"
+        val sig = "$resumable|$watched|${meta.trailers.firstOrNull()}|${meta.type}|${Library.has(meta.id)}|${mainVideo()?.id}"
         if (sig != buttonsSig) {
             buttonsSig = sig; buttons.removeAllViews()
-            val at = if (meta.type == "series" && resume != null && resume.season >= 0) " S${resume.season} E${resume.episode}" else ""
-            val play = Ui.button(c, (if (resumable) "Resume" else if (at.isNotEmpty()) "Next" else "Play") + at, primary = true) { playMain() }
+            val v = mainVideo()
+            val at = if (v != null) " S${v.season} E${v.episode}" else ""
+            val started = resume != null || Watched.of(meta.id).isNotEmpty()
+            val play = Ui.button(c, (if (resumable) "Resume" else if (v != null && started) "Next" else "Play") + at, primary = true) { playMain() }
             val round = Ui.dp(c, 48)
             buttons.addView(play, LinearLayout.LayoutParams(-2, round))
             val saved = Library.has(meta.id)
@@ -187,11 +189,11 @@ class DetailsActivity : Activity() {
         seasons.forEach { s -> chipsRow.addView(Ui.button(c, if (s == 0) "Specials" else "Season $s") { season = s; tabsSig = ""; renderTabs() }.apply { isSelected = s == season }) }
         col.addView(HorizontalScrollView(c).apply { isHorizontalScrollBarEnabled = false; addView(chipsRow) })
         val models = meta.videos.filter { it.season == season }.map { v ->
-            CardModel(v.title, v.thumbnail, v.overview, if (resume?.videoId == v.id) resume.fraction else 0f, v, badge = episodeBadge(v))
+            CardModel(v.title, v.thumbnail, v.overview, if (resume?.videoId == v.id) resume.fraction else 0f, v, badge = episodeBadge(v), done = Watched.has(meta.id, v.id))
         }
         col.addView(strip(190).apply {
             setPadding(0, Ui.dp(c, 8), 0, 0)
-            adapter = CardAdapter(CardKind.EPISODE, models, lite, { }, { m -> (m.payload as? Video)?.let { playVideo(it.id) } }, { m -> (m.payload as? Video)?.let { openSources(it.id) } })
+            adapter = CardAdapter(CardKind.EPISODE, models, lite, { }, { m -> (m.payload as? Video)?.let { playVideo(it.id) } }, { m -> (m.payload as? Video)?.let { episodeMenu(it) } })
         })
         return col
     }
@@ -201,6 +203,15 @@ class DetailsActivity : Activity() {
         val d = v.airDate() ?: return "EPISODE ${v.episode}"
         val text = java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.US).format(d)
         return "EPISODE ${v.episode}  \u00b7  " + if (d.time > System.currentTimeMillis()) "AIRS $text" else text
+    }
+
+    /** Hold OK on an episode: choose a source, or mark it watched or not. */
+    private fun episodeMenu(v: Video) {
+        val done = Watched.has(meta.id, v.id)
+        AlertDialog.Builder(this).setTitle("S${v.season} \u00b7 E${v.episode}  ${v.title}")
+            .setItems(arrayOf("Choose a source", if (done) "Mark not watched" else "Mark watched")) { _, i ->
+                if (i == 0) openSources(v.id) else { Watched.set(meta.id, v.id, !done); tabsSig = ""; renderTabs() }
+            }.show()
     }
 
     private fun castPanel(): View = strip(150).apply { adapter = PersonAdapter(people()) }
@@ -217,11 +228,17 @@ class DetailsActivity : Activity() {
     }
 
     /** The episode to play from the main button: where the viewer left off, else the first one. */
-    private fun mainVideoId(): String {
-        if (meta.type != "series") return meta.id
+    private fun mainVideoId(): String = mainVideo()?.id ?: meta.id
+
+    /** Series: the episode being watched, else the first one not finished yet, else the first. Movies: null. */
+    private fun mainVideo(): Video? {
+        if (meta.type != "series") return null
+        val episodes = meta.videos.filter { it.season > 0 }.ifEmpty { meta.videos }
         val resume = WatchStore.forMeta(meta.id)
-        if (resume != null && resume.videoId.isNotEmpty()) return resume.videoId
-        return meta.videos.firstOrNull { it.season > 0 }?.id ?: meta.videos.firstOrNull()?.id ?: meta.id
+        val cur = resume?.let { r -> episodes.firstOrNull { it.id == r.videoId } }
+        if (cur != null && resume.fraction < 0.93f) return cur
+        val done = Watched.of(meta.id)
+        return episodes.firstOrNull { it.id !in done && (cur == null || episodes.indexOf(it) > episodes.indexOf(cur)) } ?: episodes.firstOrNull { it.id !in done } ?: episodes.firstOrNull()
     }
 
     private fun playMain() = playVideo(mainVideoId())
@@ -289,6 +306,9 @@ class DetailsActivity : Activity() {
     }
 
     private fun dismissBusy() { busy?.dismiss(); busy = null }
+
+    /** Coming back from the player: the tick and the Next button move on. */
+    override fun onResume() { super.onResume(); if (::meta.isInitialized && ::buttons.isInitialized) { tabsSig = ""; render() } }
 
     override fun onDestroy() { session?.cancelled = true; dismissBusy(); super.onDestroy() }
 

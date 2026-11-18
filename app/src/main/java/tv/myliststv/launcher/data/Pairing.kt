@@ -63,6 +63,7 @@ object Pairing {
         AddonStore.remove(AddonStore.DEFAULT_URL)
         AddonStore.add(manifestUrl)
         Prefs.accountLink = manifestUrl
+        Library.pull { }
         AddonStore.needsRefresh = true
         Backup.auto()
     }

@@ -18,34 +18,34 @@ Find a symbol with grep on this file, then read only that file around the line n
     33   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
     39   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (327 lines) - The home screen.
+## MainActivity.kt (333 lines) - The home screen.
     31 class MainActivity  - The home screen.
     54   fun updateBell()
     56   fun updateProfile()
     59   fun profileChip()  - Who is watching: the current profile at the top right; OK switches.
     71   fun pickProfile()
-    78   fun showNotices()
-    96   fun setBackdrop(url: String?)  - Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every p
-   102   fun showBackdrop(on: Boolean)
-   108   fun onCreate(savedInstanceState: Bundle?)
-   172   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
-   189   fun tabView(t: String)
-   195   fun select(i: Int, force: Boolean = false)
-   219   fun go(where: String)  - Where a mapped remote button sends the launcher.
-   229   fun openMeta(m: Meta)
-   233   fun resumeEntry(e: WatchStore.Entry)
-   238   fun launch(a: AppEntry)
-   247   fun appMenu(a: AppEntry)
-   272   fun onResume()
-   282   fun onNewIntent(intent: Intent)
-   296   fun onBackPressed()
-   304   fun dispatchKeyEvent(e: KeyEvent)  - Hidden side bar: Left from the left edge of a page opens it; Right, OK on a page or Back closes it.
-   315   fun isInContent(v: View)
-   316   fun openSide()
-   317   fun closeSide()
-   319   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   324   fun onDestroy()
-   326   fun onTrimMemory(level: Int)
+    79   fun showNotices()  - The bell: new-episode alerts for your Library first, then the TV's own notifications when access is given.
+    98   fun setBackdrop(url: String?)  - Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every p
+   104   fun showBackdrop(on: Boolean)
+   110   fun onCreate(savedInstanceState: Bundle?)
+   174   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
+   191   fun tabView(t: String)
+   197   fun select(i: Int, force: Boolean = false)
+   221   fun go(where: String)  - Where a mapped remote button sends the launcher.
+   231   fun openMeta(m: Meta)
+   235   fun resumeEntry(e: WatchStore.Entry)
+   240   fun launch(a: AppEntry)
+   249   fun appMenu(a: AppEntry)
+   274   fun onResume()
+   288   fun onNewIntent(intent: Intent)
+   302   fun onBackPressed()
+   310   fun dispatchKeyEvent(e: KeyEvent)  - Hidden side bar: Left from the left edge of a page opens it; Right, OK on a page or Back closes it.
+   321   fun isInContent(v: View)
+   322   fun openSide()
+   323   fun closeSide()
+   325   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   330   fun onDestroy()
+   332   fun onTrimMemory(level: Int)
 
 ## data/AddonStore.kt (100 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
@@ -62,6 +62,18 @@ Find a symbol with grep on this file, then read only that file around the line n
     59   fun move(url: String, delta: Int)
     67   fun load(cb: (List<Addon>)  - Fetches every saved manifest (from cache first), then calls [cb] once on the main thread with those that loade
     89   fun probe(url: String, cb: (Manifest?, String?)  - Fetches a manifest to check it before installing.
+
+## data/Alerts.kt (52 lines) - New-episode alerts for series in the Library, shown in the bell.
+    12 object Alerts  - New-episode alerts for series in the Library, shown in the bell.
+    13   class Item
+    15   fun sp()
+    17   fun all()
+    22   fun write(l: List<Item>)
+    27   fun remove(id: String)
+    28   fun clear()
+    31   fun newestAired(videos: List<Video>, now: Long = System.currentTimeMillis()  - The newest episode that has already aired, as season * 10000 + episode, or 0.
+    35   fun compare(meta: Meta, seen: Int, newest: Int)  - Compares one show with what was seen last; returns a new alert or null.
+    39   fun check(force: Boolean = false, done: ()  - Looks at the Library's series now and then.
 
 ## data/Backup.kt (110 lines) - Encrypted backup of the whole setup.
     19 object Backup  - Encrypted backup of the whole setup.
@@ -164,17 +176,22 @@ Find a symbol with grep on this file, then read only that file around the line n
    188   fun youtubeIds(o: JSONObject)  - Trailers appear as trailerStreams [{ytId}] or trailers [{source, type}]; both carry a YouTube id.
    195   fun strings(a: JSONArray?)
 
-## data/Library.kt (38 lines) - "Library": titles the viewer saved with + on a details page.
+## data/Library.kt (79 lines) - "Library": titles the viewer saved with + on a details page.
      8 object Library  - "Library": titles the viewer saved with + on a details page.
      9   fun sp(profile: String = Profiles.activeId)
     11   fun read(profile: String)
     16   fun write(profile: String, list: List<Meta>)
-    21   fun all()
-    22   fun has(id: String)
-    25   fun toggle(m: Meta)  - Adds the title, or takes it out if it is already there.
-    32   fun remove(id: String)
-    35   fun export()  - Every profile's list, for a backup.
-    37   fun import(o: JSONObject?)
+    23   fun syncOn()
+    24   fun post(o: JSONObject)
+    25   fun items(l: List<Meta>)
+    28   fun push()  - Sends the list to the account.
+    41   fun pull(changed: ()  - Brings the account's Watchlist in.
+    61   fun all()
+    62   fun has(id: String)
+    65   fun toggle(m: Meta)  - Adds the title, or takes it out if it is already there.
+    73   fun remove(id: String)
+    76   fun export()  - Every profile's list, for a backup.
+    78   fun import(o: JSONObject?)
 
 ## data/Live.kt (148 lines)
      9 class Channel
@@ -211,7 +228,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     70 class Addon  - One installed addon.
     81 class StreamItem  - One playable stream option from an addon.
 
-## data/Pairing.kt (78 lines) - Sign in with a code.
+## data/Pairing.kt (79 lines) - Sign in with a code.
     12 object Pairing  - Sign in with a code.
     14   class Start
     16   fun parseStart(text: String)
@@ -224,7 +241,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     57   fun userOf(manifestUrl: String)  - Who the link belongs to, for display: the user in /user/tv/manifest.json.
     60   fun targetOf(manifestUrl: String)  - What My Lists wants as the TV's id: the secret in /i/<secret>/tv/...
     62   fun signIn(manifestUrl: String)
-    71   fun signOut()  - Back to the default My Lists catalogs.
+    72   fun signOut()  - Back to the default My Lists catalogs.
 
 ## data/People.kt (18 lines) - Cast photos.
      7 object People  - Cast photos.
@@ -382,40 +399,50 @@ Find a symbol with grep on this file, then read only that file around the line n
     60   fun toJson(e: Entry)
     67   fun fromJson(o: JSONObject)
 
+## data/Watched.kt (21 lines) - Which episodes of each show this profile has finished (90% or more, or marked by hand).
+     8 object Watched  - Which episodes of each show this profile has finished (90% or more, or marked by hand).
+     9   fun sp()
+    11   fun of(metaId: String)
+    15   fun has(metaId: String, videoId: String)
+    17   fun set(metaId: String, videoId: String, watched: Boolean)
+
 ## screens/AddonsActivity.kt (24 lines) - Settings, Addons: the list of addons and playlists, in a page of its own.
     13 class AddonsActivity  - Settings, Addons: the list of addons and playlists, in a page of its own.
     16   fun onCreate(savedInstanceState: Bundle?)
     23   fun onDestroy()
 
-## screens/DetailsActivity.kt (324 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
+## screens/DetailsActivity.kt (344 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     26 class DetailsActivity  - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     49   fun onCreate(savedInstanceState: Bundle?)
     88   fun render()
-   130   fun statusLabel()
-   133   fun nextEpisodeLine()  - "Next episode: S4 \u00b7 E6 \u00b7 Friday, Nov 19" for the first episode that has not aired yet.
-   139   fun chip(text: String)
-   145   fun people()  - People shown in Cast & crew: directors first, then writers, then cast, each name once.
-   148   fun renderTabs()
-   166   fun showTab(names: List<String>, i: Int)
-   173   fun strip(h: Int)
-   179   fun episodesPanel()
-   200   fun episodeBadge(v: Video)  - "EPISODE 6" with its air date: "Nov 12, 2026" once aired, "AIRS Nov 19, 2026" before.
-   206   fun castPanel()
-   208   fun openTrailer(id: String)
-   213   fun toggleWatched(watched: Boolean)
-   220   fun mainVideoId()  - The episode to play from the main button: where the viewer left off, else the first one.
-   227   fun playMain()
-   228   fun sourcesMain()
-   230   fun videoFor(id: String)
-   233   fun playVideo(videoId: String)  - Finds streams, picks the best, and starts the player.
-   263   fun openSources(videoId: String)
-   267   fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: Stre
-   279   fun noStreams(statuses: List<StreamResolver.AddonStatus>)
-   286   fun showBusy(msg: String)
-   291   fun dismissBusy()
-   293   fun onDestroy()
+   132   fun statusLabel()
+   135   fun nextEpisodeLine()  - "Next episode: S4 \u00b7 E6 \u00b7 Friday, Nov 19" for the first episode that has not aired yet.
+   141   fun chip(text: String)
+   147   fun people()  - People shown in Cast & crew: directors first, then writers, then cast, each name once.
+   150   fun renderTabs()
+   168   fun showTab(names: List<String>, i: Int)
+   175   fun strip(h: Int)
+   181   fun episodesPanel()
+   202   fun episodeBadge(v: Video)  - "EPISODE 6" with its air date: "Nov 12, 2026" once aired, "AIRS Nov 19, 2026" before.
+   209   fun episodeMenu(v: Video)  - Hold OK on an episode: choose a source, or mark it watched or not.
+   217   fun castPanel()
+   219   fun openTrailer(id: String)
+   224   fun toggleWatched(watched: Boolean)
+   231   fun mainVideoId()  - The episode to play from the main button: where the viewer left off, else the first one.
+   234   fun mainVideo()  - Series: the episode being watched, else the first one not finished yet, else the first.
+   244   fun playMain()
+   245   fun sourcesMain()
+   247   fun videoFor(id: String)
+   250   fun playVideo(videoId: String)  - Finds streams, picks the best, and starts the player.
+   280   fun openSources(videoId: String)
+   284   fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: Stre
+   296   fun noStreams(statuses: List<StreamResolver.AddonStatus>)
+   303   fun showBusy(msg: String)
+   308   fun dismissBusy()
+   311   fun onResume()  - Coming back from the player: the tick and the Next button move on.
+   313   fun onDestroy()
 
-## screens/PlayerActivity.kt (685 lines) - Full-screen player.
+## screens/PlayerActivity.kt (686 lines) - Full-screen player.
     35 class PlayerActivity  - Full-screen player.
     83   fun onCreate(savedInstanceState: Bundle?)
     98   fun buildUi()
@@ -463,12 +490,12 @@ Find a symbol with grep on this file, then read only that file around the line n
    584   fun doSkip(s: Segments.Seg)
    588   fun updateProgress()
    600   fun saveProgress(force: Boolean, ended: Boolean = false)
-   617   fun dispatchKeyEvent(e: KeyEvent)
-   650   fun seekStep(e: KeyEvent, dir: Int)  - Holding the key seeks faster: 10 s, then 20 s, then 40 s per step.
-   655   fun seekBy(deltaMs: Long)
-   662   fun onBackPressed()
-   671   fun onStop()
-   678   fun onDestroy()
+   618   fun dispatchKeyEvent(e: KeyEvent)
+   651   fun seekStep(e: KeyEvent, dir: Int)  - Holding the key seeks faster: 10 s, then 20 s, then 40 s per step.
+   656   fun seekBy(deltaMs: Long)
+   663   fun onBackPressed()
+   672   fun onStop()
+   679   fun onDestroy()
 
 ## screens/SearchActivity.kt (56 lines) - Search across the catalog addons.
     20 class SearchActivity  - Search across the catalog addons.
@@ -570,23 +597,23 @@ Find a symbol with grep on this file, then read only that file around the line n
    117   fun refreshContinue()  - Called when coming back from the player so the progress shows without reloading catalogs.
    125   fun hero(m: CardModel)
 
-## ui/Cards.kt (199 lines)
+## ui/Cards.kt (207 lines)
     20 class CardKind
     22 class CardModel
-    35 class RowModel
-    44 class Card  - One tile.
-    87   fun bind(m: CardModel)
-   111 class CardAdapter  - A horizontal strip of cards.
-   120   class H
-   122   fun set(newItems: List<CardModel>)
-   124   fun onCreateViewHolder(parent: ViewGroup, viewType: Int)
-   130   fun onBindViewHolder(h: H, position: Int)
-   141   fun getItemCount()
-   145 class RowView  - A titled row: heading, optional source label, horizontal strip.
-   171 class RowsList  - A vertical list of [RowView]s over [rows].
-   181   fun changed(i: Int)
-   182   fun changedAll()
-   183   fun inserted(i: Int)
+    37 class RowModel
+    46 class Card  - One tile.
+    94   fun bind(m: CardModel)
+   119 class CardAdapter  - A horizontal strip of cards.
+   128   class H
+   130   fun set(newItems: List<CardModel>)
+   132   fun onCreateViewHolder(parent: ViewGroup, viewType: Int)
+   138   fun onBindViewHolder(h: H, position: Int)
+   149   fun getItemCount()
+   153 class RowView  - A titled row: heading, optional source label, horizontal strip.
+   179 class RowsList  - A vertical list of [RowView]s over [rows].
+   189   fun changed(i: Int)
+   190   fun changedAll()
+   191   fun inserted(i: Int)
 
 ## ui/LibraryScreen.kt (55 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     12 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.

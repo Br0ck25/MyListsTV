@@ -30,6 +30,8 @@ data class CardModel(
     val banner: Boolean = false,
     /** A small label in the top corner, e.g. "EPISODE 6". */
     val badge: String? = null,
+    /** An episode the viewer has finished: shows a tick in the corner. */
+    val done: Boolean = false,
 )
 
 data class RowModel(
@@ -48,6 +50,10 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
     val bar = View(c).apply { setBackgroundColor(Ui.ACCENT); visibility = GONE }
     val badge = Ui.text(c, "", 11f, Ui.TEXT, true, 1).apply {
         setPadding(Ui.dp(c, 8), Ui.dp(c, 2), Ui.dp(c, 8), Ui.dp(c, 2)); background = Ui.rounded(c, Ui.SCRIM_SLATE, Ui.R_PILL)
+    }
+    val tick = ImageView(c).apply {
+        setImageResource(tv.myliststv.launcher.R.drawable.ic_check); setColorFilter(Ui.TEXT)
+        val p = Ui.dp(c, 4); setPadding(p, p, p, p); background = Ui.rounded(c, Ui.BRAND_FILL, Ui.R_PILL); visibility = GONE
     }
     val appIcon = ImageView(c).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
     private var wPx = 0; private var hPx = 0
@@ -75,6 +81,7 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
             if (ep) {
                 subLabel.maxLines = 2
                 addView(badge, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.START).apply { setMargins(Ui.dp(c, 8), Ui.dp(c, 8), 0, 0) })
+                addView(tick, LayoutParams(Ui.dp(c, 24), Ui.dp(c, 24), Gravity.TOP or Gravity.END).apply { setMargins(0, Ui.dp(c, 8), Ui.dp(c, 8), 0) })
             }
             if (kind == CardKind.WIDE || ep) {
                 addView(subLabel, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM).apply { setMargins(Ui.dp(c, 8), 0, Ui.dp(c, 8), Ui.dp(c, 8)) })
@@ -98,6 +105,7 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
         label.text = if (kind == CardKind.POSTER && !m.image.isNullOrEmpty()) "" else m.title
         subLabel.text = m.sub ?: ""
         ImageLoader.load(img, m.image, wPx, hPx)
+        tick.visibility = if (m.done) VISIBLE else GONE
         badge.text = m.badge ?: ""; badge.visibility = if (m.badge == null) GONE else VISIBLE
         if (kind == CardKind.WIDE || kind == CardKind.EPISODE) {
             bar.visibility = if (m.progress > 0f) VISIBLE else GONE
