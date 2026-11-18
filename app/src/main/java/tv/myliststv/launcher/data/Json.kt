@@ -78,7 +78,7 @@ object Json {
         put("trailerStreams", JSONArray().also { a -> m.trailers.forEach { a.put(JSONObject().put("ytId", it)) } }); put("country", m.country ?: ""); put("awards", m.awards ?: "")
         put("videos", JSONArray().also { a -> m.videos.forEach { v ->
             a.put(JSONObject().put("id", v.id).put("title", v.title).put("season", v.season).put("episode", v.episode)
-                .put("thumbnail", v.thumbnail ?: "").put("overview", v.overview ?: "")) } })
+                .put("thumbnail", v.thumbnail ?: "").put("overview", v.overview ?: "").put("released", v.released ?: "")) } })
     }.toString()
 
     fun metaFromJson(text: String): Meta? = try { metaFrom(JSONObject(text)) } catch (_: Exception) { null }
@@ -102,6 +102,7 @@ object Json {
                 episode = episode,
                 thumbnail = v.optString("thumbnail").ifEmpty { null },
                 overview = v.optString("overview").ifEmpty { v.optString("description") }.ifEmpty { null },
+                released = v.optString("released").ifEmpty { v.optString("firstAired") }.ifEmpty { null },
             )
         }
         val genres = strings(o.optJSONArray("genres")).ifEmpty { strings(o.optJSONArray("genre")) }

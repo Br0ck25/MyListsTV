@@ -43,7 +43,7 @@ class LiveScreen(private val act: Activity) {
     }
 
     fun start() {
-        note.text = if (LiveStore.playlists().isEmpty()) "No IPTV playlist yet. In the Addons tab choose “Add an addon or playlist” and paste an M3U link." else "Loading channels…"
+        note.text = if (LiveStore.playlists().isEmpty()) "No IPTV playlist yet. In Settings, then Addons, choose “Add an addon or playlist” and paste an M3U link." else "Loading channels…"
         LiveStore.load { channels, guides ->
             show(channels)
             Epg.load(guides, channels.mapNotNull { it.tvgId }.toSet()) { rv.adapter?.notifyDataSetChanged() }

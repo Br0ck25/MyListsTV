@@ -61,12 +61,12 @@ class BrowseScreen(
         val defs = Catalogs.browseRows(type, 8).filter { (_, cat) -> Catalogs.rowTitle(type, cat) !in hidden }
         if (defs.isEmpty() && Catalogs.enabled().isEmpty()) {
             heroTitle.text = "No catalog addon is on"
-            heroDesc.text = "Turn one on in the Addons tab."
+            heroDesc.text = "Turn one on in Settings, then Addons."
         }
         if (withContinue && StreamResolver.providers("movie", "tt0000001").isEmpty()) {
             heroTitle.text = "Welcome to My Lists TV"
             heroMeta.text = "One more step before you can play"
-            heroDesc.text = "Install a stream addon in the Addons tab. You can paste its link from your phone."
+            heroDesc.text = "Install a stream addon in Settings, then Addons. You can paste its link from your phone."
         }
         for ((addon, cat) in defs) {
             val title = Catalogs.rowTitle(type, cat)

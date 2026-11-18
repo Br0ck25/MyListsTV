@@ -32,7 +32,12 @@ data class Video(
     val episode: Int,
     val thumbnail: String? = null,
     val overview: String? = null,
-)
+    /** Air date as the addon gave it (ISO 8601, e.g. 2026-11-19T00:00:00.000Z). */
+    val released: String? = null,
+) {
+    /** "Nov 19, 2026", or null when the addon gave no usable date. */
+    fun airDate(): java.util.Date? = released?.take(10)?.let { try { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }.parse(it) } catch (_: Exception) { null } }
+}
 
 data class CatalogDef(
     val type: String,

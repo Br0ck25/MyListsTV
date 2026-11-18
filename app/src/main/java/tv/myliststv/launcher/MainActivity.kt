@@ -27,7 +27,7 @@ import tv.myliststv.launcher.ui.*
  */
 class MainActivity : Activity() {
 
-    private val tabs = listOf("Home", "Movies", "Series", "Live", "Apps", "Addons")
+    private val tabs = listOf("Home", "Movies", "Series", "Live", "Apps")
     private val tabViews = ArrayList<TextView>()
     private lateinit var content: FrameLayout
     private lateinit var searchBtn: View
@@ -160,7 +160,7 @@ class MainActivity : Activity() {
         }
         content.addView(Ui.text(this, "Loading…", 16f, Ui.DIM).apply { gravity = Gravity.CENTER }, FrameLayout.LayoutParams(-1, -1))
         val safe = CrashGuard.safeMode(this)
-        val start = { ready = true; val t = if (safe) 4 else 0; select(t, force = true); tabViews[t].requestFocus(); afterStart(safe); intent.getStringExtra("go")?.let { go(it) } }
+        val start = { ready = true; select(0, force = true); tabViews[0].requestFocus(); afterStart(safe); intent.getStringExtra("go")?.let { go(it) } }
         if (safe) start() else AddonStore.load { start() }
         handler.postDelayed({ CrashGuard.clear(this) }, 30_000)
     }
@@ -172,8 +172,8 @@ class MainActivity : Activity() {
             .setPositiveButton("Start normally") { _, _ -> CrashGuard.clear(this); recreate() }
             .setNegativeButton("Reset addons and caches") { _, _ -> AddonStore.reset(); Http.clear(); ImageLoader.clearDisk(); CrashGuard.clear(this); recreate() }.show()
         else if (!Prefs.setupDone) AlertDialog.Builder(this).setTitle("Welcome to My Lists TV")
-            .setMessage("You are seeing the default My Lists catalogs. To play video, add a stream addon in the Addons tab; you can paste its link from your phone. Simple mode hides settings most people never need.")
-            .setPositiveButton("Set up addons") { _, _ -> Prefs.setupDone = true; select(5, force = true); tabViews[5].requestFocus() }
+            .setMessage("You are seeing the default My Lists catalogs. To play video, add a stream addon in Settings, then Addons; you can paste its link from your phone. Simple mode hides settings most people never need.")
+            .setPositiveButton("Set up addons") { _, _ -> Prefs.setupDone = true; startActivity(Intent(this, AddonsActivity::class.java)) }
             .setNeutralButton("Advanced mode") { _, _ -> Prefs.setupDone = true; Prefs.advanced = true }
             .setNegativeButton("Skip") { _, _ -> Prefs.setupDone = true }.show()
         else if (Profiles.all().size > 1 && !Profiles.askedThisRun) {
@@ -206,7 +206,6 @@ class MainActivity : Activity() {
             }
             3 -> { val s = LiveScreen(this); screen = s; content.addView(s.view); s.start() }
             4 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
-            5 -> { val s = AddonsScreen(this) { }; screen = s; content.addView(s.view); s.start() }
         }
     }
 

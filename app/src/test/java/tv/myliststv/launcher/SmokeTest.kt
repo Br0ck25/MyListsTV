@@ -46,12 +46,37 @@ class SmokeTest {
         assertTrue("addon loaded", AddonStore.loaded.any { it.name == "My Lists" })
     }
 
+    /** My Lists removed, only the standard Stremio catalog left: Home, search and details must all still work. */
+    @Test fun worksWithoutTheMyListsAddon() {
+        val cinemeta = "https://v3-cinemeta.strem.io/manifest.json"
+        val ok = try { Http.fetchBlocking(cinemeta, 6000, 8000).contains("catalogs") } catch (_: Throwable) { false }
+        org.junit.Assume.assumeTrue("Cinemeta is not reachable", ok)
+        AddonStore.reset(); AddonStore.remove(AddonStore.DEFAULT_URL); AddonStore.add(cinemeta)
+        var loaded = false; AddonStore.load { loaded = true }; settle(4000)
+        assertTrue(loaded)
+        assertTrue("no My Lists", AddonStore.loaded.none { it.name == "My Lists" })
+        assertTrue("home has catalogs", Catalogs.browseRows(null, 8).isNotEmpty())
+        var found: List<Meta> = emptyList(); Catalogs.search("matrix") { found = it }; settle(5000)
+        assertTrue("search finds titles", found.isNotEmpty())
+        var meta: Meta? = null; Catalogs.meta("movie", "tt0133093", null) { meta = it }; settle(5000)
+        assertEquals("The Matrix", meta?.name)
+        val a = Robolectric.buildActivity(MainActivity::class.java).setup().get(); settle(6000)
+        assertTrue("home rows", views(a.window.decorView).filterIsInstance<RecyclerView>().any { it.adapter != null && it.adapter!!.itemCount >= 2 })
+        AddonStore.reset()
+    }
+
     @Test fun everyTabBuilds() {
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
         settle(3000)
         val tabs = views(a.window.decorView).filterIsInstance<android.widget.TextView>().filter { it.text.toString() in listOf("Movies", "Series", "Live", "Apps", "Addons") }
-        assertEquals(5, tabs.size)
+        assertEquals("four pages; addons live in Settings now", 4, tabs.size)
         tabs.forEach { it.performClick(); settle(1500) }
+    }
+
+    @Test fun addonsPageOpensFromSettings() {
+        val a = Robolectric.buildActivity(AddonsActivity::class.java).setup().get()
+        settle(1500)
+        assertTrue(views(a.window.decorView).filterIsInstance<android.widget.TextView>().any { it.text.toString() == "Addons" })
     }
 
     @Test fun detailsStreamsSearchAndSettingsOpen() {

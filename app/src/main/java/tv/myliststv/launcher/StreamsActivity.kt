@@ -46,7 +46,7 @@ class StreamsActivity : Activity() {
         val ok = st.count { it.ok }
         status.text = (if (done) "" else "Still looking…  ") + "${ranked.size} sources from $ok of ${st.size} addons" +
             st.filter { !it.ok }.joinToString("") { "   · ${it.name} did not answer" }
-        if (done && ranked.isEmpty()) status.text = if (StreamResolver.providers(meta.type, videoId).isEmpty()) "No stream addon is installed. Add one in the Addons tab." else "No playable sources found."
+        if (done && ranked.isEmpty()) status.text = if (StreamResolver.providers(meta.type, videoId).isEmpty()) "No stream addon is installed. Add one in Settings, then Addons." else "No playable sources found."
         val focusedIdx = (0 until list.childCount).firstOrNull { list.getChildAt(it).hasFocus() } ?: -1
         list.removeAllViews()
         ranked.forEachIndexed { i, s ->

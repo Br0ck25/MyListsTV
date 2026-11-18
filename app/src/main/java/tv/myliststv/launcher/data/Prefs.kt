@@ -95,6 +95,16 @@ object Prefs {
         get() = sp.getString("buttonMap", "") ?: ""
         set(v) = sp.edit().putString("buttonMap", v).apply()
 
+    /** The audio and subtitle language the viewer last chose for a title, so the next episode starts the same way. Null when never chosen. */
+    fun recallTracks(metaId: String?): Pair<String?, String?> =
+        (sp.getString("tr_$metaId", "|") ?: "|").split('|').let { it.getOrNull(0)?.ifEmpty { null } to it.getOrNull(1)?.ifEmpty { null } }
+
+    fun rememberTrack(metaId: String?, audio: Boolean, lang: String) {
+        if (metaId == null) return
+        val (a, s) = recallTracks(metaId)
+        sp.edit().putString("tr_$metaId", (if (audio) lang else a.orEmpty()) + "|" + (if (audio) s.orEmpty() else lang)).apply()
+    }
+
     var showContinue: Boolean
         get() = sp.getBoolean("showCw", true)
         set(v) { sp.edit().putBoolean("showCw", v).apply(); epoch++ }
@@ -114,7 +124,7 @@ object Prefs {
         set(v) = sp.edit().putLong("lastBackup", v).apply()
 
     /** Settings as JSON for a backup. The recovery code, last-backup time and first-run flag stay on the box. */
-    fun export(): org.json.JSONObject = org.json.JSONObject(sp.all.filterKeys { it !in setOf("backupCode", "lastBackup", "setupDone", "accountLink") })
+    fun export(): org.json.JSONObject = org.json.JSONObject(sp.all.filterKeys { !it.startsWith("tr_") && it !in setOf("backupCode", "lastBackup", "setupDone", "accountLink") })
 
     fun import(o: org.json.JSONObject) {
         val e = sp.edit()

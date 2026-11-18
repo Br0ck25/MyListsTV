@@ -65,6 +65,9 @@
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" />
         <activity android:name=".SearchActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" android:windowSoftInputMode="stateHidden|adjustPan" />
+        <service android:name=".BackdropDream" android:exported="true" android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter><action android:name="android.service.dreams.DreamService" /><category android:name="android.intent.category.DEFAULT" /></intent-filter>
+        </service>
         <service android:name=".NotificationsService" android:exported="false" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
         </service>
@@ -72,6 +75,8 @@
             <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/home_button_service" />
         </service>
+        <activity android:name=".AddonsActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" android:windowSoftInputMode="stateHidden|adjustPan" />
         <activity android:name=".SettingsActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" />
         <activity android:name=".PlayerActivity" android:exported="false" android:screenOrientation="landscape"

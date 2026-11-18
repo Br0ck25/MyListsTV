@@ -210,9 +210,10 @@ class PlayerActivity : Activity() {
             .setHandleAudioBecomingNoisy(true)
             .setAudioAttributes(AudioAttributes.DEFAULT, true)
             .build()
-        val lang = Prefs.subtitleLang
+        val (rememberedAudio, rememberedSub) = Prefs.recallTracks(PlaySession.meta?.id)
+        val lang = rememberedSub ?: Prefs.subtitleLang
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
-            .setPreferredAudioLanguage(java.util.Locale.getDefault().language)
+            .setPreferredAudioLanguage(rememberedAudio ?: java.util.Locale.getDefault().language)
             .apply { if (lang == "off") setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true) else setPreferredTextLanguage(lang) }
             .build()
         player.addListener(object : Player.Listener {
@@ -351,7 +352,29 @@ class PlayerActivity : Activity() {
     private fun onEnded() {
         if (live) { finish(); return }
         saveProgress(force = true, ended = true)
-        if (PlaySession.meta!!.type == "series" && Prefs.autoplayNext) playNextEpisode(manual = false) else finish()
+        if (PlaySession.meta!!.type == "series" && Prefs.autoplayNext) upNext() else finish()
+    }
+
+    private var countdown: Runnable? = null
+
+    /** When an episode ends: "Next episode in 5" with OK to start now and Back to stop. Only if there is a next episode. */
+    private fun upNext() {
+        val m = PlaySession.meta!!
+        val idx = m.videos.indexOfFirst { it.id == PlaySession.videoId }
+        val next = if (idx >= 0) m.videos.drop(idx + 1).firstOrNull { it.season > 0 || PlaySession.season == 0 } else null
+        if (next == null) { finish(); return }
+        var left = 5
+        val tick = object : Runnable { override fun run() {
+            if (left == 0) { countdown = null; playNextEpisode(manual = false); return }
+            showSlate("Next: S${next.season} \u00b7 E${next.episode}  ${next.title}\nStarting in $left\nOK plays it now. Back stops.")
+            left--; handler.postDelayed(this, 1000)
+        } }
+        countdown = tick; tick.run()
+    }
+
+    private fun cancelCountdown(playNow: Boolean) {
+        countdown?.let { handler.removeCallbacks(it) }; countdown = null
+        if (playNow) playNextEpisode(manual = false) else { hideSlate(); finish() }
     }
 
     private fun playNextEpisode(manual: Boolean) {
@@ -473,7 +496,8 @@ class PlayerActivity : Activity() {
         if (type == C.TRACK_TYPE_TEXT) {
             val off = player.trackSelectionParameters.disabledTrackTypes.contains(C.TRACK_TYPE_TEXT)
             panelList.addView(item("Off", null, if (off) "Selected" else null) {
-                player.trackSelectionParameters = player.trackSelectionParameters.buildUpon().setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true).build(); closePanel() })
+                player.trackSelectionParameters = player.trackSelectionParameters.buildUpon().setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true).build()
+                Prefs.rememberTrack(PlaySession.meta?.id, false, "off"); closePanel() })
         }
         if (groups.isEmpty()) panelList.addView(Ui.text(this, if (type == C.TRACK_TYPE_TEXT) "No subtitles in this file." else "No other audio tracks.", 13f, Ui.DIM))
         groups.forEachIndexed { gi, g ->
@@ -485,7 +509,9 @@ class PlayerActivity : Activity() {
                 panelList.addView(item(lang, extra.ifEmpty { null }, if (sel) "Selected" else null) {
                     val b = player.trackSelectionParameters.buildUpon().setTrackTypeDisabled(type, false)
                         .setOverrideForType(TrackSelectionOverride(g.mediaTrackGroup, ti))
-                    player.trackSelectionParameters = b.build(); closePanel()
+                    player.trackSelectionParameters = b.build()
+                    f.language?.let { Prefs.rememberTrack(PlaySession.meta?.id, type == C.TRACK_TYPE_AUDIO, it) }
+                    closePanel()
                 })
             }
         }
@@ -587,6 +613,10 @@ class PlayerActivity : Activity() {
     // ---------------------------------------------------------------- keys and lifecycle
 
     override fun dispatchKeyEvent(e: KeyEvent): Boolean {
+        if (countdown != null && e.action == KeyEvent.ACTION_DOWN) {
+            if (e.keyCode == KeyEvent.KEYCODE_BACK) { cancelCountdown(false); return true }
+            if (e.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || e.keyCode == KeyEvent.KEYCODE_ENTER) { cancelCountdown(true); return true }
+        }
         if (e.action == KeyEvent.ACTION_DOWN) {
             when (e.keyCode) {
                 KeyEvent.KEYCODE_MENU -> { if (!errorOpen() && !live) openSources(); return true }

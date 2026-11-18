@@ -161,3 +161,12 @@ class ButtonMapTest {
         Prefs.buttonMap = ""
     }
 }
+
+class AirDateTest {
+    @Test fun episodesKeepTheirAirDate() {
+        val m = Json.parseMeta("""{"meta":{"id":"tt1","type":"series","name":"S","videos":[{"id":"tt1:1:1","season":1,"episode":1,"title":"A","released":"2026-11-19T00:00:00.000Z"},{"id":"tt1:1:2","season":1,"episode":2,"title":"B"}]}}""")!!
+        assertEquals(java.util.Date(1795046400000L), m.videos[0].airDate())
+        assertNull(m.videos[1].airDate())
+        assertEquals("2026-11-19T00:00:00.000Z", Json.metaFromJson(Json.metaToJson(m))!!.videos[0].released)
+    }
+}

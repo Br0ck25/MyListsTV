@@ -170,13 +170,20 @@ class DetailsActivity : Activity() {
         seasons.forEach { s -> chipsRow.addView(Ui.button(c, if (s == 0) "Specials" else "Season $s") { season = s; tabsSig = ""; renderTabs() }.apply { isSelected = s == season }) }
         col.addView(HorizontalScrollView(c).apply { isHorizontalScrollBarEnabled = false; addView(chipsRow) })
         val models = meta.videos.filter { it.season == season }.map { v ->
-            CardModel(v.title, v.thumbnail, v.overview, if (resume?.videoId == v.id) resume.fraction else 0f, v, badge = "EPISODE ${v.episode}")
+            CardModel(v.title, v.thumbnail, v.overview, if (resume?.videoId == v.id) resume.fraction else 0f, v, badge = episodeBadge(v))
         }
         col.addView(strip(190).apply {
             setPadding(0, Ui.dp(c, 8), 0, 0)
             adapter = CardAdapter(CardKind.EPISODE, models, lite, { }, { m -> (m.payload as? Video)?.let { playVideo(it.id) } }, { m -> (m.payload as? Video)?.let { openSources(it.id) } })
         })
         return col
+    }
+
+    /** "EPISODE 6" with its air date: "Nov 12, 2026" once aired, "AIRS Nov 19, 2026" before. */
+    private fun episodeBadge(v: Video): String {
+        val d = v.airDate() ?: return "EPISODE ${v.episode}"
+        val text = java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.US).format(d)
+        return "EPISODE ${v.episode}  \u00b7  " + if (d.time > System.currentTimeMillis()) "AIRS $text" else text
     }
 
     private fun castPanel(): View = strip(150).apply { adapter = PersonAdapter(people()) }
@@ -253,7 +260,7 @@ class DetailsActivity : Activity() {
     }
 
     private fun noStreams(statuses: List<StreamResolver.AddonStatus>) {
-        val why = if (statuses.isEmpty()) "No stream addon is installed for this title. Add one in the Addons tab." else statuses.joinToString("\n\n") { "${it.name} ${it.note ?: "gave nothing."}" }
+        val why = if (statuses.isEmpty()) "No stream addon is installed for this title. Add one in Settings, then Addons." else statuses.joinToString("\n\n") { "${it.name} ${it.note ?: "gave nothing."}" }
         AlertDialog.Builder(this).setTitle("No sources found")
             .setMessage(why)
             .setPositiveButton("OK", null).show()

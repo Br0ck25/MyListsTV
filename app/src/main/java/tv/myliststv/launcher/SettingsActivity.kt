@@ -73,6 +73,16 @@ class SettingsActivity : Activity() {
         }.show()
     }
 
+    /** Asks each stream addon for one well-known title and reports what each did. */
+    private fun testSources() {
+        if (StreamResolver.providers("movie", "tt0816692").isEmpty()) { android.app.AlertDialog.Builder(this).setTitle("Test my sources").setMessage("No stream addon is installed. Add one under Addons.").setPositiveButton("OK", null).show(); return }
+        Toast.makeText(this, "Testing\u2026", Toast.LENGTH_SHORT).show()
+        StreamResolver.resolve("movie", "tt0816692", StreamResolver.DEFAULT_TIMEOUT_MS, StreamResolver.Session(onUpdate = { _, _ -> }, onDone = { _, st ->
+            val lines = st.joinToString("\n\n") { (if (it.ok && it.count > 0) "\u2713 " else "\u2717 ") + it.name + ": " + (if (it.ok && it.count > 0) "${it.count} sources in ${"%.1f".format(it.millis / 1000.0)} s" else (it.note ?: "gave nothing")) }
+            android.app.AlertDialog.Builder(this).setTitle("Test my sources").setMessage(lines.ifEmpty { "No answers." }).setPositiveButton("OK", null).show()
+        }))
+    }
+
     private fun requestHome() {
         try {
             if (android.os.Build.VERSION.SDK_INT >= 29) startActivityForResult(getSystemService(android.app.role.RoleManager::class.java).createRequestRoleIntent(android.app.role.RoleManager.ROLE_HOME), 1)
@@ -182,6 +192,9 @@ class SettingsActivity : Activity() {
         .setPositiveButton("Keep signed in", null).setNegativeButton("Sign out") { _, _ -> Pairing.signOut(); refresh() }.show()
 
     private fun rows(): List<Row> = buildList {
+        add(header("Addons"))
+        add(action("Manage addons and playlists", "Catalog and stream addons, IPTV playlists, order, on and off. You can paste links from your phone.") { startActivity(Intent(this@SettingsActivity, AddonsActivity::class.java)) })
+        add(action("Test my sources", "Asks every stream addon for a well-known movie and says which answered, how fast, and why not if one did not.") { testSources() })
         add(header("General"))
         if (Prefs.accountLink.isEmpty()) add(action("Sign in with My Lists", "Replaces the default catalogs with your own lists. Takes 30 seconds with your phone.") { signIn() })
         else { add(info("Signed in", Pairing.userOf(Prefs.accountLink))); add(action("Sign out", "Goes back to the default catalogs. Your other addons stay.") { signOut() }) }
@@ -199,7 +212,7 @@ class SettingsActivity : Activity() {
             add(toggle("Try the next source if one fails", "Switches by itself when a source does not start.", { Prefs.fallbackOn }, { Prefs.fallbackOn = it }))
             add(choice("Source start timeout", "How long to wait for the first picture.", listOf(6, 10, 15), { Prefs.startupTimeoutSec }, { Prefs.startupTimeoutSec = it }, { "$it s" }))
         }
-        add(header("Home"))
+        add(header("Layout"))
         add(toggle("Show cast, logos and episodes from Cinemeta", "Asks Cinemeta, the standard Stremio metadata addon, for details your catalog addon lacks.", { Prefs.extraDetails }, { Prefs.extraDetails = it }))
         add(toggle("Wide posters", "Show catalog items as wide pictures instead of tall posters.", { Prefs.horizontalPosters }, { Prefs.horizontalPosters = it }))
         add(choice("Navigation", "Where Home, Movies, Series and the other pages are listed. Hidden opens with Left.", listOf(0, 1, 2), { Prefs.navStyle }, { Prefs.navStyle = it }, { listOf("Top bar", "Side bar", "Hidden side bar")[it] }))
@@ -210,7 +223,7 @@ class SettingsActivity : Activity() {
         add(toggle("Show apps row", "", { Prefs.showAppsRow }, { Prefs.showAppsRow = it }))
         add(header("Backup"))
         add(action("Back up my setup", "Encrypts your addons, playlists, profiles and settings. Last backup: ${lastBackupText()}.") { backupNow() })
-        add(action("Restore a backup", "Use your recovery code. You can also paste it on the phone page in the Addons tab.") { restoreDialog() })
+        add(action("Restore a backup", "Use your recovery code. You can also paste it on the phone page in Settings, then Addons.") { restoreDialog() })
         if (Prefs.backupCode.isNotEmpty()) add(action("Show recovery code", "The code that opens your backup.") { showCode(Prefs.backupCode) })
         add(header("Performance"))
         add(choice("Lite mode", "Less motion and memory. Auto turns on for weak boxes.", listOf("Auto", "On", "Off"), { Prefs.liteMode }, { Prefs.liteMode = it }))
@@ -220,7 +233,7 @@ class SettingsActivity : Activity() {
         ButtonMap.rules().forEach { r -> add(action("${ButtonMap.keyName(r.key)}: ${ButtonMap.pressName(r.press)}", "${ButtonMap.actionName(this@SettingsActivity, r.action)}. OK removes it.") {
             android.app.AlertDialog.Builder(this@SettingsActivity).setTitle("Remove this button setting?").setPositiveButton("Remove") { _, _ -> ButtonMap.save(ButtonMap.rules().filterNot { it == r }); refresh() }.setNegativeButton("Keep", null).show() }) }
         add(action("Add a button", "Give a remote button (colour keys, app keys) a job on a press, double press or hold. Home, Back, arrows, OK, volume and power cannot be changed.") { addButton() })
-        add(header("Home screen"))
+        add(header("Launcher setup"))
         add(info("Home app", if (HomeSetup.isHome(this@SettingsActivity)) "This launcher" else "Another launcher"))
         add(action("Make this my Home app", "Opens the system choice. Pick My Lists TV and choose Always.") { requestHome() })
         add(info("Home button fallback", if (HomeSetup.fallbackOn(this@SettingsActivity)) "On" else "Off"))
@@ -232,6 +245,8 @@ class SettingsActivity : Activity() {
         add(action("Turn on notifications", "Shows your TV's notifications in the bell at the top right of Home. Opens the system Notification access page.") {
             try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Toast.makeText(this@SettingsActivity, "This TV has no such setting. Use the phone or computer steps.", Toast.LENGTH_LONG).show() }
         })
+        add(action("Screensaver", "Pick My Lists TV backdrops as the screensaver in Android's settings.") {
+            try { startActivity(Intent(Settings.ACTION_DREAM_SETTINGS)) } catch (_: Exception) { try { startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS)) } catch (_: Exception) { Toast.makeText(this@SettingsActivity, "This TV keeps its screensaver setting somewhere else.", Toast.LENGTH_LONG).show() } } })
         add(action("Set up from a phone or computer", "Shows an address with the exact steps and commands for TVs that block the buttons above.") { setupPage() })
         add(header("About"))
         add(action("Check for updates", "Version 0.1.${Updater.installedBuild(this@SettingsActivity)} installed.") { checkUpdate() })
