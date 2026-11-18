@@ -69,10 +69,12 @@ class SmokeTest {
     @Test fun searchFindsTitlesFromTheLiveAddon() {
         assumeAddonReachable()
         Robolectric.buildActivity(MainActivity::class.java).setup(); settle(3000)
-        var found: List<Meta>? = null
-        Catalogs.search("dune") { found = it }
-        settle(4500)
-        assertTrue("search returned Dune", found?.any { it.name.contains("Dune") } == true)
+        val answers = ArrayList<List<Meta>>()
+        Catalogs.search("dune") { answers += it }
+        // Results arrive as each addon answers, so wait for them instead of for a fixed time.
+        val end = System.currentTimeMillis() + 20_000
+        while (System.currentTimeMillis() < end && answers.none { l -> l.any { it.name.contains("Dune") } }) { shadowOf(Looper.getMainLooper()).idle(); Thread.sleep(100) }
+        assertTrue("search returned Dune", answers.any { l -> l.any { it.name.contains("Dune") } })
     }
 }
 

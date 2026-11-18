@@ -28,19 +28,17 @@ object Catalogs {
         }
     }
 
-    /** Searches every addon that supports it. Answers (cached ones can arrive twice) are merged and de-duplicated, delivered once after a short wait. */
+    /** Searches every addon that supports it. [cb] runs on the main thread each time an answer arrives, with everything found so far (de-duplicated), so a slow addon never hides the quick ones. */
     fun search(query: String, cb: (List<Meta>) -> Unit) {
         val all = ArrayList<Meta>()
-        for (a in enabled()) for (c in a.manifest.catalogs) if (c.supportsSearch && (c.type == "movie" || c.type == "series")) {
-            Http.get(Urls.catalog(a.baseUrl, c.type, c.id, search = query), 10 * 60_000) { body, _, _ ->
-                if (body != null) try { synchronized(all) { all += Json.parseMetas(body) } } catch (_: Exception) {}
-            }
-        }
-        Http.background {
-            Thread.sleep(2200)
+        val targets = enabled().flatMap { a -> a.manifest.catalogs.filter { it.supportsSearch && (it.type == "movie" || it.type == "series") }.map { a to it } }
+        if (targets.isEmpty()) { cb(emptyList()); return }
+        for ((a, c) in targets) Http.get(Urls.catalog(a.baseUrl, c.type, c.id, search = query), 10 * 60_000) { body, _, _ ->
+            if (body == null) return@get
+            val found = try { Json.parseMetas(body) } catch (_: Exception) { return@get }
             val seen = HashSet<String>()
-            val merged = synchronized(all) { all.filter { seen.add(it.type + ":" + it.id) } }
-            Http.post { cb(merged) }
+            val merged = synchronized(all) { all += found; all.filter { seen.add(it.type + ":" + it.id) } }
+            cb(merged)
         }
     }
 
