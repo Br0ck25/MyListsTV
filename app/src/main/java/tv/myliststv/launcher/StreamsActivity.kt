@@ -13,8 +13,8 @@ import tv.myliststv.launcher.ui.*
 class StreamsActivity : Activity() {
     private lateinit var meta: Meta
     private lateinit var videoId: String
-    private val list = Ui.vbox(this)
-    private val status = Ui.text(this, "Finding sources…", 14f, Ui.DIM)
+    private lateinit var list: LinearLayout
+    private lateinit var status: TextView
     private var session: StreamResolver.Session? = null
     private var latest: List<StreamItem> = emptyList()
 
@@ -22,6 +22,8 @@ class StreamsActivity : Activity() {
         super.onCreate(savedInstanceState)
         meta = Json.metaFromJson(intent.getStringExtra("meta") ?: "") ?: run { finish(); return }
         videoId = intent.getStringExtra("videoId") ?: meta.id
+        list = Ui.vbox(this)
+        status = Ui.text(this, "Finding sources…", 14f, Ui.DIM)
         val root = Ui.vbox(this).apply { setBackgroundColor(Ui.BG); setPadding(Ui.dp(this@StreamsActivity, 48), Ui.dp(this@StreamsActivity, 24), Ui.dp(this@StreamsActivity, 48), Ui.dp(this@StreamsActivity, 12)) }
         val v = meta.videos.firstOrNull { it.id == videoId }
         root.addView(Ui.text(this, "Choose a source", 26f, Ui.TEXT, true))

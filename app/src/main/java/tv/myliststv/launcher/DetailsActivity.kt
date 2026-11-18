@@ -21,7 +21,7 @@ import tv.myliststv.launcher.ui.*
 class DetailsActivity : Activity() {
 
     private lateinit var meta: Meta
-    private val seasonRow = Ui.hbox(this, 8)
+    private lateinit var seasonRow: LinearLayout
     private lateinit var episodes: RecyclerView
     private lateinit var playBtn: TextView
     private lateinit var title: TextView
@@ -36,6 +36,7 @@ class DetailsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         meta = Json.metaFromJson(intent.getStringExtra("meta") ?: "") ?: run { finish(); return }
+        seasonRow = Ui.hbox(this, 8)
         val frame = FrameLayout(this).apply { setBackgroundColor(Ui.BG) }
         bg = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0.35f }
         frame.addView(bg, FrameLayout.LayoutParams(-1, -1))

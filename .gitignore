@@ -7,3 +7,4 @@ captures/
 *.apk
 *.aab
 .DS_Store
+!app/debug.keystore
