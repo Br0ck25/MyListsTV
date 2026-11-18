@@ -31,3 +31,13 @@ not-a-url
         assertFalse(Links.isAddon("https://iptv.example/get.php?username=u&password=p&type=m3u_plus"))
     }
 }
+
+class UpdaterTest {
+    @Test fun picksTheNewestReleaseThatHasAnApk() {
+        val json = """[{"tag_name":"v0.1.7","assets":[{"name":"MyListsTV.apk","browser_download_url":"https://x/7.apk"}]},
+          {"tag_name":"v0.1.9","assets":[]},
+          {"tag_name":"v0.1.12","assets":[{"name":"MyListsTV.apk","browser_download_url":"https://x/12.apk"}]}]"""
+        val r = Updater.parse(json)!!
+        assertEquals(12, r.build); assertEquals("https://x/12.apk", r.apkUrl)
+    }
+}

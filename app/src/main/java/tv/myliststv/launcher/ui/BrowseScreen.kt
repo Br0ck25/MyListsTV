@@ -55,6 +55,11 @@ class BrowseScreen(
             heroTitle.text = "No catalog addon is on"
             heroDesc.text = "Turn one on in the Addons tab."
         }
+        if (withContinue && StreamResolver.providers("movie", "tt0000001").isEmpty()) {
+            heroTitle.text = "Welcome to My Lists TV"
+            heroMeta.text = "One more step before you can play"
+            heroDesc.text = "Install a stream addon in the Addons tab. You can paste its link from your phone."
+        }
         for ((addon, cat) in defs) {
             val label = if (cat.type == "movie") "Movies" else "Series"
             val title = if (type == null && !cat.name.contains(label, true)) "${cat.name} · $label" else cat.name

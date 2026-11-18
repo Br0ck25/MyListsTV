@@ -24,3 +24,8 @@ Test on the reference box, per Android version:
 3. Accessibility-service Home remap (needs user to grant access).
 4. Last resort: disable the stock launcher (can break remote buttons such as YouTube).
 Record what works per device here.
+
+## Build status (keep this current)
+Done: Home (My Lists default rows, Continue watching, apps row), Movies, Series, Live (M3U), Apps, Addons (add by phone page or typing), Search, Settings (Simple/Advanced), Details with episodes, stream picker, Media3 player (Sources panel, automatic fallback, expired-link refresh, next episode, subtitles/audio/speed/info), sideload updater, 25 unit and smoke tests, CI that tests, builds and publishes the APK.
+Not done yet: account pairing and encrypted backup (needs My Lists Addon endpoints), Watch Next channel, profiles and PIN, first-run wizard, crash guard, EPG for Live, subtitles from addons, skip intro.
+Not tested: anything on a real TV box. First job after sideloading: confirm the home role (see below) and note per-device results here.

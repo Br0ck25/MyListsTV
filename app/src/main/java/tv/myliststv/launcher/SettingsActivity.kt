@@ -56,11 +56,25 @@ class SettingsActivity : Activity() {
         (listOf(mode) + simple + if (Prefs.advanced) advanced else emptyList()).forEach { o ->
             col.addView(row(o) { o.next(); val i = focusedIndex(col); build(col); col.getChildAt(i)?.requestFocus() }, Ui.matchWrap().apply { topMargin = Ui.dp(this@SettingsActivity, 8) })
         }
+        col.addView(row(Opt("Check for updates", "Version 0.1.${Updater.installedBuild(this)} installed.", { "OK" }, { checkUpdate() })) { it.next() },
+            Ui.matchWrap().apply { topMargin = Ui.dp(this@SettingsActivity, 8) })
         col.addView(row(Opt("Clear caches", "Frees stored images and catalog data (${(Http.cacheBytes() / 1_048_576)} MB now).", { "OK" }, { Http.clear(); ImageLoader.clearDisk(); Toast.makeText(this, "Caches cleared", Toast.LENGTH_SHORT).show() })) { it.next() },
             Ui.matchWrap().apply { topMargin = Ui.dp(this@SettingsActivity, 8) })
         col.addView(Ui.text(this, "To make this your home screen, run on a computer:\nadb shell cmd package set-home-activity tv.myliststv.launcher/.MainActivity\n\nMy Lists TV 0.1 · no analytics, no tracking", 12f, Ui.DIM),
             Ui.matchWrap().apply { topMargin = Ui.dp(this@SettingsActivity, 20) })
         col.post { if (col.hasFocus().not()) col.getChildAt(1)?.requestFocus() }
+    }
+
+    private fun checkUpdate() {
+        Toast.makeText(this, "Checking for updates\u2026", Toast.LENGTH_SHORT).show()
+        Updater.latest { r ->
+            val mine = Updater.installedBuild(this)
+            if (r == null) Toast.makeText(this, "Could not check right now.", Toast.LENGTH_LONG).show()
+            else if (r.build <= mine) Toast.makeText(this, "You have the latest version.", Toast.LENGTH_LONG).show()
+            else android.app.AlertDialog.Builder(this).setTitle("Update available").setMessage("${r.tag} is ready. You have 0.1.$mine.")
+                .setPositiveButton("Install") { _, _ -> Updater.install(this, r) { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() } }
+                .setNegativeButton("Later", null).show()
+        }
     }
 
     private fun focusedIndex(col: LinearLayout) = (0 until col.childCount).firstOrNull { col.getChildAt(it).hasFocus() } ?: 1
