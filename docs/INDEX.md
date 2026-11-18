@@ -18,7 +18,7 @@ Start here, then `grep -n <name> docs/MAP.md` for the exact file and line. Rules
 | Addons list and adding links, IPTV playlists | `screens/AddonsActivity.kt`, `ui/AddonsScreen.kt`, `data/AddonStore.kt`, `data/Live.kt` (`Links`) |
 | Catalogs, metadata, Cinemeta details | `data/Catalogs.kt`, `data/Json.kt`, `data/Urls.kt` |
 | All network and caching | `data/Http.kt`, `data/ImageLoader.kt` |
-| Sign in, backup, progress sync | `data/Pairing.kt`, `data/Backup.kt`, `data/Progress.kt`, `data/Secure.kt` |
+| Sign in, backup, progress, Library and addon sync | `data/Pairing.kt`, `data/Backup.kt`, `data/Progress.kt`, `data/SetupSync.kt`, `data/Library.kt`, `data/Secure.kt` |
 | Library (+ button, Library page) | `data/Library.kt`, `ui/LibraryScreen.kt`, `screens/DetailsActivity.kt` |
 | Watched ticks, new-episode alerts | `data/Watched.kt`, `data/Alerts.kt`, `screens/DetailsActivity.kt`, `MainActivity.kt` (`showNotices`) |
 | Profiles, kids filter, watch history | `data/Profiles.kt`, `data/WatchStore.kt` |

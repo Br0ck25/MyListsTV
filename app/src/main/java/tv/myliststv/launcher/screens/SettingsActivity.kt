@@ -225,7 +225,7 @@ class SettingsActivity : Activity() {
         add(toggle("Show Continue watching", "", { Prefs.showContinue }, { Prefs.showContinue = it }))
         add(toggle("Show apps row", "", { Prefs.showAppsRow }, { Prefs.showAppsRow = it }))
         add(header("Backup"))
-        add(action("Back up my setup", "Encrypts ${Profiles.active().name}'s addons, playlists and Library (the first profile also saves the profile list and settings). Last backup: ${lastBackupText()}.") { backupNow() })
+        add(action("Back up my setup", "An offline copy of ${Profiles.active().name}'s addons, playlists and Library, encrypted with a recovery code (the first profile also saves the profile list and settings). Signed in, these also follow the account. Last backup: ${lastBackupText()}.") { backupNow() })
         add(action("Restore a backup", "Use your recovery code. You can also paste it on the phone page in Settings, then Addons.") { restoreDialog() })
         if (Prefs.backupCode.isNotEmpty()) add(action("Show recovery code", "The code that opens your backup.") { showCode(Prefs.backupCode) })
         add(header("Performance"))
