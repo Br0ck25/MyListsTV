@@ -29,11 +29,30 @@ object Ui {
     const val GOOD = 0xFF30D158.toInt()
     const val WARN = 0xFFFF9F0A.toInt()
     const val BAD = 0xFFFF453A.toInt()
+    /** Text on a white (focused) pill. */
+    const val ON_FOCUS = 0xFF000000.toInt()
+    const val CLEAR = 0x00000000
+    const val FILL = 0x1AFFFFFF                // resting fill of a pill or chip
+    const val FILL_STRONG = 0x26FFFFFF         // a chip that sits on artwork
+    const val FOCUS_FILL = 0x22FFFFFF          // soft fill inside the white focus ring
+    const val TRACK = 0x33FFFFFF               // empty part of a progress bar
+    const val TOGGLE_OFF = 0xFF39393D.toInt()
+    const val OVERLAY = 0xE6000000.toInt()     // dims everything behind a slate or an error
+    const val BRAND_LINE = 0x800A84FF.toInt()  // brand outline on a banner
+    const val R_PILL = 999
     const val R_CARD = 14
     const val R_PANEL = 16
     const val R_DIALOG = 20
 
-    fun rounded(c: Context, color: Int, radius: Int): Drawable = GradientDrawable().apply { setColor(color); cornerRadius = dpf(c, radius.toFloat()) }
+    /** The three dark fades laid over artwork so text stays readable: from the left, from the bottom, from the top, and a short one behind card text. */
+    private fun fade(o: GradientDrawable.Orientation, vararg colors: Int): Drawable = GradientDrawable(o, colors)
+    fun scrimLeft(): Drawable = fade(GradientDrawable.Orientation.LEFT_RIGHT, 0xF2000000.toInt(), 0xAA000000.toInt(), CLEAR)
+    fun scrimBottom(): Drawable = fade(GradientDrawable.Orientation.BOTTOM_TOP, 0xFF000000.toInt(), 0xCC000000.toInt(), CLEAR)
+    fun scrimTop(): Drawable = fade(GradientDrawable.Orientation.TOP_BOTTOM, 0xCC000000.toInt(), CLEAR)
+    fun scrimShade(): Drawable = fade(GradientDrawable.Orientation.BOTTOM_TOP, 0xCC000000.toInt(), CLEAR)
+
+    fun rounded(c: Context, color: Int, radius: Int, outline: Int = CLEAR): Drawable =
+        GradientDrawable().apply { setColor(color); cornerRadius = dpf(c, radius.toFloat()); if (outline != CLEAR) setStroke(dp(c, 1), outline) }
 
     /** The look of a focusable row or panel: rounded CARD fill, clipped to its corners, white focus ring at the same radius. */
     fun rowStyle(c: Context, v: View, radius: Int = R_PANEL, fill: Int = CARD) {
@@ -50,7 +69,7 @@ object Ui {
     fun size(t: TextView, sp: Float) = t.setTextSize(TypedValue.COMPLEX_UNIT_PX, sp * scale(t.context))
 
     /** White ring and soft fill while focused, nothing otherwise. */
-    fun focusBg(c: Context, radiusDp: Int = 10, fill: Int = 0x22FFFFFF): Drawable {
+    fun focusBg(c: Context, radiusDp: Int = 10, fill: Int = FOCUS_FILL): Drawable {
         val d = GradientDrawable().apply {
             setColor(fill); setStroke(dp(c, 3), Color.WHITE); cornerRadius = dpf(c, radiusDp.toFloat())
         }
@@ -60,12 +79,13 @@ object Ui {
         }
     }
 
-    fun pillBg(c: Context, normal: Int = 0x1AFFFFFF, focusedFill: Int = Color.WHITE): Drawable {
-        val on = GradientDrawable().apply { setColor(focusedFill); cornerRadius = dpf(c, 40f) }
-        val off = GradientDrawable().apply { setColor(normal); cornerRadius = dpf(c, 40f) }
+    /** A pill: white when focused, brand blue when selected (the open tab), otherwise [normal]. */
+    fun pillBg(c: Context, normal: Int = FILL, focusedFill: Int = Color.WHITE): Drawable {
+        val pill = { color: Int -> GradientDrawable().apply { setColor(color); cornerRadius = dpf(c, 40f) } }
         return StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_focused), on)
-            addState(intArrayOf(), off)
+            addState(intArrayOf(android.R.attr.state_focused), pill(focusedFill))
+            addState(intArrayOf(android.R.attr.state_selected), pill(BRAND_FILL))
+            addState(intArrayOf(), pill(normal))
         }
     }
 
@@ -78,15 +98,31 @@ object Ui {
         }
 
     /** A focusable pill. Dark text on a white pill while focused. */
-    fun button(c: Context, label: String, onClick: () -> Unit): TextView =
+    /** [primary] is the one main action on a screen: filled brand blue until focused. */
+    fun button(c: Context, label: String, primary: Boolean = false, onClick: () -> Unit): TextView =
         TextView(c).apply {
             text = label; size(this, 15f); setTextColor(TEXT); typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             setPadding(dp(c, 18), dp(c, 9), dp(c, 18), dp(c, 9))
-            background = pillBg(c); isFocusable = true; isClickable = true
+            background = pillBg(c, if (primary) BRAND_FILL else FILL); isFocusable = true; isClickable = true
             setOnFocusChangeListener { v, f -> (v as TextView).setTextColor(if (f) 0xFF000000.toInt() else TEXT) }
             setOnClickListener { onClick() }
         }
+
+    /** Asks for one line of text. The keyboard is closed again when the dialog goes away, and Done on the keyboard confirms. */
+    fun askText(a: android.app.Activity, title: String, hint: String, ok: String, message: String? = null, caps: Boolean = false, onOk: (String) -> Unit) {
+        val e = android.widget.EditText(a).apply {
+            this.hint = hint; setHintTextColor(DIM); setTextColor(TEXT); setSingleLine(true)
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or (if (caps) android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS else android.text.InputType.TYPE_TEXT_VARIATION_URI)
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_DONE
+        }
+        val d = android.app.AlertDialog.Builder(a).setTitle(title).apply { if (message != null) setMessage(message) }.setView(e)
+            .setPositiveButton(ok) { _, _ -> onOk(e.text.toString()) }.setNegativeButton("Cancel", null).create()
+        val closeKeyboard = { (a.getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).hideSoftInputFromWindow(e.windowToken, 0) }
+        e.setOnEditorActionListener { _, id, _ -> if (id == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) { closeKeyboard(); d.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick(); true } else false }
+        d.setOnDismissListener { closeKeyboard(); a.window.decorView.requestFocus() }
+        d.show()
+    }
 
     fun hbox(c: Context, gapDp: Int = 0): LinearLayout = LinearLayout(c).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL

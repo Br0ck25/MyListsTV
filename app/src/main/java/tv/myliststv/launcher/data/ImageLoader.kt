@@ -27,17 +27,25 @@ object ImageLoader {
 
     fun trim() { memory.evictAll() }
 
-    fun load(view: ImageView, url: String?, w: Int, h: Int, alpha: Boolean = false) {
+    /** [fade] fades the picture in when it arrives from the network (not when it is already in memory). */
+    fun load(view: ImageView, url: String?, w: Int, h: Int, alpha: Boolean = false, fade: Boolean = false, onLoaded: ((Boolean) -> Unit)? = null) {
         view.setTag(TAG, url)
         if (url.isNullOrEmpty()) { view.setImageDrawable(null); return }
         val key = "$url@$w"
         val hit = memory.get(key)
-        if (hit != null) { view.setImageBitmap(hit); return }
+        if (hit != null) { view.setImageBitmap(hit); onLoaded?.invoke(true); return }
         view.setImageDrawable(null)
         pool.execute {
-            val bmp = try { decode(url, w, h, alpha) } catch (_: Throwable) { null } ?: return@execute
+            val bmp = try { decode(url, w, h, alpha) } catch (_: Throwable) { null }
+            if (bmp == null) { Http.post { if (view.getTag(TAG) == url) onLoaded?.invoke(false) }; return@execute }
             memory.put(key, bmp)
-            Http.post { if (view.getTag(TAG) == url) view.setImageDrawable(BitmapDrawable(view.resources, bmp)) }
+            Http.post {
+                if (view.getTag(TAG) == url) {
+                    view.setImageDrawable(BitmapDrawable(view.resources, bmp))
+                    if (fade) { view.alpha = 0f; view.animate().alpha(1f).setDuration(220).start() }
+                    onLoaded?.invoke(true)
+                }
+            }
         }
     }
 
@@ -73,5 +81,5 @@ object ImageLoader {
 
     fun clearDisk() { dir?.listFiles()?.forEach { it.delete() }; memory.evictAll() }
 
-    private const val TAG = 0x7f0a0001
+    private val TAG = tv.myliststv.launcher.R.id.tag_image
 }

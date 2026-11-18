@@ -26,7 +26,7 @@ class SearchActivity : Activity() {
             inputType = InputType.TYPE_CLASS_TEXT; setSingleLine(true)
         }
         val status = Ui.text(this, "Type at least 2 letters.", 13f, Ui.DIM)
-        val grid = RecyclerView(this).apply { layoutManager = GridLayoutManager(this@SearchActivity, 8); itemAnimator = null }
+        val grid = RecyclerView(this).apply { layoutManager = GridLayoutManager(this@SearchActivity, if (Prefs.horizontalPosters) 4 else 8); itemAnimator = null }
         val root = Ui.vbox(this).apply { setBackgroundColor(Ui.BG); setPadding(Ui.dp(this@SearchActivity, 48), Ui.dp(this@SearchActivity, 20), Ui.dp(this@SearchActivity, 48), 0) }
         root.addView(box, Ui.matchWrap()); root.addView(status, Ui.wrap())
         root.addView(grid, android.widget.LinearLayout.LayoutParams(-1, 0, 1f))
@@ -41,7 +41,7 @@ class SearchActivity : Activity() {
                     Catalogs.search(q) { list ->
                         if (q != wanted) return@search
                         status.text = if (list.isEmpty()) "No matches for “$q”." else "${list.size} results"
-                        grid.adapter = CardAdapter(CardKind.POSTER, list.filter(Profiles::allows).map { CardModel(it.name, it.poster, payload = it) }, Prefs.lite(), { }, { m ->
+                        grid.adapter = CardAdapter(if (Prefs.horizontalPosters) CardKind.WIDE else CardKind.POSTER, list.filter(Profiles::allows).map { if (Prefs.horizontalPosters) CardModel(it.name, it.background ?: it.poster, it.year, payload = it) else CardModel(it.name, it.poster, payload = it) }, Prefs.lite(), { }, { m ->
                             startActivity(Intent(this@SearchActivity, DetailsActivity::class.java).putExtra("meta", Json.metaToJson(m.payload as Meta)))
                         })
                     }

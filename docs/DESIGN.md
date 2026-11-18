@@ -36,7 +36,7 @@ Rules: text on a filled colour uses `BRAND_FILL` with `TEXT`; never put white te
 
 ### 2.3 Spacing and type
 Spacing steps: 4, 8, 12, 16, 24, 32. Row padding 16 × 12. Gap between rows 8. Screen side margin 48.
-Text sizes: caption 11, small 12, body 14, control 15, row title 16, heading 24, hero 26. Weights: regular for body, bold for controls, titles and labels. No other sizes.
+Text sizes (the only ones allowed): 11 caption, 12 and 13 small, 14 body, 15 control, 16 row title, 20 and 22 section, 24 and 26 heading, 30 hero, 34 display. Weights: regular for body, bold for controls, titles and labels.
 
 ## 3. Components
 - **Focus.** White 3-unit ring at the component's own radius, soft white fill (≈13%). Never remove it. Cards also scale 1.06 unless lite mode is on.
@@ -57,7 +57,8 @@ Text sizes: caption 11, small 12, body 14, control 15, row title 16, heading 24,
 3. One control per row, on the right. Label bold on the left, one line of muted help under it (omit if the label says it all).
 4. Changes apply at once. There is no Save button.
 5. **Back** goes up one level and never loses a change. **Hold OK** on a row or card opens its context menu as a list dialog. The launcher home never closes on Back.
-6. Settings are grouped under short headings (Playback, Home, Live TV, Backup, Profiles, Updates, About). Most used first. Advanced-only rows appear only in Advanced mode, directly under their group.
+6. **Settings is a split menu.** The groups (General, Playback, Home, Backup, Performance, About) run down the left; the rows of the group under the focus show on the right and change as focus moves down the list. Right enters the rows, Back returns to the groups. Most used first. Advanced-only rows appear only in Advanced mode, directly under their group.
+   The top bar has no logo or app name: the tabs start at the left edge.
 7. Destructive rows (remove, clear, reset) sit last in their group, and always confirm.
 8. Order of focus is top to bottom, left to right. A screen always puts focus on its first useful control when opened.
 9. Every screen has an empty, loading and error state with one sentence telling the viewer what to do.
@@ -75,7 +76,10 @@ Plain words, sentence case, no jargon (say "source", not "stream resolver"; "add
 4. Do keep rounded shapes. Don't draw a sharp-cornered focusable.
 5. Do keep the focus ring. Don't hide it.
 
-## 8. New screen checklist (in order, before writing code)
+## 8. Enforced by a test
+`DesignGuardTest` fails the build if a screen (anything outside `ui/Ui.kt`) uses a hex colour, `android.graphics.Color`, a raw corner radius, a raw text size call, a text size outside the scale above, or a corner radius that is not an `R_*` token. Add the token to `Ui.kt` and to this file instead.
+
+## 9. New screen checklist (in order, before writing code)
 1. List its rows and which kind each is (toggle, choice, action, info).
 2. Pick tokens for every colour, size and radius from §2.
 3. Write its empty, loading and error sentences.

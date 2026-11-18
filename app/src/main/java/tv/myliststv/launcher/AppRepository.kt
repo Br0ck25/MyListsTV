@@ -22,6 +22,13 @@ object AppRepository {
             .sortedBy { it.label.lowercase() }
     }
 
+    /** What to draw for an app: its TV banner if it has one (a wide picture), else its icon. */
+    fun look(pm: PackageManager, c: ComponentName): Pair<android.graphics.drawable.Drawable?, Boolean> {
+        val banner = try { pm.getActivityBanner(c) } catch (_: Exception) { null }
+        if (banner != null) return banner to true
+        return (try { pm.getActivityIcon(c) } catch (_: Exception) { null }) to false
+    }
+
     private fun query(pm: PackageManager, category: String, sideloaded: Boolean): List<AppEntry> {
         val intent = Intent(Intent.ACTION_MAIN).addCategory(category)
         return pm.queryIntentActivities(intent, 0).map { ri ->

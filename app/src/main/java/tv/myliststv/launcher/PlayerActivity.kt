@@ -94,23 +94,23 @@ class PlayerActivity : Activity() {
 
     private fun buildUi() {
         val c = this
-        root = FrameLayout(c).apply { setBackgroundColor(Color.BLACK); isFocusable = true }
+        root = FrameLayout(c).apply { setBackgroundColor(Ui.BG); isFocusable = true }
         playerView = PlayerView(c).apply {
             useController = false
             resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-            setShutterBackgroundColor(Color.BLACK)
+            setShutterBackgroundColor(Ui.BG)
             setKeepContentOnPlayerReset(false)
         }
         root.addView(playerView, FrameLayout.LayoutParams(-1, -1))
 
         bottom = Ui.vbox(c).apply {
-            background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, intArrayOf(0xF2050609.toInt(), 0x00050609))
+            background = Ui.scrimBottom()
             setPadding(Ui.dp(c, 48), Ui.dp(c, 60), Ui.dp(c, 48), Ui.dp(c, 24))
         }
         titleText = Ui.text(c, "", 26f, Ui.TEXT, true, 1)
         subText = Ui.text(c, "", 13f, Ui.TEXT2, false, 1)
         bottom.addView(titleText); bottom.addView(subText, Ui.wrap().apply { topMargin = Ui.dp(c, 4) })
-        track = FrameLayout(c).apply { setBackgroundColor(0x33FFFFFF) }
+        track = FrameLayout(c).apply { setBackgroundColor(Ui.TRACK) }
         fill = View(c).apply { setBackgroundColor(Ui.ACCENT) }
         track.addView(fill, FrameLayout.LayoutParams(0, -1))
         bottom.addView(track, LinearLayout.LayoutParams(-1, Ui.dp(c, 5)).apply { topMargin = Ui.dp(c, 14) })
@@ -130,24 +130,24 @@ class PlayerActivity : Activity() {
 
         banner = Ui.text(c, "", 15f, Ui.TEXT, true).apply {
             setPadding(Ui.dp(c, 22), Ui.dp(c, 10), Ui.dp(c, 22), Ui.dp(c, 10)); visibility = View.GONE
-            background = GradientDrawable().apply { setColor(0xEE141620.toInt()); setStroke(Ui.dp(c, 1), 0x80FFC65C.toInt()); cornerRadius = Ui.dpf(c, 30f) }
+            background = Ui.rounded(c, Ui.ELEVATED, Ui.R_PILL, Ui.BRAND_LINE)
         }
         root.addView(banner, FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = Ui.dp(c, 28) })
         // Skip intro / recap / credits: shown only while inside one of those; OK skips it.
         skipBtn = Ui.text(c, "", 16f, Ui.TEXT, true).apply {
             setPadding(Ui.dp(c, 22), Ui.dp(c, 11), Ui.dp(c, 22), Ui.dp(c, 11)); visibility = View.GONE
-            background = Ui.rounded(c, Ui.ELEVATED, 999)
+            background = Ui.rounded(c, Ui.ELEVATED, Ui.R_PILL)
         }
         root.addView(skipBtn, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END).apply { bottomMargin = Ui.dp(c, 150); rightMargin = Ui.dp(c, 48) })
 
-        slate = Ui.vbox(c).apply { gravity = Gravity.CENTER; setBackgroundColor(0xE0080A0E.toInt()); isClickable = true }
+        slate = Ui.vbox(c).apply { gravity = Gravity.CENTER; setBackgroundColor(Ui.OVERLAY); isClickable = true }
         slate.addView(ProgressBar(c), LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)))
         slateText = Ui.text(c, "", 20f, Ui.TEXT, true).apply { gravity = Gravity.CENTER }
         slate.addView(slateText, Ui.wrap().apply { topMargin = Ui.dp(c, 14) })
         root.addView(slate, FrameLayout.LayoutParams(-1, -1))
 
         panel = Ui.vbox(c).apply {
-            setBackgroundColor(0xFF12141D.toInt()); visibility = View.GONE
+            setBackgroundColor(Ui.ELEVATED); visibility = View.GONE
             setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 12))
         }
         panelTitle = Ui.text(c, "", 22f, Ui.TEXT, true)
@@ -159,7 +159,7 @@ class PlayerActivity : Activity() {
         panel.addView(ScrollView(c).apply { addView(panelList) }, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = Ui.dp(c, 8) })
         root.addView(panel, FrameLayout.LayoutParams(Ui.dp(c, 340), -1, Gravity.END))
 
-        errorBox = Ui.vbox(c).apply { gravity = Gravity.CENTER; setBackgroundColor(0xF0080A0E.toInt()); visibility = View.GONE; setPadding(Ui.dp(c, 80), 0, Ui.dp(c, 80), 0) }
+        errorBox = Ui.vbox(c).apply { gravity = Gravity.CENTER; setBackgroundColor(Ui.OVERLAY); visibility = View.GONE; setPadding(Ui.dp(c, 80), 0, Ui.dp(c, 80), 0) }
         errorBox.addView(Ui.text(c, "Playback error", 26f, Ui.TEXT, true))
         errorText = Ui.text(c, "", 16f, Ui.TEXT2).apply { gravity = Gravity.CENTER }
         errorBox.addView(errorText, Ui.wrap().apply { topMargin = Ui.dp(c, 8); bottomMargin = Ui.dp(c, 16) })
@@ -372,7 +372,7 @@ class PlayerActivity : Activity() {
             begin(pick, 0, "Starting stream via ${pick.addonName}…")
         })
         resolveSession = s
-        StreamResolver.resolve(m.type, next.id, 9000, s)
+        StreamResolver.resolve(m.type, next.id, StreamResolver.DEFAULT_TIMEOUT_MS, s)
     }
 
     // ---------------------------------------------------------------- panels
@@ -437,7 +437,7 @@ class PlayerActivity : Activity() {
         }
     }
 
-    private fun chip(label: String, onClick: () -> Unit): TextView = Ui.button(this, label, onClick).apply { Ui.size(this, 12f); setPadding(Ui.dp(this@PlayerActivity, 12), Ui.dp(this@PlayerActivity, 6), Ui.dp(this@PlayerActivity, 12), Ui.dp(this@PlayerActivity, 6)) }
+    private fun chip(label: String, onClick: () -> Unit): TextView = Ui.button(this, label) { onClick() }.apply { Ui.size(this, 12f); setPadding(Ui.dp(this@PlayerActivity, 12), Ui.dp(this@PlayerActivity, 6), Ui.dp(this@PlayerActivity, 12), Ui.dp(this@PlayerActivity, 6)) }
 
     private fun reloadSources() {
         bannerShow("Looking for sources…")
@@ -450,7 +450,7 @@ class PlayerActivity : Activity() {
             if (panelOpen() && panelKind == "Sources") renderSources()
         })
         resolveSession = s
-        StreamResolver.resolve(PlaySession.meta!!.type, PlaySession.videoId, 9000, s)
+        StreamResolver.resolve(PlaySession.meta!!.type, PlaySession.videoId, StreamResolver.DEFAULT_TIMEOUT_MS, s)
     }
 
     /** Manual switch: keeps the viewer's place, and the app stops choosing for them. */

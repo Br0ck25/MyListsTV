@@ -74,6 +74,8 @@ object Json {
         put("poster", m.poster ?: ""); put("background", m.background ?: ""); put("logo", m.logo ?: "")
         put("description", m.description ?: ""); put("releaseInfo", m.year ?: ""); put("imdbRating", m.rating ?: "")
         put("runtime", m.runtime ?: ""); put("certification", m.certification ?: ""); put("genres", JSONArray(m.genres))
+        put("cast", JSONArray(m.cast)); put("director", JSONArray(m.directors)); put("writer", JSONArray(m.writers))
+        put("trailerStreams", JSONArray().also { a -> m.trailers.forEach { a.put(JSONObject().put("ytId", it)) } }); put("country", m.country ?: ""); put("awards", m.awards ?: "")
         put("videos", JSONArray().also { a -> m.videos.forEach { v ->
             a.put(JSONObject().put("id", v.id).put("title", v.title).put("season", v.season).put("episode", v.episode)
                 .put("thumbnail", v.thumbnail ?: "").put("overview", v.overview ?: "")) } })
@@ -113,12 +115,30 @@ object Json {
             logo = o.optString("logo").ifEmpty { null },
             description = o.optString("description").ifEmpty { null },
             year = o.optString("releaseInfo").ifEmpty { o.optString("year") }.ifEmpty { null },
-            rating = rating.ifEmpty { null },
+            // A rating of 0 means "not rated yet" (unreleased titles), so it is left out.
+            rating = rating.toDoubleOrNull()?.takeIf { it > 0.0 }?.let { "%.1f".format(java.util.Locale.US, it) } ?: rating.takeIf { it.isNotEmpty() && it.toDoubleOrNull() == null },
             runtime = o.optString("runtime").ifEmpty { null },
             certification = o.optString("certification").ifEmpty { null },
+            cast = names(o.optJSONArray("cast")), directors = names(o.optJSONArray("director")), writers = names(o.optJSONArray("writer")),
+            trailers = youtubeIds(o), country = o.optString("country").ifEmpty { null }, awards = o.optString("awards").ifEmpty { null },
             genres = genres,
             videos = videos.sortedWith(compareBy({ it.season }, { it.episode })),
         )
+    }
+
+    /** Debrid addons answer a bad key or a limit with a fake \"stream\" whose name says error and whose video explains it. It is not a source. */
+    private fun isNotice(s: JSONObject) = s.optString("name").contains("error", ignoreCase = true) || s.optString("url").contains("/videos/failed_")
+
+    /** What the addon said in such notices, for example "Invalid TorBox ApiKey/Token!". */
+    fun notices(text: String): List<String> {
+        val a = JSONObject(text).optJSONArray("streams") ?: return emptyList()
+        return (0 until a.length()).mapNotNull { a.optJSONObject(it) }.filter { isNotice(it) }.map { it.optString("title").replace('\n', ' ').trim() }.filter { it.isNotEmpty() }
+    }
+
+    /** Streams that are torrent links with no direct URL. This app does not play those. */
+    fun torrentOnlyCount(text: String): Int {
+        val a = JSONObject(text).optJSONArray("streams") ?: return 0
+        return (0 until a.length()).count { a.optJSONObject(it)?.let { s -> s.optString("url").isEmpty() && s.optString("infoHash").isNotEmpty() } == true }
     }
 
     /** Streams an addon returned for one title. Only direct URL streams are playable here. */
@@ -129,7 +149,7 @@ object Json {
             val s = a.optJSONObject(i) ?: continue
             val url = s.optString("url")
             // No on-device torrenting, no external links: only direct (usually debrid) URLs.
-            if (url.isEmpty() || !(url.startsWith("http://") || url.startsWith("https://"))) continue
+            if (url.isEmpty() || !(url.startsWith("http://") || url.startsWith("https://")) || isNotice(s)) continue
             val name = s.optString("name")
             val title = s.optString("title").ifEmpty { s.optString("description") }
             val hints = s.optJSONObject("behaviorHints")
@@ -155,6 +175,20 @@ object Json {
             )
         }
         return out
+    }
+
+    /** People are plain names, or objects with a name. */
+    private fun names(a: JSONArray?): List<String> {
+        if (a == null) return emptyList()
+        return (0 until a.length()).mapNotNull { i -> a.opt(i).let { if (it is JSONObject) it.optString("name") else it?.toString() } }.map { it.trim() }.filter { it.isNotEmpty() && it != "null" }
+    }
+
+    /** Trailers appear as trailerStreams [{ytId}] or trailers [{source, type}]; both carry a YouTube id. */
+    private fun youtubeIds(o: JSONObject): List<String> {
+        val out = LinkedHashSet<String>()
+        o.optJSONArray("trailerStreams")?.let { a -> for (i in 0 until a.length()) a.optJSONObject(i)?.optString("ytId")?.takeIf { it.length == 11 }?.let { out += it } }
+        o.optJSONArray("trailers")?.let { a -> for (i in 0 until a.length()) a.optJSONObject(i)?.optString("source")?.takeIf { it.length == 11 }?.let { out += it } }
+        return out.toList()
     }
 
     private fun strings(a: JSONArray?): List<String> {

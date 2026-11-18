@@ -2,10 +2,8 @@ package tv.myliststv.launcher.ui
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.text.InputType
 import android.view.Gravity
 import android.view.View
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -105,15 +103,7 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
             .setNegativeButton("Keep", null).show()
     }
 
-    private fun askUrl() {
-        val input = EditText(act).apply {
-            hint = "Addon link or IPTV playlist link"; inputType = InputType.TYPE_TEXT_VARIATION_URI or InputType.TYPE_CLASS_TEXT
-            setSingleLine(true); setTextColor(0xFF000000.toInt())
-        }
-        AlertDialog.Builder(act).setTitle("Add an addon or playlist").setView(input)
-            .setPositiveButton("Install") { _, _ -> install(input.text.toString()) }
-            .setNegativeButton("Cancel", null).show()
-    }
+    private fun askUrl() = Ui.askText(act, "Add an addon or playlist", "Addon link, IPTV playlist link or recovery code", "Install") { install(it) }
 
     private fun install(raw: String) {
         Toast.makeText(act, "Checking\u2026", Toast.LENGTH_SHORT).show()

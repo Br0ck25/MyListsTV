@@ -37,7 +37,7 @@ class StreamsActivity : Activity() {
             onDone = { l, st -> latest = l; show(l, st, true) },
         )
         session = s
-        StreamResolver.resolve(meta.type, videoId, 9000, s)
+        StreamResolver.resolve(meta.type, videoId, StreamResolver.DEFAULT_TIMEOUT_MS, s)
     }
 
     private fun show(streams: List<StreamItem>, st: List<StreamResolver.AddonStatus>, done: Boolean) {

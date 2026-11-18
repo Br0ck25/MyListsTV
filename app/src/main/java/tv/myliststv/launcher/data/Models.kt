@@ -13,6 +13,13 @@ data class Meta(
     val rating: String? = null,
     val runtime: String? = null,
     val certification: String? = null,
+    val cast: List<String> = emptyList(),
+    val directors: List<String> = emptyList(),
+    val writers: List<String> = emptyList(),
+    /** YouTube video ids. */
+    val trailers: List<String> = emptyList(),
+    val country: String? = null,
+    val awards: String? = null,
     val genres: List<String> = emptyList(),
     val videos: List<Video> = emptyList(),
 )

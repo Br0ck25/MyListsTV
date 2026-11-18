@@ -9,10 +9,12 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -35,20 +37,46 @@ class MainActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private var pendingSelect: Runnable? = null
     private var ready = false
+    private lateinit var bg: ImageView
+    private lateinit var scrims: List<View>
+    private var backdropUrl: String? = null
+    private var backdropJob: Runnable? = null
+
+    /** Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every picture. A null leaves the current one. */
+    private fun setBackdrop(url: String?) {
+        if (url == null || url == backdropUrl) return
+        backdropJob?.let { handler.removeCallbacks(it) }
+        backdropJob = Runnable { backdropUrl = url; ImageLoader.load(bg, url, Ui.dp(this, if (Prefs.lite()) 640 else 960), Ui.dp(this, if (Prefs.lite()) 360 else 540), fade = !Prefs.lite()) }.also { handler.postDelayed(it, 250) }
+    }
+
+    private fun showBackdrop(on: Boolean) {
+        val v = if (on) View.VISIBLE else View.GONE
+        bg.visibility = v; scrims.forEach { it.visibility = v }
+        if (!on) { backdropJob?.let { handler.removeCallbacks(it) }; backdropUrl = null; bg.setImageDrawable(null) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val root = Ui.vbox(this).apply { setBackgroundColor(Ui.BG) }
-        val bar = Ui.hbox(this, 8).apply { setPadding(Ui.dp(this@MainActivity, 40), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 40), Ui.dp(this@MainActivity, 8)) }
-        val logo = Ui.hbox(this, 8)
-        logo.addView(View(this).apply { background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(Ui.ACCENT) } },
-            LinearLayout.LayoutParams(Ui.dp(this, 16), Ui.dp(this, 16)))
-        logo.addView(Ui.text(this, "My Lists TV", 20f, Ui.TEXT, true))
-        bar.addView(logo, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { rightMargin = Ui.dp(this@MainActivity, 24) })
+        // Layers, back to front: the focused title's backdrop, two dark fades for readability, the screen, then the tab bar.
+        val root = FrameLayout(this).apply { setBackgroundColor(Ui.BG) }
+        bg = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+        scrims = listOf(
+            View(this).apply { background = Ui.scrimLeft() },
+            View(this).apply { background = Ui.scrimBottom() },
+        )
+        root.addView(bg, FrameLayout.LayoutParams(-1, -1))
+        root.addView(scrims[0], FrameLayout.LayoutParams(-1, -1))
+        root.addView(scrims[1], FrameLayout.LayoutParams(-1, Ui.dp(this, 420), Gravity.BOTTOM))
+        content = FrameLayout(this).apply { setPadding(0, Ui.dp(this@MainActivity, 64), 0, 0) }
+        root.addView(content, FrameLayout.LayoutParams(-1, -1))
+        val bar = Ui.hbox(this, 8).apply {
+            setPadding(Ui.dp(this@MainActivity, 40), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 40), Ui.dp(this@MainActivity, 8))
+            background = Ui.scrimTop()
+        }
         tabs.forEachIndexed { i, t ->
             val v = tabView(t)
             v.setOnFocusChangeListener { view, f ->
-                (view as TextView).setTextColor(if (f) 0xFF12131A.toInt() else if (i == current) Ui.TEXT else Ui.DIM)
+                (view as TextView).setTextColor(if (f) Ui.ON_FOCUS else if (i == current) Ui.TEXT else Ui.DIM)
                 if (f) { pendingSelect?.let { handler.removeCallbacks(it) }; pendingSelect = Runnable { select(i) }.also { handler.postDelayed(it, 140) } }
             }
             v.setOnClickListener { select(i, force = true) }
@@ -59,9 +87,7 @@ class MainActivity : Activity() {
         searchBtn = Ui.button(this, "Search") { startActivity(Intent(this, SearchActivity::class.java)) }
         settingsBtn = Ui.button(this, "Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }
         bar.addView(searchBtn); bar.addView(settingsBtn)
-        root.addView(bar, Ui.matchWrap())
-        content = FrameLayout(this)
-        root.addView(content, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        root.addView(bar, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
         setContentView(root)
         content.addView(Ui.text(this, "Loading…", 16f, Ui.DIM).apply { gravity = Gravity.CENTER }, FrameLayout.LayoutParams(-1, -1))
         val safe = CrashGuard.safeMode(this)
@@ -93,7 +119,7 @@ class MainActivity : Activity() {
     private fun tabView(t: String) = TextView(this).apply {
         text = t; Ui.size(this, 15f); setTextColor(Ui.DIM); typeface = android.graphics.Typeface.DEFAULT_BOLD
         setPadding(Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 8), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 8))
-        background = Ui.pillBg(this@MainActivity, 0x00000000); isFocusable = true; isClickable = true
+        background = Ui.pillBg(this@MainActivity, Ui.CLEAR); isFocusable = true; isClickable = true
     }
 
     private fun select(i: Int, force: Boolean = false) {
@@ -104,10 +130,11 @@ class MainActivity : Activity() {
         (screen as? AddonsScreen)?.stop()
         content.removeAllViews()
         screen = null
+        showBackdrop(i in 0..2)
         when (i) {
             0, 1, 2 -> {
                 val s = BrowseScreen(this, type = when (i) { 1 -> "movie"; 2 -> "series"; else -> null }, withContinue = i == 0, withApps = i == 0,
-                    onMeta = ::openMeta, onResume = ::resumeEntry, onApp = ::launch, onAppMenu = ::appMenu)
+                    onMeta = ::openMeta, onResume = ::resumeEntry, onApp = ::launch, onAppMenu = ::appMenu, onBackdrop = ::setBackdrop)
                 screen = s; content.addView(s.view); s.start()
             }
             3 -> { val s = LiveScreen(this); screen = s; content.addView(s.view); s.start() }
@@ -144,8 +171,11 @@ class MainActivity : Activity() {
         }.show()
     }
 
+    private var seenEpoch = Prefs.epoch
+
     override fun onResume() {
         super.onResume()
+        if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; if (ready && current >= 0) select(current, force = true) }
         if (AddonStore.needsRefresh) { AddonStore.needsRefresh = false; AddonStore.load { select(current.coerceAtLeast(0), force = true) } }
         (screen as? BrowseScreen)?.refreshContinue()
     }

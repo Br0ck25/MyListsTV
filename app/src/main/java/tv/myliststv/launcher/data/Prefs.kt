@@ -9,6 +9,10 @@ object Prefs {
     private lateinit var sp: SharedPreferences
     private lateinit var appContext: Context
 
+    /** Goes up whenever a setting that changes what Home shows is changed, so the screen behind Settings rebuilds when you come back. */
+    @Volatile var epoch = 0
+        private set
+
     fun init(c: Context) {
         appContext = c.applicationContext; sp = c.getSharedPreferences("settings", Context.MODE_PRIVATE)
         if (Secure.needsWrap(sp.getString("backupCode", null))) backupCode = backupCode    // wraps a code saved before the Keystore was used
@@ -16,7 +20,7 @@ object Prefs {
 
     var liteMode: String                 // "Auto", "On", "Off"
         get() = sp.getString("lite", "Auto") ?: "Auto"
-        set(v) = sp.edit().putString("lite", v).apply()
+        set(v) { sp.edit().putString("lite", v).apply(); epoch++ }
 
     /** 0 = Auto (device decides), otherwise 2160, 1080 or 720. */
     var maxResolution: Int
@@ -47,17 +51,27 @@ object Prefs {
         get() = sp.getBoolean("skipIntro", true)
         set(v) = sp.edit().putBoolean("skipIntro", v).apply()
 
+    /** Ask Cinemeta (the standard Stremio metadata addon) for logos, country, awards and episodes the catalog addon lacks. */
+    var extraDetails: Boolean
+        get() = sp.getBoolean("extraDetails", true)
+        set(v) { sp.edit().putBoolean("extraDetails", v).apply(); epoch++ }
+
     var autoplayNext: Boolean
         get() = sp.getBoolean("autoNext", true)
         set(v) = sp.edit().putBoolean("autoNext", v).apply()
 
     var showAppsRow: Boolean
         get() = sp.getBoolean("appsRow", true)
-        set(v) = sp.edit().putBoolean("appsRow", v).apply()
+        set(v) { sp.edit().putBoolean("appsRow", v).apply(); epoch++ }
+
+    /** Catalog items as wide backdrop pictures (true) or tall posters (false). */
+    var horizontalPosters: Boolean
+        get() = sp.getBoolean("horizontalPosters", false)
+        set(v) { sp.edit().putBoolean("horizontalPosters", v).apply(); epoch++ }
 
     var showContinue: Boolean
         get() = sp.getBoolean("showCw", true)
-        set(v) = sp.edit().putBoolean("showCw", v).apply()
+        set(v) { sp.edit().putBoolean("showCw", v).apply(); epoch++ }
 
     /** Recovery code for this box's online backup. Empty until the first backup. */
     var backupCode: String

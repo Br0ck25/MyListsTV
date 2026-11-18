@@ -15,7 +15,7 @@ class AppsScreen(private val act: Activity, private val onApp: (AppEntry) -> Uni
     private val rv = RecyclerView(act)
 
     init {
-        rv.layoutManager = GridLayoutManager(act, 7)
+        rv.layoutManager = GridLayoutManager(act, 4)
         rv.clipToPadding = false
         rv.setPadding(Ui.dp(act, 42), Ui.dp(act, 12), Ui.dp(act, 42), Ui.dp(act, 20))
         rv.itemAnimator = null
@@ -27,7 +27,7 @@ class AppsScreen(private val act: Activity, private val onApp: (AppEntry) -> Uni
             val apps = AppRepository.load(act)
             Http.post {
                 val models = apps.map { a ->
-                    CardModel(a.label, null, payload = a, icon = try { act.packageManager.getActivityIcon(a.component) } catch (_: Exception) { null })
+                    AppRepository.look(act.packageManager, a.component).let { (icon, banner) -> CardModel(a.label, null, payload = a, icon = icon, banner = banner) }
                 }
                 rv.adapter = CardAdapter(CardKind.APP, models, Prefs.lite(), { }, { m -> (m.payload as? AppEntry)?.let(onApp) }, { m -> (m.payload as? AppEntry)?.let(onMenu) })
             }

@@ -21,11 +21,12 @@ class BrowseScreen(
     private val onResume: (WatchStore.Entry) -> Unit,
     private val onApp: (AppEntry) -> Unit,
     private val onAppMenu: (AppEntry) -> Unit,
+    private val onBackdrop: (String?) -> Unit = {},
 ) {
     private val c = act
     private val lite = Prefs.lite()
     private val rows = ArrayList<RowModel>()
-    private val heroTitle = Ui.text(c, "", 26f, Ui.TEXT, true, 1)
+    private val heroTitle = Ui.text(c, "", 30f, Ui.TEXT, true, 1)
     private val heroMeta = Ui.text(c, "", 14f, Ui.ACCENT, true, 1)
     private val heroDesc = Ui.text(c, "", 14f, Ui.TEXT2, false, 3)
     private val list = RowsList(c, rows, lite, ::hero, { model ->
@@ -39,10 +40,10 @@ class BrowseScreen(
 
     init {
         val root = Ui.vbox(c)
-        val hero = Ui.vbox(c).apply { setPadding(Ui.dp(c, 48), Ui.dp(c, 10), Ui.dp(c, 120), Ui.dp(c, 6)) }
+        val hero = Ui.vbox(c).apply { setPadding(Ui.dp(c, 48), Ui.dp(c, 10), Ui.dp(c, 420), Ui.dp(c, 6)) }
         hero.addView(heroTitle); hero.addView(heroMeta); hero.addView(heroDesc)
         (heroMeta.layoutParams as? LinearLayout.LayoutParams)
-        root.addView(hero, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(c, 112)))
+        root.addView(hero, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(c, 120)))
         root.addView(list, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         view = root
     }
@@ -63,13 +64,14 @@ class BrowseScreen(
         for ((addon, cat) in defs) {
             val label = if (cat.type == "movie") "Movies" else "Series"
             val title = if (type == null && !cat.name.contains(label, true)) "${cat.name} · $label" else cat.name
-            val row = RowModel(title, "via ${addon.name}", CardKind.POSTER, emptyList(), loaded = false)
+            val wide = Prefs.horizontalPosters
+            val row = RowModel(title, "via ${addon.name}", if (wide) CardKind.WIDE else CardKind.POSTER, emptyList(), loaded = false)
             rows += row
             Catalogs.load(addon, cat) { metas, _ ->
                 val idx = rows.indexOf(row)
                 if (idx < 0) return@load
                 if (metas != null) {
-                    row.items = metas.filter(Profiles::allows).take(30).map { CardModel(it.name, it.poster, payload = it) }
+                    row.items = metas.filter(Profiles::allows).take(30).map { if (wide) CardModel(it.name, it.background ?: it.poster, listOfNotNull(it.year, it.rating?.let { r -> "\u2605 $r" }).joinToString("  \u00b7  "), payload = it) else CardModel(it.name, it.poster, payload = it) }
                     row.loaded = true
                 } else if (row.items.isEmpty()) row.loaded = true
                 list.changed(idx)
@@ -82,7 +84,7 @@ class BrowseScreen(
                 val apps = AppRepository.load(act)
                 Http.post {
                     val row = RowModel("Your apps", "Installed", CardKind.APP, apps.map { a ->
-                        CardModel(a.label, null, payload = a, icon = try { act.packageManager.getActivityIcon(a.component) } catch (_: Exception) { null })
+                        AppRepository.look(act.packageManager, a.component).let { (icon, banner) -> CardModel(a.label, null, payload = a, icon = icon, banner = banner) }
                     })
                     rows += row
                     list.inserted(rows.size - 1)
@@ -113,11 +115,13 @@ class BrowseScreen(
     private fun hero(m: CardModel) {
         when (val p = m.payload) {
             is Meta -> {
+                onBackdrop(p.background ?: p.poster)
                 heroTitle.text = p.name
                 heroMeta.text = listOfNotNull(p.year, p.rating?.let { "★ $it" }, p.genres.take(3).joinToString(", ").ifEmpty { null }).joinToString("   ")
                 heroDesc.text = p.description ?: ""
             }
             is WatchStore.Entry -> {
+                onBackdrop(p.background ?: p.poster)
                 heroTitle.text = p.name
                 heroMeta.text = if (p.type == "series" && p.season >= 0) "S${p.season} · E${p.episode}  ${p.episodeTitle ?: ""}".trim() else "Resume"
                 heroDesc.text = "${(p.fraction * 100).toInt()}% watched"

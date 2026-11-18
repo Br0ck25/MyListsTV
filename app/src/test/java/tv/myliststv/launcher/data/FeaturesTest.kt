@@ -31,3 +31,76 @@ class FeaturesTest {
         assertEquals("https://h/x/subtitles/series/tt1:1:2.json", Urls.subtitles("https://h/x", "series", "tt1:1:2"))
     }
 }
+
+class DetailsDataTest {
+    @Test fun readsCastCrewTrailersAndFactsFromBothAddonShapes() {
+        // My Lists: names as plain strings, trailers as ytId streams. Cinemeta: trailers as {source}.
+        val a = Json.parseMeta("""{"meta":{"id":"tt1","type":"movie","name":"Dune","cast":["Timothée Chalamet","Zendaya"],"director":["Denis Villeneuve"],"trailerStreams":[{"title":"Trailer","ytId":"w0HgHet0sxg"}],"trailers":[{"source":"w0HgHet0sxg","type":"Trailer"}]}}""")!!
+        assertEquals(listOf("Timothée Chalamet", "Zendaya"), a.cast); assertEquals(listOf("Denis Villeneuve"), a.directors)
+        assertEquals("the same trailer is listed once", listOf("w0HgHet0sxg"), a.trailers)
+        val b = Json.parseMeta("""{"meta":{"id":"tt1","type":"movie","name":"Dune","country":"Canada, United States","awards":"Won 6 Oscars","writer":["Jon Spaihts"],"logo":"https://l/logo.png","cast":[{"name":"Object Form"}]}}""")!!
+        assertEquals("Canada, United States", b.country); assertEquals(listOf("Jon Spaihts"), b.writers); assertEquals(listOf("Object Form"), b.cast)
+    }
+
+    @Test fun extraDetailsOnlyFillWhatTheCatalogAddonLacks() {
+        val mine = Meta("tt1", "movie", "Dune", description = "My Lists text", cast = listOf("A"), rating = "7.8")
+        val cine = Meta("tt1", "movie", "Dune", description = "Cinemeta text", cast = listOf("B", "C"), logo = "https://l/logo.png", country = "Canada", awards = "Won 6 Oscars", rating = "8.0")
+        val m = Catalogs.fillGaps(mine, cine)
+        assertEquals("My Lists text", m.description); assertEquals(listOf("A"), m.cast); assertEquals("7.8", m.rating)
+        assertEquals("https://l/logo.png", m.logo); assertEquals("Canada", m.country); assertEquals("Won 6 Oscars", m.awards)
+    }
+
+    @Test fun detailsSurviveTheTripBetweenScreens() {
+        val m = Meta("tt1", "movie", "Dune", cast = listOf("A", "B"), directors = listOf("D"), trailers = listOf("w0HgHet0sxg"), country = "Canada", awards = "x")
+        assertEquals(m, Json.metaFromJson(Json.metaToJson(m)))
+    }
+
+    @Test fun readsACastPhotoFromAPersonSearch() {
+        assertEquals("https://image.tmdb.org/t/p/w200/x.jpg", People.parsePhoto("""{"ok":true,"results":[{"name":"Zendaya","poster":"https://image.tmdb.org/t/p/w200/x.jpg"},{"name":"Other","poster":null}]}"""))
+        assertNull(People.parsePhoto("""{"ok":true,"results":[]}""")); assertNull(People.parsePhoto("not json"))
+    }
+}
+
+class RatingTest {
+    @Test fun aZeroRatingIsLeftOut() {
+        assertNull(Json.parseMeta("""{"meta":{"id":"tt1","name":"New","imdbRating":"0"}}""")!!.rating)
+        assertNull(Json.parseMeta("""{"meta":{"id":"tt1","name":"New","rating":0.0}}""")!!.rating)
+        assertEquals("7.8", Json.parseMeta("""{"meta":{"id":"tt1","name":"Old","imdbRating":"7.8"}}""")!!.rating)
+        assertEquals("one decimal", "9.1", Json.parseMeta("""{"meta":{"id":"tt1","name":"Long","rating":9.077}}""")!!.rating)
+    }
+}
+
+class DebridAddonTest {
+    @Test fun aBadKeyNoticeIsExplainedAndIsNotASource() {
+        // What Torrentio answers when the TorBox key is wrong: one fake "stream" whose video says so.
+        val bad = """{"streams":[{"name":"Torrentio\nTB error","title":"Invalid TorBox ApiKey/Token!","url":"https://torrentio.strem.fun/videos/failed_access_v3.mp4"}]}"""
+        assertTrue(Json.parseStreams(bad, "Torrentio", "https://t/manifest.json").isEmpty())
+        assertEquals(listOf("Invalid TorBox ApiKey/Token!"), Json.notices(bad))
+    }
+
+    @Test fun torrentOnlyLinksAreCountedSoTheViewerIsTold() {
+        val noKey = """{"streams":[{"name":"Torrentio\n4k","title":"x","infoHash":"2f1b54bf","fileIdx":0},{"name":"Torrentio\n1080p","title":"y","infoHash":"aa11"}]}"""
+        assertTrue(Json.parseStreams(noKey, "Torrentio", "u").isEmpty()); assertEquals(2, Json.torrentOnlyCount(noKey))
+    }
+
+    @Test fun debridLinksArePlayableSources() {
+        val ok = """{"streams":[{"name":"Torrentio\n[TB+] 1080p","title":"Dune 2021 1080p\n👤 30 💾 9.5 GB","url":"https://torrentio.strem.fun/resolve/torbox/KEY/hash/null/0/Dune.mkv","behaviorHints":{"bingeGroup":"torrentio|1080p"}}]}"""
+        val l = Json.parseStreams(ok, "Torrentio", "u")
+        assertEquals(1, l.size); assertEquals(1080, l[0].resolution); assertTrue(l[0].cached); assertEquals(0, Json.torrentOnlyCount(ok))
+    }
+
+    @Test fun debridAddonsGetTimeToAnswer() = assertTrue(StreamResolver.DEFAULT_TIMEOUT_MS >= 20_000)
+}
+
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34], application = tv.myliststv.launcher.App::class)
+class PosterShapeTest {
+    @Test fun wideAndTallPostersAreASettingThatMakesHomeRebuild() {
+        Prefs.horizontalPosters = false
+        assertFalse(Prefs.horizontalPosters)
+        val before = Prefs.epoch
+        Prefs.horizontalPosters = true
+        assertTrue(Prefs.horizontalPosters); assertTrue("Home is told to rebuild", Prefs.epoch > before)
+        Prefs.horizontalPosters = false
+    }
+}

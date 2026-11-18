@@ -33,6 +33,7 @@
 
         <activity
             android:name=".MainActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale"
             android:exported="true"
             android:launchMode="singleTask"
             android:stateNotNeeded="true"
@@ -58,10 +59,14 @@
         </provider>
 
         <!-- Exported so the system home screen can open it from a Watch Next card. -->
-        <activity android:name=".DetailsActivity" android:exported="true" android:screenOrientation="landscape" />
-        <activity android:name=".StreamsActivity" android:exported="false" android:screenOrientation="landscape" />
-        <activity android:name=".SearchActivity" android:exported="false" android:screenOrientation="landscape" android:windowSoftInputMode="stateHidden|adjustPan" />
-        <activity android:name=".SettingsActivity" android:exported="false" android:screenOrientation="landscape" />
+        <activity android:name=".DetailsActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="true" android:screenOrientation="landscape" />
+        <activity android:name=".StreamsActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" />
+        <activity android:name=".SearchActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" android:windowSoftInputMode="stateHidden|adjustPan" />
+        <activity android:name=".SettingsActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" />
         <activity android:name=".PlayerActivity" android:exported="false" android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|keyboardHidden|keyboard|smallestScreenSize|screenLayout|uiMode"
             android:theme="@style/Theme.MyListsTV" />

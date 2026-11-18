@@ -42,7 +42,21 @@ object Catalogs {
         }
     }
 
+    /** The standard Stremio metadata addon. Used only to fill in what the catalog addon lacks (logo, country, awards, writers, episodes). */
+    private const val CINEMETA = "https://v3-cinemeta.strem.io"
+
+    /** [cb] may run more than once: first with what the catalog addon knows, then again with extra details merged in. */
     fun meta(type: String, id: String, fallback: Meta?, cb: (Meta?) -> Unit) {
+        var best: Meta? = fallback
+        primaryMeta(type, id, fallback) { m -> best = m; cb(m) }
+        if (Prefs.extraDetails && id.startsWith("tt") && (type == "movie" || type == "series"))
+            Http.get(Urls.meta(CINEMETA, type, id), META_TTL) { body, _, _ ->
+                val extra = body?.let { try { Json.parseMeta(it) } catch (_: Exception) { null } } ?: return@get
+                best = fillGaps(best ?: extra, extra); cb(best)
+            }
+    }
+
+    private fun primaryMeta(type: String, id: String, fallback: Meta?, cb: (Meta?) -> Unit) {
         val providers = enabled().filter { a ->
             val r = a.manifest.resources["meta"] ?: return@filter false
             (r.types.isEmpty() || type in r.types) && (r.idPrefixes.isEmpty() || r.idPrefixes.any { id.startsWith(it) })
@@ -57,14 +71,16 @@ object Catalogs {
         }
     }
 
+    /** Keeps everything [base] has and takes from [extra] only what [base] lacks. */
+    fun fillGaps(base: Meta, extra: Meta): Meta = base.copy(
+        poster = base.poster ?: extra.poster, background = base.background ?: extra.background, logo = base.logo ?: extra.logo,
+        description = base.description ?: extra.description, year = base.year ?: extra.year, rating = base.rating ?: extra.rating,
+        runtime = base.runtime ?: extra.runtime, certification = base.certification ?: extra.certification,
+        genres = base.genres.ifEmpty { extra.genres }, cast = base.cast.ifEmpty { extra.cast }, directors = base.directors.ifEmpty { extra.directors },
+        writers = base.writers.ifEmpty { extra.writers }, trailers = base.trailers.ifEmpty { extra.trailers },
+        country = base.country ?: extra.country, awards = base.awards ?: extra.awards, videos = base.videos.ifEmpty { extra.videos },
+    )
+
     /** Detail data wins, but anything missing there (a poster, say) is kept from the catalog item. */
-    fun mergeMeta(detail: Meta, base: Meta?): Meta =
-        if (base == null) detail else detail.copy(
-            poster = detail.poster ?: base.poster,
-            background = detail.background ?: base.background,
-            description = detail.description ?: base.description,
-            year = detail.year ?: base.year,
-            rating = detail.rating ?: base.rating,
-            genres = detail.genres.ifEmpty { base.genres },
-        )
+    fun mergeMeta(detail: Meta, base: Meta?): Meta = if (base == null) detail else fillGaps(detail, base)
 }

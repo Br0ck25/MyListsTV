@@ -24,6 +24,8 @@ data class CardModel(
     val progress: Float = 0f,
     val payload: Any? = null,
     val icon: android.graphics.drawable.Drawable? = null,
+    /** For apps: true when [icon] is a wide TV banner that fills the whole tile. */
+    val banner: Boolean = false,
 )
 
 data class RowModel(
@@ -48,19 +50,19 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
         when (kind) {
             CardKind.POSTER -> { w = Ui.dp(c, 118); h = Ui.dp(c, 177) }
             CardKind.WIDE -> { w = Ui.dp(c, 208); h = Ui.dp(c, 117) }
-            CardKind.APP -> { w = Ui.dp(c, 104); h = Ui.dp(c, 104) }
+            CardKind.APP -> { w = Ui.dp(c, 192); h = Ui.dp(c, 108) }
         }
         wPx = w; hPx = h
         layoutParams = RecyclerView.LayoutParams(w, h).also { it.setMargins(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6)) }
         isFocusable = true; isClickable = true
         background = Ui.rounded(c, Ui.CARD, Ui.R_CARD); clipToOutline = true
         if (kind == CardKind.APP) {
-            addView(appIcon, LayoutParams(Ui.dp(c, 56), Ui.dp(c, 56), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = Ui.dp(c, 12) })
+            addView(appIcon, LayoutParams(Ui.dp(c, 48), Ui.dp(c, 48), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = Ui.dp(c, 14) })
             label.gravity = Gravity.CENTER; label.maxLines = 2
             addView(label, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM).apply { setMargins(Ui.dp(c, 4), 0, Ui.dp(c, 4), Ui.dp(c, 8)) })
         } else {
             addView(img, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-            val shade = View(c).apply { background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, intArrayOf(0xCC000000.toInt(), Color.TRANSPARENT)) }
+            val shade = View(c).apply { background = Ui.scrimShade() }
             addView(shade, LayoutParams(LayoutParams.MATCH_PARENT, Ui.dp(c, 70), Gravity.BOTTOM))
             addView(label, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM).apply {
                 setMargins(Ui.dp(c, 8), 0, Ui.dp(c, 8), if (kind == CardKind.WIDE) Ui.dp(c, 22) else Ui.dp(c, 8)) })
@@ -69,12 +71,18 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
                 addView(bar, LayoutParams(0, Ui.dp(c, 3), Gravity.BOTTOM or Gravity.START))
             }
         }
-        foreground = Ui.focusBg(c, Ui.R_CARD, 0x00000000)
+        foreground = Ui.focusBg(c, Ui.R_CARD, Ui.CLEAR)
     }
 
     fun bind(m: CardModel) {
         if (kind == CardKind.APP) {
-            label.text = m.title; appIcon.setImageDrawable(m.icon); return
+            // A banner is a wide picture that fills the tile; an app without one gets its icon above its name.
+            appIcon.setImageDrawable(m.icon)
+            appIcon.scaleType = if (m.banner) ImageView.ScaleType.CENTER_CROP else ImageView.ScaleType.FIT_CENTER
+            appIcon.layoutParams = if (m.banner) LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+                else LayoutParams(Ui.dp(context, 48), Ui.dp(context, 48), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = Ui.dp(context, 14) }
+            label.text = m.title; label.visibility = if (m.banner) GONE else VISIBLE
+            return
         }
         // A poster already shows its art with the title baked in for most catalogs; keep the title only when there is no image.
         label.text = if (kind == CardKind.POSTER && !m.image.isNullOrEmpty()) "" else m.title
@@ -124,7 +132,7 @@ class CardAdapter(
 
 /** A titled row: heading, optional source label, horizontal strip. */
 class RowView(c: Context) : LinearLayout(c) {
-    val title = Ui.text(c, "", 17f, Ui.TEXT, true)
+    val title = Ui.text(c, "", 16f, Ui.TEXT, true)
     val source = Ui.text(c, "", 12f, Ui.DIM)
     val strip = RecyclerView(c).apply {
         layoutManager = LinearLayoutManager(c, LinearLayoutManager.HORIZONTAL, false)
