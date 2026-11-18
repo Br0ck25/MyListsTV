@@ -93,6 +93,10 @@ object Epg {
         return now to l.firstOrNull { it.start >= (now?.stop ?: t) }
     }
 
+    internal fun setGuide(g: Map<String, List<Prog>>) { guide = g }
+
+    fun schedule(tvgId: String?): List<Prog> = if (tvgId == null) emptyList() else guide[tvgId] ?: emptyList()
+
     private fun time(s: String): Long? {
         for (f in listOf("yyyyMMddHHmmss Z", "yyyyMMddHHmmss")) try {
             val df = java.text.SimpleDateFormat(f, java.util.Locale.US); if (f.length == 14) df.timeZone = java.util.TimeZone.getTimeZone("UTC")

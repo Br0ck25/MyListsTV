@@ -97,11 +97,13 @@ class DetailsActivity : Activity() {
         val sig = "$resumable|$watched|${meta.trailers.firstOrNull()}|${meta.type}"
         if (sig != buttonsSig) {
             buttonsSig = sig; buttons.removeAllViews()
-            val play = Ui.button(c, if (resumable) "Resume" else "Play", primary = true) { playMain() }
-            buttons.addView(play)
-            buttons.addView(Ui.button(c, "Sources") { sourcesMain() })
-            meta.trailers.firstOrNull()?.let { id -> buttons.addView(Ui.button(c, "Trailer") { openTrailer(id) }) }
-            if (meta.type == "movie") buttons.addView(Ui.button(c, if (watched) "Mark unwatched" else "Mark watched") { toggleWatched(watched) })
+            val at = if (meta.type == "series" && resume != null && resume.season >= 0) " S${resume.season} E${resume.episode}" else ""
+            val play = Ui.button(c, (if (resumable) "Resume" else if (at.isNotEmpty()) "Next" else "Play") + at, primary = true) { playMain() }
+            val round = Ui.dp(c, 48)
+            buttons.addView(play, LinearLayout.LayoutParams(-2, round))
+            buttons.addView(Ui.iconButton(c, R.drawable.ic_list, "Choose a source") { sourcesMain() }, LinearLayout.LayoutParams(round, round))
+            meta.trailers.firstOrNull()?.let { id -> buttons.addView(Ui.iconButton(c, R.drawable.ic_trailer, "Trailer") { openTrailer(id) }, LinearLayout.LayoutParams(round, round)) }
+            if (meta.type == "movie") buttons.addView(Ui.iconButton(c, R.drawable.ic_check, if (watched) "Mark unwatched" else "Mark watched") { toggleWatched(watched) }.also { it.isSelected = watched }, LinearLayout.LayoutParams(round, round))
             if (!focusedOnce) { focusedOnce = true; play.post { play.requestFocus() } }
         }
         metaLine.text = listOfNotNull(if (meta.type == "series") "Series" else "Movie", meta.genres.take(3).joinToString(", ").ifEmpty { null }, meta.runtime, meta.year).joinToString("  \u2022  ")
@@ -168,11 +170,11 @@ class DetailsActivity : Activity() {
         seasons.forEach { s -> chipsRow.addView(Ui.button(c, if (s == 0) "Specials" else "Season $s") { season = s; tabsSig = ""; renderTabs() }.apply { isSelected = s == season }) }
         col.addView(HorizontalScrollView(c).apply { isHorizontalScrollBarEnabled = false; addView(chipsRow) })
         val models = meta.videos.filter { it.season == season }.map { v ->
-            CardModel("E${v.episode}  ${v.title}", v.thumbnail, v.overview, if (resume?.videoId == v.id) resume.fraction else 0f, v)
+            CardModel(v.title, v.thumbnail, v.overview, if (resume?.videoId == v.id) resume.fraction else 0f, v, badge = "EPISODE ${v.episode}")
         }
-        col.addView(strip(125).apply {
+        col.addView(strip(190).apply {
             setPadding(0, Ui.dp(c, 8), 0, 0)
-            adapter = CardAdapter(CardKind.WIDE, models, lite, { }, { m -> (m.payload as? Video)?.let { playVideo(it.id) } }, { m -> (m.payload as? Video)?.let { openSources(it.id) } })
+            adapter = CardAdapter(CardKind.EPISODE, models, lite, { }, { m -> (m.payload as? Video)?.let { playVideo(it.id) } }, { m -> (m.payload as? Video)?.let { openSources(it.id) } })
         })
         return col
     }

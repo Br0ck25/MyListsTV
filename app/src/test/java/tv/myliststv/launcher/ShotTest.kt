@@ -54,4 +54,18 @@ class ShotTest {
         val tab = all(m.window.decorView).filterIsInstance<android.widget.TextView>().first { it.text.toString() == "Apps" }; tab.performClick(); settle(1500); shot(m, "apps")
         val d = Robolectric.buildActivity(DetailsActivity::class.java, android.content.Intent().putExtra("meta", tv.myliststv.launcher.data.Json.metaToJson(tv.myliststv.launcher.data.Meta("tt1160419", "movie", "Dune", "https://image.tmdb.org/t/p/w500/v1tRXZ4JtD2Iv6fjkPvT4GiwslV.jpg", "https://image.tmdb.org/t/p/w1280/qVgZu5BTx6pu4owCvVOm4zjTfOi.jpg")))).setup().get(); settle(9000); shot(d, "details")
     }
+
+    @Test fun liveGuide() {
+        Assume.assumeTrue(dir != null)
+        val a = Robolectric.buildActivity(Activity::class.java).setup().get()
+        a.setTheme(R.style.Theme_MyListsTV)
+        val screen = tv.myliststv.launcher.ui.LiveScreen(a)
+        a.setContentView(android.widget.FrameLayout(a).apply { setBackgroundColor(tv.myliststv.launcher.ui.Ui.BG); addView(screen.view) })
+        val chs = listOf("News One" to "News", "Sports HD" to "Sports", "Movie Max" to "Movies", "Kids Zone" to "Kids", "Music TV" to "Music", "No Guide" to "News")
+            .mapIndexed { i, (n, g) -> tv.myliststv.launcher.data.Channel(n, null, g, "http://x/$i", if (i == 5) null else "c$i") }
+        val t = System.currentTimeMillis(); val m = 60_000L
+        tv.myliststv.launcher.data.Epg.setGuide(chs.filter { it.tvgId != null }.associate { c -> c.tvgId!! to listOf(
+            tv.myliststv.launcher.data.Prog(t - 20 * m, t + 25 * m, "Morning Show"), tv.myliststv.launcher.data.Prog(t + 25 * m, t + 85 * m, "The Big Match"), tv.myliststv.launcher.data.Prog(t + 85 * m, t + 140 * m, "Evening Report")) })
+        screen.show(chs); settle(500); shot(a, "live")
+    }
 }

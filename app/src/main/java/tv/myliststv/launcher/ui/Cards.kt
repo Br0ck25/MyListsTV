@@ -15,7 +15,7 @@ import androidx.recyclerview.widget.RecyclerView
 import tv.myliststv.launcher.data.ImageLoader
 import tv.myliststv.launcher.data.Prefs
 
-enum class CardKind { POSTER, WIDE, APP }
+enum class CardKind { POSTER, WIDE, APP, EPISODE }
 
 data class CardModel(
     val title: String,
@@ -26,6 +26,8 @@ data class CardModel(
     val icon: android.graphics.drawable.Drawable? = null,
     /** For apps: true when [icon] is a wide TV banner that fills the whole tile. */
     val banner: Boolean = false,
+    /** A small label in the top corner, e.g. "EPISODE 6". */
+    val badge: String? = null,
 )
 
 data class RowModel(
@@ -42,13 +44,17 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
     val label = Ui.text(c, "", 13f, Ui.TEXT, true, 3)
     val subLabel = Ui.text(c, "", 11f, Ui.TEXT2, false, 1)
     val bar = View(c).apply { setBackgroundColor(Ui.ACCENT); visibility = GONE }
+    val badge = Ui.text(c, "", 11f, Ui.TEXT, true, 1).apply {
+        setPadding(Ui.dp(c, 8), Ui.dp(c, 2), Ui.dp(c, 8), Ui.dp(c, 2)); background = Ui.rounded(c, Ui.SCRIM_SLATE, Ui.R_PILL)
+    }
     val appIcon = ImageView(c).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
     private var wPx = 0; private var hPx = 0
 
     init {
         // App tiles are the same size as wide cards; the size setting scales all of them together.
-        val w = (Ui.dp(c, if (kind == CardKind.POSTER) 118 else 208) * Prefs.cardScale).toInt()
-        val h = (Ui.dp(c, if (kind == CardKind.POSTER) 177 else 117) * Prefs.cardScale).toInt()
+        val (bw, bh) = when (kind) { CardKind.POSTER -> 118 to 177; CardKind.EPISODE -> 300 to 170; else -> 208 to 117 }
+        val w = (Ui.dp(c, bw) * Prefs.cardScale).toInt()
+        val h = (Ui.dp(c, bh) * Prefs.cardScale).toInt()
         wPx = w; hPx = h
         layoutParams = RecyclerView.LayoutParams(w, h).also { it.setMargins(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6)) }
         isFocusable = true; isClickable = true
@@ -59,11 +65,16 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
             addView(label, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM).apply { setMargins(Ui.dp(c, 4), 0, Ui.dp(c, 4), Ui.dp(c, 8)) })
         } else {
             addView(img, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+            val ep = kind == CardKind.EPISODE
             val shade = View(c).apply { background = Ui.scrimShade() }
-            addView(shade, LayoutParams(LayoutParams.MATCH_PARENT, Ui.dp(c, 70), Gravity.BOTTOM))
+            addView(shade, LayoutParams(LayoutParams.MATCH_PARENT, Ui.dp(c, if (ep) 120 else 70), Gravity.BOTTOM))
             addView(label, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM).apply {
-                setMargins(Ui.dp(c, 8), 0, Ui.dp(c, 8), if (kind == CardKind.WIDE) Ui.dp(c, 22) else Ui.dp(c, 8)) })
-            if (kind == CardKind.WIDE) {
+                setMargins(Ui.dp(c, 8), 0, Ui.dp(c, 8), if (ep) Ui.dp(c, 44) else if (kind == CardKind.WIDE) Ui.dp(c, 22) else Ui.dp(c, 8)) })
+            if (ep) {
+                subLabel.maxLines = 2
+                addView(badge, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.START).apply { setMargins(Ui.dp(c, 8), Ui.dp(c, 8), 0, 0) })
+            }
+            if (kind == CardKind.WIDE || ep) {
                 addView(subLabel, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM).apply { setMargins(Ui.dp(c, 8), 0, Ui.dp(c, 8), Ui.dp(c, 8)) })
                 addView(bar, LayoutParams(0, Ui.dp(c, 3), Gravity.BOTTOM or Gravity.START))
             }
@@ -85,7 +96,8 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
         label.text = if (kind == CardKind.POSTER && !m.image.isNullOrEmpty()) "" else m.title
         subLabel.text = m.sub ?: ""
         ImageLoader.load(img, m.image, wPx, hPx)
-        if (kind == CardKind.WIDE) {
+        badge.text = m.badge ?: ""; badge.visibility = if (m.badge == null) GONE else VISIBLE
+        if (kind == CardKind.WIDE || kind == CardKind.EPISODE) {
             bar.visibility = if (m.progress > 0f) VISIBLE else GONE
             (bar.layoutParams as LayoutParams).width = (wPx * m.progress).toInt()
             bar.requestLayout()
