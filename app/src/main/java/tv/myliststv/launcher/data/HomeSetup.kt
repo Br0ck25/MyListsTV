@@ -32,5 +32,6 @@ object HomeSetup {
         "adb shell pm grant tv.myliststv.launcher android.permission.WRITE_SECURE_SETTINGS",
         "adb shell settings put secure enabled_accessibility_services $SERVICE",
         "adb shell settings put secure accessibility_enabled 1",
+        "adb shell cmd notification allow_listener tv.myliststv.launcher/tv.myliststv.launcher.NotificationsService",
     )
 }

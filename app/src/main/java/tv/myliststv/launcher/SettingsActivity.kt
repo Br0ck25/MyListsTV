@@ -37,6 +37,17 @@ class SettingsActivity : Activity() {
 
     override fun onResume() { super.onResume(); if (::rail.isInitialized) refresh() }
 
+    private fun androidSettings() {
+        val pages = listOf("All settings" to Settings.ACTION_SETTINGS, "Wi-Fi and network" to Settings.ACTION_WIFI_SETTINGS, "Display" to Settings.ACTION_DISPLAY_SETTINGS,
+            "Sound" to Settings.ACTION_SOUND_SETTINGS, "Bluetooth and remotes" to Settings.ACTION_BLUETOOTH_SETTINGS, "Apps" to Settings.ACTION_APPLICATION_SETTINGS,
+            "Date and time" to Settings.ACTION_DATE_SETTINGS, "Storage" to Settings.ACTION_INTERNAL_STORAGE_SETTINGS)
+        android.app.AlertDialog.Builder(this).setTitle("Android settings").setItems(pages.map { it.first }.toTypedArray()) { _, i ->
+            try { startActivity(Intent(pages[i].second)) } catch (_: Exception) {
+                try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) { Toast.makeText(this, "This TV does not open its settings from apps.", Toast.LENGTH_LONG).show() }
+            }
+        }.show()
+    }
+
     private fun requestHome() {
         try {
             if (android.os.Build.VERSION.SDK_INT >= 29) startActivityForResult(getSystemService(android.app.role.RoleManager::class.java).createRequestRoleIntent(android.app.role.RoleManager.ROLE_HOME), 1)
@@ -150,6 +161,7 @@ class SettingsActivity : Activity() {
         if (Prefs.accountLink.isEmpty()) add(action("Sign in with My Lists", "Replaces the default catalogs with your own lists. Takes 30 seconds with your phone.") { signIn() })
         else { add(info("Signed in", Pairing.userOf(Prefs.accountLink))); add(action("Sign out", "Goes back to the default catalogs. Your other addons stay.") { signOut() }) }
         add(action("Switch profile", "Now: ${Profiles.active().name}${if (Profiles.active().kids) " (kids)" else ""}. Each profile keeps its own history.") { profileMenu() })
+        add(action("Android settings", "Wi-Fi, display, sound, Bluetooth, apps and the rest of the TV's own settings.") { androidSettings() })
         add(toggle("Advanced settings", "Shows more options in each group.", { Prefs.advanced }, { Prefs.advanced = it }))
         add(header("Playback"))
         add(toggle("Auto-pick the best source", "Play starts at once. Off shows the source list first.", { Prefs.autoPick }, { Prefs.autoPick = it }))
@@ -184,6 +196,10 @@ class SettingsActivity : Activity() {
         add(action("Turn on the Home button fallback", "For TVs that keep their own launcher as Home. Opens the system accessibility page if needed. It only sees which app came forward.") {
             if (HomeSetup.enableFallback(this@SettingsActivity)) refresh()
             else try { Toast.makeText(this@SettingsActivity, "Turn on My Lists TV Home button", Toast.LENGTH_LONG).show(); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
+        })
+        add(info("Notifications bell", if (Notices.allowed(this@SettingsActivity)) "On" else "Off"))
+        add(action("Turn on notifications", "Shows your TV's notifications in the bell at the top right of Home. Opens the system Notification access page.") {
+            try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Toast.makeText(this@SettingsActivity, "This TV has no such setting. Use the phone or computer steps.", Toast.LENGTH_LONG).show() }
         })
         add(action("Set up from a phone or computer", "Shows an address with the exact steps and commands for TVs that block the buttons above.") { setupPage() })
         add(header("About"))

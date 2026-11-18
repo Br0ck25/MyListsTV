@@ -39,7 +39,26 @@ class MainActivity : Activity() {
     private var ready = false
     private lateinit var bg: ImageView
     private lateinit var scrims: List<View>
+    private lateinit var bellBtn: TextView
     private var backdropUrl: String? = null
+
+    private fun updateBell() { val n = Notices.list(this).size; bellBtn.text = if (n > 0) "Notifications ($n)" else "Notifications" }
+
+    private fun showNotices() {
+        if (!Notices.allowed(this)) {
+            AlertDialog.Builder(this).setTitle("Notifications").setMessage("To show your TV's notifications here, give My Lists TV Notification access. They stay on this box and are not stored or sent anywhere.")
+                .setPositiveButton("Open the setting") { _, _ -> try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { android.widget.Toast.makeText(this, "This TV has no such setting. See Settings, Home screen, for the phone steps.", android.widget.Toast.LENGTH_LONG).show() } }
+                .setNegativeButton("Not now", null).show()
+            return
+        }
+        val l = Notices.list(this)
+        if (l.isEmpty()) { AlertDialog.Builder(this).setTitle("Notifications").setMessage("Nothing new.").setPositiveButton("OK", null).show(); return }
+        AlertDialog.Builder(this).setTitle("Notifications")
+            .setItems(l.map { "${it.app}: ${it.title}\n${it.text}".trim() }.toTypedArray()) { _, i ->
+                try { l[i].open?.send() } catch (_: Exception) {}
+                Notices.dismiss(l[i].key); updateBell()
+            }.setNeutralButton("Clear all") { _, _ -> Notices.dismissAll(); updateBell() }.setPositiveButton("Close", null).show()
+    }
     private var backdropJob: Runnable? = null
 
     /** Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every picture. A null leaves the current one. */
@@ -57,6 +76,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Notices.onChange = { handler.post { if (::bellBtn.isInitialized) updateBell() } }
         // Layers, back to front: the focused title's backdrop, two dark fades for readability, the screen, then the tab bar.
         val root = FrameLayout(this).apply { setBackgroundColor(Ui.BG) }
         bg = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
@@ -84,9 +104,10 @@ class MainActivity : Activity() {
             bar.addView(v)
         }
         bar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        bellBtn = Ui.button(this, "Notifications") { showNotices() }
         searchBtn = Ui.button(this, "Search") { startActivity(Intent(this, SearchActivity::class.java)) }
         settingsBtn = Ui.button(this, "Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }
-        bar.addView(searchBtn); bar.addView(settingsBtn)
+        bar.addView(bellBtn); bar.addView(searchBtn); bar.addView(settingsBtn)
         root.addView(bar, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
         setContentView(root)
         content.addView(Ui.text(this, "Loading…", 16f, Ui.DIM).apply { gravity = Gravity.CENTER }, FrameLayout.LayoutParams(-1, -1))
@@ -175,6 +196,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        if (::bellBtn.isInitialized) updateBell()
         if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; if (ready && current >= 0) select(current, force = true) }
         if (AddonStore.needsRefresh) { AddonStore.needsRefresh = false; AddonStore.load { select(current.coerceAtLeast(0), force = true) } }
         (screen as? BrowseScreen)?.refreshContinue()

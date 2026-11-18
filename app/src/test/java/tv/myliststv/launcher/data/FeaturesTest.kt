@@ -144,5 +144,8 @@ class HomeSetupTest {
     @Test fun fallbackIsOffUntilEnabled() {
         val c = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
         assertFalse(HomeSetup.fallbackOn(c))
+        assertFalse(tv.myliststv.launcher.Notices.allowed(c))
+        assertTrue(tv.myliststv.launcher.Notices.list(c).isEmpty())
+        Class.forName("tv.myliststv.launcher.NotificationsService")
     }
 }
