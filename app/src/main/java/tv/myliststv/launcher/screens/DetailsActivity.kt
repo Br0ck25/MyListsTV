@@ -105,8 +105,8 @@ class DetailsActivity : Activity() {
             val round = Ui.dp(c, 48)
             buttons.addView(play, LinearLayout.LayoutParams(-2, round))
             val saved = Library.has(meta.id)
-            buttons.addView(Ui.iconButton(c, if (saved) R.drawable.ic_bookmark else R.drawable.ic_add, if (saved) "Remove from My list" else "Add to My list") {
-                val now = Library.toggle(meta); Toast.makeText(c, if (now) "Added to My list" else "Removed from My list", Toast.LENGTH_SHORT).show(); buttonsSig = ""; render(); buttons.getChildAt(1)?.requestFocus()
+            buttons.addView(Ui.iconButton(c, if (saved) R.drawable.ic_bookmark else R.drawable.ic_add, if (saved) "Remove from Library" else "Add to Library") {
+                val now = Library.toggle(meta); Toast.makeText(c, if (now) "Added to Library" else "Removed from Library", Toast.LENGTH_SHORT).show(); buttonsSig = ""; render(); buttons.getChildAt(1)?.requestFocus()
             }.also { it.isSelected = saved }, LinearLayout.LayoutParams(round, round))
             buttons.addView(Ui.iconButton(c, R.drawable.ic_list, "Choose a source") { sourcesMain() }, LinearLayout.LayoutParams(round, round))
             meta.trailers.firstOrNull()?.let { id -> buttons.addView(Ui.iconButton(c, R.drawable.ic_trailer, "Trailer") { openTrailer(id) }, LinearLayout.LayoutParams(round, round)) }

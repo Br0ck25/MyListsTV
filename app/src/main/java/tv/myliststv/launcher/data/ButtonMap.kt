@@ -16,7 +16,7 @@ object ButtonMap {
     data class Rule(val key: Int, val press: String, val action: String)
 
     val PRESSES = listOf("single" to "Press", "double" to "Double press", "long" to "Hold")
-    val ACTIONS = listOf("home" to "Go to Home", "movies" to "Movies", "series" to "Series", "library" to "My list", "live" to "Live TV", "apps" to "Apps", "search" to "Search", "settings" to "Settings", "profiles" to "Switch profile")
+    val ACTIONS = listOf("home" to "Go to Home", "movies" to "Movies", "series" to "Series", "library" to "Library", "live" to "Live TV", "apps" to "Apps", "search" to "Search", "settings" to "Settings", "profiles" to "Switch profile")
     private val NOT_ALLOWED = setOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_CENTER,
         KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_HOME, KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN, KeyEvent.KEYCODE_VOLUME_MUTE, KeyEvent.KEYCODE_POWER)
 

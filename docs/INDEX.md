@@ -19,7 +19,7 @@ Start here, then `grep -n <name> docs/MAP.md` for the exact file and line. Rules
 | Catalogs, metadata, Cinemeta details | `data/Catalogs.kt`, `data/Json.kt`, `data/Urls.kt` |
 | All network and caching | `data/Http.kt`, `data/ImageLoader.kt` |
 | Sign in, backup, progress sync | `data/Pairing.kt`, `data/Backup.kt`, `data/Progress.kt`, `data/Secure.kt` |
-| My list (+ button, Library page) | `data/Library.kt`, `ui/LibraryScreen.kt`, `screens/DetailsActivity.kt` |
+| Library (+ button, Library page) | `data/Library.kt`, `ui/LibraryScreen.kt`, `screens/DetailsActivity.kt` |
 | Profiles, kids filter, watch history | `data/Profiles.kt`, `data/WatchStore.kt` |
 | Remote button mapper, Home button | `data/ButtonMap.kt`, `services/HomeButtonService.kt`, `data/HomeSetup.kt` |
 | Notifications bell | `services/NotificationsService.kt` (`Notices`), `MainActivity.kt` (`showNotices`) |

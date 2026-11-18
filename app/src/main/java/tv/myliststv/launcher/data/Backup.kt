@@ -56,7 +56,7 @@ object Backup {
         String(c.doFinal(b, 29, b.size - 29))
     } catch (_: Exception) { null }
 
-    /** What a backup holds: addons (with their keys), IPTV playlists, profiles, My list and settings. Not caches, not watch history. */
+    /** What a backup holds: addons (with their keys), IPTV playlists, profiles, Library and settings. Not caches, not watch history. */
     fun snapshot(): String = JSONObject().apply {
         put("v", 1)
         put("addons", JSONArray().also { a -> AddonStore.saved().forEach { a.put(JSONObject().put("url", it.url).put("on", it.enabled)) } })

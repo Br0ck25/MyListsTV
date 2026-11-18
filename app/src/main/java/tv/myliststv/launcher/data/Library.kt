@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import tv.myliststv.launcher.App
 
-/** "My list": titles the viewer saved with + on a details page. One list per profile, newest first, kept on the box and in backups. */
+/** "Library": titles the viewer saved with + on a details page. One list per profile, newest first, kept on the box and in backups. */
 object Library {
     private fun sp(profile: String = Profiles.activeId) = App.instance.getSharedPreferences("library_$profile", android.content.Context.MODE_PRIVATE)
 

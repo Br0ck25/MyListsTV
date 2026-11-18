@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import tv.myliststv.launcher.data.*
 
-/** "My list" as a page: every saved title in a grid, with All, Movies and Series filters. OK opens it, hold OK removes it. */
+/** "Library" as a page: every saved title in a grid, with All, Movies and Series filters. OK opens it, hold OK removes it. */
 class LibraryScreen(private val act: Activity, private val onMeta: (Meta) -> Unit) {
     private val title = Ui.text(act, "", 24f, Ui.TEXT, true)
     private val empty = Ui.text(act, "Nothing saved yet. Press + on a title's page to keep it here.", 14f, Ui.DIM, false, 3)
@@ -44,12 +44,12 @@ class LibraryScreen(private val act: Activity, private val onMeta: (Meta) -> Uni
     private fun show() {
         val all = Library.all().filter { Profiles.allows(it) }
         val items = all.filter { filter == null || it.type == filter }
-        title.text = "My list" + if (all.isNotEmpty()) "  ·  ${all.size}" else ""
+        title.text = "Library" + if (all.isNotEmpty()) "  ·  ${all.size}" else ""
         empty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
         pills.visibility = if (all.isEmpty()) View.GONE else View.VISIBLE
         val models = items.map { if (wide) CardModel(it.name, it.background ?: it.poster, null, payload = it) else CardModel(it.name, it.poster, payload = it) }
         grid.adapter = CardAdapter(if (wide) CardKind.WIDE else CardKind.POSTER, models, Prefs.lite(), { }, { m -> (m.payload as? Meta)?.let(onMeta) }, { m ->
-            (m.payload as? Meta)?.let { meta -> AlertDialog.Builder(act).setTitle(meta.name).setItems(arrayOf("Remove from My list")) { _, _ -> Library.remove(meta.id); show() }.show() }
+            (m.payload as? Meta)?.let { meta -> AlertDialog.Builder(act).setTitle(meta.name).setItems(arrayOf("Remove from Library")) { _, _ -> Library.remove(meta.id); show() }.show() }
         })
     }
 }

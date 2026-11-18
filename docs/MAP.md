@@ -72,7 +72,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     36   fun key(code: String, salt: ByteArray, sha256: Boolean)
     43   fun encrypt(plain: String, code: String)  - Blob = base64( format byte, 16-byte salt, 12-byte iv, AES-256-GCM ciphertext ).
     52   fun decrypt(blob: String, code: String)  - Null when the code is wrong or the blob was changed: GCM checks both.
-    60   fun snapshot()  - What a backup holds: addons (with their keys), IPTV playlists, profiles, My list and settings.
+    60   fun snapshot()  - What a backup holds: addons (with their keys), IPTV playlists, profiles, Library and settings.
     72   fun apply(c: Context, json: String)  - Returns a short summary of what was restored, or null if the data is not a backup.
     88   fun codeForThisBox()  - The code for this box, made on first use.
     90   fun upload(code: String, reply: (String)
@@ -164,8 +164,8 @@ Find a symbol with grep on this file, then read only that file around the line n
    188   fun youtubeIds(o: JSONObject)  - Trailers appear as trailerStreams [{ytId}] or trailers [{source, type}]; both carry a YouTube id.
    195   fun strings(a: JSONArray?)
 
-## data/Library.kt (38 lines) - "My list": titles the viewer saved with + on a details page.
-     8 object Library  - "My list": titles the viewer saved with + on a details page.
+## data/Library.kt (38 lines) - "Library": titles the viewer saved with + on a details page.
+     8 object Library  - "Library": titles the viewer saved with + on a details page.
      9   fun sp(profile: String = Profiles.activeId)
     11   fun read(profile: String)
     16   fun write(profile: String, list: List<Meta>)
@@ -588,8 +588,8 @@ Find a symbol with grep on this file, then read only that file around the line n
    182   fun changedAll()
    183   fun inserted(i: Int)
 
-## ui/LibraryScreen.kt (55 lines) - "My list" as a page: every saved title in a grid, with All, Movies and Series filters.
-    12 class LibraryScreen  - "My list" as a page: every saved title in a grid, with All, Movies and Series filters.
+## ui/LibraryScreen.kt (55 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
+    12 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     34   fun start()
     44   fun show()
 

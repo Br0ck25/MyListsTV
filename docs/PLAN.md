@@ -39,4 +39,4 @@ Not tested: anything on a real TV box (including the Keystore path and Watch Nex
 
 - Addons moved from a tab into Settings, Addons (AddonsActivity). Settings groups: Addons, General, Playback, Layout, Backup, Performance, Remote buttons, Launcher setup, About. Episode air dates come from the addon's `released` field (Cinemeta has it). Up-next countdown, per-show audio/subtitle memory, Test my sources, screensaver (BackdropDream). SmokeTest `worksWithoutTheMyListsAddon` proves Home, search and details work with only Cinemeta.
 
-- Library ("My list"): + on a details page saves a title; a Library tab shows them as a page (grid, All / Movies / Series). One list per profile, on the box and in backups (`data/Library.kt`, `ui/LibraryScreen.kt`). Not synced to the My Lists website yet: that needs an addon endpoint for the watchlist.
+- Library: + on a details page saves a title; a Library tab shows them as a page (grid, All / Movies / Series). One list per profile, on the box and in backups (`data/Library.kt`, `ui/LibraryScreen.kt`). Not synced to the My Lists website yet: that needs an addon endpoint for the watchlist.
