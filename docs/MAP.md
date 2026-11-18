@@ -18,7 +18,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     33   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
     39   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (333 lines) - The home screen.
+## MainActivity.kt (341 lines) - The home screen.
     31 class MainActivity  - The home screen.
     54   fun updateBell()
     56   fun updateProfile()
@@ -31,23 +31,24 @@ Find a symbol with grep on this file, then read only that file around the line n
    174   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
    191   fun tabView(t: String)
    197   fun select(i: Int, force: Boolean = false)
-   221   fun go(where: String)  - Where a mapped remote button sends the launcher.
-   231   fun openMeta(m: Meta)
-   235   fun resumeEntry(e: WatchStore.Entry)
-   240   fun launch(a: AppEntry)
-   249   fun appMenu(a: AppEntry)
-   274   fun onResume()
-   288   fun onNewIntent(intent: Intent)
-   302   fun onBackPressed()
-   310   fun dispatchKeyEvent(e: KeyEvent)  - Hidden side bar: Left from the left edge of a page opens it; Right, OK on a page or Back closes it.
-   321   fun isInContent(v: View)
-   322   fun openSide()
-   323   fun closeSide()
-   325   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   330   fun onDestroy()
-   332   fun onTrimMemory(level: Int)
+   221   fun reloadAddons()
+   224   fun go(where: String)  - Where a mapped remote button sends the launcher.
+   234   fun openMeta(m: Meta)
+   238   fun resumeEntry(e: WatchStore.Entry)
+   243   fun launch(a: AppEntry)
+   252   fun appMenu(a: AppEntry)
+   277   fun onResume()
+   296   fun onNewIntent(intent: Intent)
+   310   fun onBackPressed()
+   318   fun dispatchKeyEvent(e: KeyEvent)  - Hidden side bar: Left from the left edge of a page opens it; Right, OK on a page or Back closes it.
+   329   fun isInContent(v: View)
+   330   fun openSide()
+   331   fun closeSide()
+   333   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   338   fun onDestroy()
+   340   fun onTrimMemory(level: Int)
 
-## data/AddonStore.kt (104 lines) - The user's installed addons, kept as a list of manifest URLs.
+## data/AddonStore.kt (105 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
     13   class Saved
     21   fun init(c: Context)
@@ -55,15 +56,15 @@ Find a symbol with grep on this file, then read only that file around the line n
     28   fun forget(id: String)
     30   fun saved()
     40   fun write(list: List<Saved>)
-    47   fun normalize(input: String)  - Accepts stremio:// links and bare folders.
-    56   fun restore(list: List<Saved>)
-    59   fun reset()  - Back to just the default My Lists addon.
-    60   fun add(url: String)
-    61   fun remove(url: String)
-    62   fun setEnabled(url: String, on: Boolean)
-    63   fun move(url: String, delta: Int)
-    71   fun load(cb: (List<Addon>)  - Fetches every saved manifest (from cache first), then calls [cb] once on the main thread with those that loade
-    93   fun probe(url: String, cb: (Manifest?, String?)  - Fetches a manifest to check it before installing.
+    48   fun normalize(input: String)  - Accepts stremio:// links and bare folders.
+    57   fun restore(list: List<Saved>)
+    60   fun reset()  - Back to just the default My Lists addon.
+    61   fun add(url: String)
+    62   fun remove(url: String)
+    63   fun setEnabled(url: String, on: Boolean)
+    64   fun move(url: String, delta: Int)
+    72   fun load(cb: (List<Addon>)  - Fetches every saved manifest (from cache first), then calls [cb] once on the main thread with those that loade
+    94   fun probe(url: String, cb: (Manifest?, String?)  - Fetches a manifest to check it before installing.
 
 ## data/Alerts.kt (52 lines) - New-episode alerts for series in the Library, shown in the bell.
     12 object Alerts  - New-episode alerts for series in the Library, shown in the bell.
@@ -231,7 +232,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     70 class Addon  - One installed addon.
     81 class StreamItem  - One playable stream option from an addon.
 
-## data/Pairing.kt (79 lines) - Sign in with a code.
+## data/Pairing.kt (80 lines) - Sign in with a code.
     12 object Pairing  - Sign in with a code.
     14   class Start
     16   fun parseStart(text: String)
@@ -244,7 +245,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     57   fun userOf(manifestUrl: String)  - Who the link belongs to, for display: the user in /user/tv/manifest.json.
     60   fun targetOf(manifestUrl: String)  - What My Lists wants as the TV's id: the secret in /i/<secret>/tv/...
     62   fun signIn(manifestUrl: String)
-    72   fun signOut()  - Back to the default My Lists catalogs.
+    73   fun signOut()  - Back to the default My Lists catalogs.
 
 ## data/People.kt (18 lines) - Cast photos.
      7 object People  - Cast photos.
@@ -345,6 +346,17 @@ Find a symbol with grep on this file, then read only that file around the line n
     18   fun parse(text: String)
     30   fun at(segs: List<Seg>, posMs: Long)  - The segment [posMs] is inside, if any.
     33   fun load(videoId: String, cb: (List<Seg>)  - Cached for a week: these times almost never change.
+
+## data/SetupSync.kt (68 lines) - Keeps a signed-in profile's stream addons and IPTV playlists on its account, so a new TV only needs the sign-i
+    12 object SetupSync  - Keeps a signed-in profile's stream addons and IPTV playlists on its account, so a new TV only needs the sign-i
+    17   fun sp()
+    18   fun on()
+    19   fun post(o: JSONObject)
+    20   fun isShared(url: String)
+    23   fun changed()  - Called when the addon list or the playlists change by the viewer's own doing.
+    26   fun payload()  - What is sent: the profile's own addons (not the account link or the default) and its playlists.
+    30   fun push()
+    44   fun pull(changed: ()  - Brings the account's lists in.
 
 ## data/StreamRank.kt (86 lines) - Reading quality out of addon stream text, ranking, and the next-source choice for fallback.
      6 object StreamRank  - Reading quality out of addon stream text, ranking, and the next-source choice for fallback.

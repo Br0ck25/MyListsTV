@@ -71,7 +71,7 @@ class MainActivity : Activity() {
     private fun pickProfile() {
         val l = Profiles.all()
         AlertDialog.Builder(this).setTitle("Who is watching?").setItems(l.map { it.name + if (it.kids) " (kids)" else "" }.toTypedArray()) { _, i ->
-            Profiles.switchTo(this, l[i].id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { select(0, force = true) }; Library.pull { }
+            Profiles.switchTo(this, l[i].id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }
         }.show()
     }
 
@@ -216,6 +216,9 @@ class MainActivity : Activity() {
     }
 
     private var lastHome = 0L
+    private var lastSync = 0L
+
+    private fun reloadAddons() { AddonStore.needsRefresh = false; AddonStore.load { select(current.coerceAtLeast(0), force = true) } }
 
     /** Where a mapped remote button sends the launcher. */
     private fun go(where: String) {
@@ -276,7 +279,12 @@ class MainActivity : Activity() {
         if (Prefs.navStyle != navStyle) { recreate(); return }
         if (ready) {
             Alerts.check { if (::bellBadge.isInitialized) updateBell() }
-            Library.pull { if (current == 3) select(3, force = true) }
+            val t = System.currentTimeMillis()
+            if (t - lastSync > 5 * 60_000L) {
+                lastSync = t
+                Library.pull { if (current == 3) select(3, force = true) }
+                SetupSync.pull { reloadAddons() }
+            }
         }
         if (::bellBadge.isInitialized) updateBell()
         if (::profileName.isInitialized) updateProfile()

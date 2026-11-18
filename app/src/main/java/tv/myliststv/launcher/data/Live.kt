@@ -48,7 +48,7 @@ object LiveStore {
     fun forget(id: String) { sp.edit().remove(Profiles.key("list", id)).apply() }
     fun add(url: String) { if (url !in playlists()) restore(playlists() + url) }
     fun remove(url: String) { restore(playlists() - url) }
-    fun restore(list: List<String>) { sp.edit().putString(Profiles.key("list"), Secure.wrap(list.joinToString("\n"))).apply() }
+    fun restore(list: List<String>) { sp.edit().putString(Profiles.key("list"), Secure.wrap(list.joinToString("\n"))).apply(); SetupSync.changed() }
 
     /** Loads every playlist (cached first) and returns the channels once, grouped. [cb] runs on the main thread. */
     fun load(cb: (List<Channel>, List<String>) -> Unit) {

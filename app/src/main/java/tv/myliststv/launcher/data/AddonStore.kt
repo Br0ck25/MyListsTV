@@ -41,6 +41,7 @@ object AddonStore {
         val a = JSONArray()
         list.forEach { a.put(JSONObject().put("url", it.url).put("on", it.enabled)) }
         sp.edit().putString(listKey(), Secure.wrap(a.toString())).apply()
+        SetupSync.changed()
     }
 
     /** Accepts stremio:// links and bare folders. Returns null if it cannot be an addon URL. */

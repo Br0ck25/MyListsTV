@@ -255,3 +255,19 @@ class ProfileAccountsTest {
         Profiles.switchTo(ctx, main); Prefs.accountLink = ""; AddonStore.reset(); LiveStore.restore(emptyList()); Prefs.backupCode = ""; Library.remove("tt1")
     }
 }
+
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34], application = tv.myliststv.launcher.App::class)
+class SetupSyncTest {
+    @Test fun sendsOnlyTheProfilesOwnAddonsAndPlaylists() {
+        Prefs.accountLink = "https://mylistsaddon.com/i/TOKEN/tv/manifest.json"
+        AddonStore.reset(); AddonStore.remove(AddonStore.DEFAULT_URL)
+        AddonStore.add(Prefs.accountLink); AddonStore.add("https://torrentio.example/key/manifest.json"); LiveStore.restore(listOf("http://iptv.example/a.m3u"))
+        val p = SetupSync.payload()
+        val urls = (0 until p.getJSONArray("addons").length()).map { p.getJSONArray("addons").getJSONObject(it).getString("url") }
+        assertEquals("not this TV's pairing link, not the default", listOf("https://torrentio.example/key/manifest.json"), urls)
+        assertEquals("http://iptv.example/a.m3u", p.getJSONArray("playlists").getString(0))
+        assertFalse("the pairing secret never goes in the list", p.toString().contains("TOKEN"))
+        Prefs.accountLink = ""; AddonStore.reset(); LiveStore.restore(emptyList())
+    }
+}

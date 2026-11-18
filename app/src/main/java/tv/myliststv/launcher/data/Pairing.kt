@@ -64,6 +64,7 @@ object Pairing {
         AddonStore.add(manifestUrl)
         Prefs.accountLink = manifestUrl
         Library.pull { }
+        SetupSync.pull { AddonStore.needsRefresh = true }
         AddonStore.needsRefresh = true
         Backup.auto()
     }
