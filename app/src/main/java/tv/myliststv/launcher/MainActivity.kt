@@ -42,6 +42,9 @@ class MainActivity : Activity() {
     private lateinit var bg: ImageView
     private lateinit var scrims: List<View>
     private lateinit var bellBtn: View
+    private lateinit var side: LinearLayout
+    private val navStyle = Prefs.navStyle
+    private val sideWidth get() = Ui.dp(this, 200)
     private lateinit var bellBadge: TextView
     private var backdropUrl: String? = null
 
@@ -118,14 +121,19 @@ class MainActivity : Activity() {
             setPadding(Ui.dp(this@MainActivity, 40), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 40), Ui.dp(this@MainActivity, 8))
             background = Ui.scrimTop()
         }
+        side = Ui.vbox(this).apply {
+            val p = Ui.dp(this@MainActivity, 10); setPadding(p, Ui.dp(this@MainActivity, 72), p, p)
+            background = Ui.rounded(this@MainActivity, Ui.CARD, Ui.R_DIALOG)
+            visibility = if (navStyle == 1) View.VISIBLE else View.GONE
+        }
         tabs.forEachIndexed { i, t ->
             val v = tabView(t)
             v.setOnFocusChangeListener { view, f ->
                 (view as TextView).setTextColor(if (f) Ui.ON_FOCUS else if (i == current) Ui.TEXT else Ui.DIM)
             }
-            v.setOnClickListener { select(i, force = true) }
+            v.setOnClickListener { select(i, force = true); if (navStyle == 2) closeSide() }
             tabViews += v
-            bar.addView(v)
+            if (navStyle == 0) bar.addView(v) else side.addView(v, LinearLayout.LayoutParams(-1, -2))
         }
         bar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
         val icon = Ui.dp(this, 40)
@@ -139,6 +147,10 @@ class MainActivity : Activity() {
         bar.addView(profileChip(), LinearLayout.LayoutParams(-2, icon).apply { rightMargin = Ui.dp(this@MainActivity, 8) })
         bar.addView(bellBtn, LinearLayout.LayoutParams(icon, icon)); bar.addView(searchBtn, LinearLayout.LayoutParams(icon, icon)); bar.addView(settingsBtn, LinearLayout.LayoutParams(icon, icon))
         updateProfile()
+        if (navStyle != 0) {
+            root.addView(side, FrameLayout.LayoutParams(sideWidth, -1, Gravity.START).apply { setMargins(Ui.dp(this@MainActivity, 12), Ui.dp(this@MainActivity, 12), 0, Ui.dp(this@MainActivity, 12)) })
+            if (navStyle == 1) content.setPadding(sideWidth + Ui.dp(this, 16), Ui.dp(this, 64), 0, 0)
+        }
         root.addView(bar, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
         setContentView(root)
         // Moving along the tabs switches page; coming up from a page onto the tabs does not (OK does).
@@ -181,7 +193,7 @@ class MainActivity : Activity() {
         if (!ready) return
         if (i == current && !force) return
         current = i
-        tabViews.forEachIndexed { idx, v -> if (!v.isFocused) v.setTextColor(if (idx == i) Ui.TEXT else Ui.DIM) }
+        tabViews.forEachIndexed { idx, v -> v.isSelected = navStyle != 0 && idx == i; if (!v.isFocused) v.setTextColor(if (idx == i) Ui.TEXT else Ui.DIM) }
         (screen as? AddonsScreen)?.stop()
         content.removeAllViews()
         screen = null
@@ -243,6 +255,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        if (Prefs.navStyle != navStyle) { recreate(); return }
         if (::bellBadge.isInitialized) updateBell()
         if (::profileName.isInitialized) updateProfile()
         if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; if (ready && current >= 0) select(current, force = true) }
@@ -265,6 +278,22 @@ class MainActivity : Activity() {
         if (!inBar && current >= 0) tabViews[current.coerceIn(0, tabViews.size - 1)].requestFocus()
         // On the tab bar, Back does nothing: this is the home screen.
     }
+
+    /** Hidden side bar: Left from the left edge of a page opens it; Right, OK on a page or Back closes it. */
+    override fun dispatchKeyEvent(e: KeyEvent): Boolean {
+        if (navStyle == 2 && e.action == KeyEvent.ACTION_DOWN) {
+            val f = currentFocus
+            val open = side.visibility == View.VISIBLE
+            if (!open && e.keyCode == KeyEvent.KEYCODE_DPAD_LEFT && f != null && f !in tabViews && f.focusSearch(View.FOCUS_LEFT).let { it == null || !isInContent(it) }) { openSide(); return true }
+            if (open && e.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) { closeSide(); return true }
+            if (open && e.keyCode == KeyEvent.KEYCODE_BACK) { closeSide(); return true }
+        }
+        return super.dispatchKeyEvent(e)
+    }
+
+    private fun isInContent(v: View): Boolean { var p: android.view.ViewParent? = v.parent; while (p != null) { if (p === content) return true; p = p.parent }; return false }
+    private fun openSide() { side.visibility = View.VISIBLE; tabViews[current.coerceIn(0, tabViews.size - 1)].requestFocus() }
+    private fun closeSide() { side.visibility = View.GONE; content.requestFocus() }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_SEARCH) { startActivity(Intent(this, SearchActivity::class.java)); return true }

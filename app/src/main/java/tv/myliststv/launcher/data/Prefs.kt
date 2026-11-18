@@ -85,6 +85,11 @@ object Prefs {
     /** Sort key for a home row: its place in [homeOrder], else Continue watching first, apps last, catalogs between. */
     fun homeRank(title: String): Int = homeOrder.indexOf(title).let { if (it >= 0) it else when (title) { "Continue watching" -> -1; "Your apps" -> 10000; else -> 5000 } }
 
+    /** Where the pages (Home, Movies...) are listed: 0 across the top, 1 side bar, 2 side bar that stays hidden until Left is pressed. */
+    var navStyle: Int
+        get() = sp.getInt("navStyle", 0)
+        set(v) { sp.edit().putInt("navStyle", v).apply(); epoch++ }
+
     var showContinue: Boolean
         get() = sp.getBoolean("showCw", true)
         set(v) { sp.edit().putBoolean("showCw", v).apply(); epoch++ }

@@ -32,3 +32,5 @@ Not done yet: skip intro for movies (IntroDB has none; TheIntroDB covers few), Q
 Not tested: anything on a real TV box (including the Keystore path and Watch Next). First job after sideloading: confirm the home role (see below) and note per-device results here.
 
 - Progress sync (signed in only): part-watched titles go to My Lists `/api/nuvio-tv/progress` (website Continue Watching), finished ones to `/api/nuvio-tv/history`. Needs the addon branch `tv-backup-endpoint` deployed. Home screen setup (Settings): make Home app, Home-button fallback (HomeButtonService, accessibility, sees only which app came forward), phone/computer steps page. Later, optional: on-TV adb pairing over Wireless debugging (needs an adb library).
+
+- UI: Live TV is a programme guide (groups, time axis, channel rows). Navigation setting: top bar, side bar, or hidden side bar (Left opens). Details has icon buttons and episode cards. Hold OK on a Continue watching card to remove it.

@@ -177,6 +177,7 @@ class SettingsActivity : Activity() {
         add(header("Home"))
         add(toggle("Show cast, logos and episodes from Cinemeta", "Asks Cinemeta, the standard Stremio metadata addon, for details your catalog addon lacks.", { Prefs.extraDetails }, { Prefs.extraDetails = it }))
         add(toggle("Wide posters", "Show catalog items as wide pictures instead of tall posters.", { Prefs.horizontalPosters }, { Prefs.horizontalPosters = it }))
+        add(choice("Navigation", "Where Home, Movies, Series and the other pages are listed. Hidden opens with Left.", listOf(0, 1, 2), { Prefs.navStyle }, { Prefs.navStyle = it }, { listOf("Top bar", "Side bar", "Hidden side bar")[it] }))
         add(choice("Card size", "Posters, wide cards and app tiles grow or shrink together.", listOf(0, 1, 2), { Prefs.cardSize }, { Prefs.cardSize = it }, { listOf("Small", "Medium", "Large")[it] }))
         add(action("Arrange Home rows", "Move lists and the apps row up or down, or hide them from Home.") { arrangeRows() })
         add(action("Arrange apps row", "Reorder the apps on Home or hide some. The Apps tab still shows all of them.") { arrangeApps() })

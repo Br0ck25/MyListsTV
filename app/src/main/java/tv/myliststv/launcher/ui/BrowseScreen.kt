@@ -35,7 +35,13 @@ class BrowseScreen(
             is WatchStore.Entry -> onResume(p)
             is AppEntry -> onApp(p)
         }
-    }, { model -> (model.payload as? AppEntry)?.let(onAppMenu) })
+    }, { model ->
+        when (val p = model.payload) {
+            is AppEntry -> onAppMenu(p)
+            is WatchStore.Entry -> android.app.AlertDialog.Builder(c).setTitle(p.name)
+                .setItems(arrayOf("Remove from Continue watching")) { _, _ -> WatchStore.remove(p.metaId); refreshContinue() }.show()
+        }
+    })
     val view: View
 
     init {

@@ -68,4 +68,11 @@ class ShotTest {
             tv.myliststv.launcher.data.Prog(t - 20 * m, t + 25 * m, "Morning Show"), tv.myliststv.launcher.data.Prog(t + 25 * m, t + 85 * m, "The Big Match"), tv.myliststv.launcher.data.Prog(t + 85 * m, t + 140 * m, "Evening Report")) })
         screen.show(chs); settle(500); shot(a, "live")
     }
+
+    @Test fun sideBar() {
+        Assume.assumeTrue(dir != null)
+        tv.myliststv.launcher.data.Prefs.navStyle = 1
+        val m = Robolectric.buildActivity(MainActivity::class.java).setup().get(); settle(7000); lay(m); settle(300); lay(m); shot(m, "side")
+        tv.myliststv.launcher.data.Prefs.navStyle = 0
+    }
 }
