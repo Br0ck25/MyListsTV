@@ -25,7 +25,7 @@ import tv.myliststv.launcher.ui.*
  */
 class MainActivity : Activity() {
 
-    private val tabs = listOf("Home", "Movies", "Series", "Apps", "Addons")
+    private val tabs = listOf("Home", "Movies", "Series", "Live", "Apps", "Addons")
     private val tabViews = ArrayList<TextView>()
     private lateinit var content: FrameLayout
     private lateinit var searchBtn: TextView
@@ -87,8 +87,9 @@ class MainActivity : Activity() {
                     onMeta = ::openMeta, onResume = ::resumeEntry, onApp = ::launch, onAppMenu = ::appMenu)
                 screen = s; content.addView(s.view); s.start()
             }
-            3 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
-            4 -> { val s = AddonsScreen(this) { }; screen = s; content.addView(s.view); s.start() }
+            3 -> { val s = LiveScreen(this); screen = s; content.addView(s.view); s.start() }
+            4 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
+            5 -> { val s = AddonsScreen(this) { }; screen = s; content.addView(s.view); s.start() }
         }
     }
 

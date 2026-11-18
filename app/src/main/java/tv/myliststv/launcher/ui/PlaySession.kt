@@ -16,4 +16,7 @@ object PlaySession {
     /** True when the app chose the stream itself, so automatic fallback may replace it. */
     var autoSelected: Boolean = true
     var resumeMs: Long = 0
+    /** Set when watching live TV: the channel list and where we are in it. Null for movies and series. */
+    var live: List<tv.myliststv.launcher.data.Channel>? = null
+    var liveIndex: Int = 0
 }

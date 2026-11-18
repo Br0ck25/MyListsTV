@@ -19,13 +19,7 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
     private val col = Ui.vbox(act)
     val view: View = scroll
     private var focusIndex = 0
-    private val phone = tv.myliststv.launcher.data.PhoneServer { link, reply ->
-        val url = AddonStore.normalize(link)
-        if (url == null) reply("That does not look like an addon link.")
-        else AddonStore.probe(url) { m, err ->
-            if (m == null) reply(err ?: "Could not install it.") else { AddonStore.add(url); reply("Installed ${m.name}. Check your TV."); reload() }
-        }
-    }
+    private val phone = tv.myliststv.launcher.data.PhoneServer { link, reply -> tv.myliststv.launcher.data.Links.add(link) { reply(it); reload() } }
     fun stop() = phone.stop()
 
     init {
@@ -42,7 +36,7 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
         col.addView(Ui.text(c, "Addons", 24f, Ui.TEXT, true))
         col.addView(Ui.text(c, "Catalog addons fill your rows. Stream addons provide the video. Order matters: earlier stream addons win ties.", 13f, Ui.DIM, false, 2),
             Ui.matchWrap().apply { topMargin = Ui.dp(c, 4); bottomMargin = Ui.dp(c, 12) })
-        val add = row("Add an addon", phone.address()?.let { "From your phone, open $it and paste the link. Or press OK to type it here." } ?: "Press OK to type a link.", "OK") { askUrl() }
+        val add = row("Add an addon or playlist", phone.address()?.let { "From your phone, open $it and paste the link. Or press OK to type it here." } ?: "Press OK to type a link.", "OK") { askUrl() }
         col.addView(add, Ui.matchWrap().apply { bottomMargin = Ui.dp(c, 8) })
         val saved = AddonStore.saved()
         val loaded = AddonStore.loaded.associateBy { it.manifestUrl }
@@ -112,25 +106,17 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
 
     private fun askUrl() {
         val input = EditText(act).apply {
-            hint = "https://example.com/manifest.json"; inputType = InputType.TYPE_TEXT_VARIATION_URI or InputType.TYPE_CLASS_TEXT
+            hint = "Addon link or IPTV playlist link"; inputType = InputType.TYPE_TEXT_VARIATION_URI or InputType.TYPE_CLASS_TEXT
             setSingleLine(true); setTextColor(0xFF000000.toInt())
         }
-        AlertDialog.Builder(act).setTitle("Add an addon").setView(input)
+        AlertDialog.Builder(act).setTitle("Add an addon or playlist").setView(input)
             .setPositiveButton("Install") { _, _ -> install(input.text.toString()) }
             .setNegativeButton("Cancel", null).show()
     }
 
     private fun install(raw: String) {
-        val url = AddonStore.normalize(raw)
-        if (url == null) { Toast.makeText(act, "That does not look like an addon link.", Toast.LENGTH_LONG).show(); return }
-        Toast.makeText(act, "Checking the addon…", Toast.LENGTH_SHORT).show()
-        AddonStore.probe(url) { m, err ->
-            if (m == null) { Toast.makeText(act, err ?: "Could not install it.", Toast.LENGTH_LONG).show(); return@probe }
-            AddonStore.add(url)
-            Toast.makeText(act, "Installed ${m.name}", Toast.LENGTH_SHORT).show()
-            focusIndex = AddonStore.saved().size
-            reload()
-        }
+        Toast.makeText(act, "Checking\u2026", Toast.LENGTH_SHORT).show()
+        tv.myliststv.launcher.data.Links.add(raw) { msg -> Toast.makeText(act, msg, Toast.LENGTH_LONG).show(); focusIndex = AddonStore.saved().size; reload() }
     }
 
     private fun reload() { AddonStore.load { rebuild(); onChanged() } }

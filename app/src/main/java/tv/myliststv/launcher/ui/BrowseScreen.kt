@@ -4,8 +4,6 @@ import android.app.Activity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import tv.myliststv.launcher.AppEntry
 import tv.myliststv.launcher.AppRepository
 import tv.myliststv.launcher.data.*
@@ -30,16 +28,16 @@ class BrowseScreen(
     private val heroTitle = Ui.text(c, "", 26f, Ui.TEXT, true, 1)
     private val heroMeta = Ui.text(c, "", 14f, Ui.ACCENT, true, 1)
     private val heroDesc = Ui.text(c, "", 14f, 0xFFC3C8DC.toInt(), false, 3)
-    private val list = RecyclerView(c)
-    private val adapter = RowsAdapter()
+    private val list = RowsList(c, rows, lite, ::hero, { model ->
+        when (val p = model.payload) {
+            is Meta -> onMeta(p)
+            is WatchStore.Entry -> onResume(p)
+            is AppEntry -> onApp(p)
+        }
+    }, { model -> (model.payload as? AppEntry)?.let(onAppMenu) })
     val view: View
 
     init {
-        list.layoutManager = LinearLayoutManager(c)
-        list.adapter = adapter
-        list.itemAnimator = null
-        list.clipToPadding = false
-        list.setItemViewCacheSize(3)
         val root = Ui.vbox(c)
         val hero = Ui.vbox(c).apply { setPadding(Ui.dp(c, 48), Ui.dp(c, 10), Ui.dp(c, 120), Ui.dp(c, 6)) }
         hero.addView(heroTitle); hero.addView(heroMeta); hero.addView(heroDesc)
@@ -69,11 +67,11 @@ class BrowseScreen(
                     row.items = metas.take(30).map { CardModel(it.name, it.poster, payload = it) }
                     row.loaded = true
                 } else if (row.items.isEmpty()) row.loaded = true
-                adapter.notifyItemChanged(idx)
+                list.changed(idx)
                 if (heroTitle.text.isNullOrEmpty() && row.items.isNotEmpty()) hero(row.items.first())
             }
         }
-        adapter.notifyDataSetChanged()
+        list.changedAll()
         if (withApps && Prefs.showAppsRow) {
             Http.background {
                 val apps = AppRepository.load(act)
@@ -82,7 +80,7 @@ class BrowseScreen(
                         CardModel(a.label, null, payload = a, icon = try { act.packageManager.getActivityIcon(a.component) } catch (_: Exception) { null })
                     })
                     rows += row
-                    adapter.notifyItemInserted(rows.size - 1)
+                    list.inserted(rows.size - 1)
                 }
             }
         }
@@ -104,7 +102,7 @@ class BrowseScreen(
         val had = rows.isNotEmpty() && rows[0].title == "Continue watching"
         if (had) rows.removeAt(0)
         addContinue()
-        adapter.notifyDataSetChanged()
+        list.changedAll()
     }
 
     private fun hero(m: CardModel) {
@@ -120,27 +118,6 @@ class BrowseScreen(
                 heroDesc.text = "${(p.fraction * 100).toInt()}% watched"
             }
             is AppEntry -> { heroTitle.text = p.label; heroMeta.text = "Installed app"; heroDesc.text = "Press OK to open." }
-        }
-    }
-
-    private inner class RowsAdapter : RecyclerView.Adapter<RowsAdapter.H>() {
-        inner class H(val row: RowView) : RecyclerView.ViewHolder(row)
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = H(RowView(parent.context))
-        override fun getItemCount() = rows.size
-        override fun onBindViewHolder(h: H, position: Int) {
-            val m = rows[position]
-            val show = m.items.isNotEmpty()
-            h.row.visibility = if (show) View.VISIBLE else View.GONE
-            h.row.layoutParams = RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, if (show) RecyclerView.LayoutParams.WRAP_CONTENT else 0)
-            h.row.title.text = m.title
-            h.row.source.text = m.source ?: ""
-            h.row.strip.adapter = CardAdapter(m.kind, m.items, lite, ::hero, { model ->
-                when (val p = model.payload) {
-                    is Meta -> onMeta(p)
-                    is WatchStore.Entry -> onResume(p)
-                    is AppEntry -> onApp(p)
-                }
-            }, { model -> (model.payload as? AppEntry)?.let(onAppMenu) })
         }
     }
 }

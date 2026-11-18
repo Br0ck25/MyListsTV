@@ -82,6 +82,7 @@ class StreamsActivity : Activity() {
         val v = meta.videos.firstOrNull { it.id == videoId }
         val resume = WatchStore.forMeta(meta.id)
         PlaySession.apply {
+            live = null
             this.meta = this@StreamsActivity.meta; this.videoId = this@StreamsActivity.videoId
             season = v?.season ?: -1; episode = v?.episode ?: -1; episodeTitle = v?.title
             this.ranked = ranked; current = s; autoSelected = false

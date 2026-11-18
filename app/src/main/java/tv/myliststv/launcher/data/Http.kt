@@ -48,6 +48,8 @@ object Http {
 
     fun post(block: () -> Unit) { main.post(block) }
 
+    fun postDelayed(ms: Long, block: () -> Unit) { main.postDelayed(block, ms) }
+
     /** Blocking download for use from a background thread. Follows up to five redirects, including http to https. */
     fun fetchBlocking(url: String, connectMs: Int, readMs: Int, headers: Map<String, String> = emptyMap()): String {
         var current = url

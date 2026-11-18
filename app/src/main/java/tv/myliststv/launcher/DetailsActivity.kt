@@ -110,18 +110,27 @@ class DetailsActivity : Activity() {
     private fun playVideo(videoId: String) {
         if (!Prefs.autoPick) { openSources(videoId); return }
         val v = videoFor(videoId)
-        showBusy("Finding the best source…")
+        showBusy("Finding the best source\u2026")
         var started = false
-        val timeoutRunnable = Runnable { }
+        var latest: List<StreamItem> = emptyList()
+        var timerSet = false
+        // Do not wait for the slowest addon: pick 2.5 s after the first sources arrive, or when every addon has answered.
+        fun pick() {
+            if (started) return
+            started = true; dismissBusy()
+            val max = Prefs.effectiveMaxResolution()
+            val ranked = StreamRank.sorted(StreamRank.playable(latest, max), max)
+            if (ranked.isEmpty()) noStreams() else startPlayer(videoId, v, ranked, ranked.first(), auto = true)
+        }
         val s = StreamResolver.Session(
-            onUpdate = { list, _ -> if (!started && list.isNotEmpty()) busy?.setMessage("Found ${list.size} sources…") },
-            onDone = { list, _ ->
-                if (started) return@Session
-                started = true; dismissBusy()
-                val ranked = StreamRank.sorted(StreamRank.playable(list, Prefs.effectiveMaxResolution()), Prefs.effectiveMaxResolution())
-                if (ranked.isEmpty()) { noStreams(); return@Session }
-                startPlayer(videoId, v, ranked, ranked.first(), auto = true)
+            onUpdate = { list, _ ->
+                latest = list
+                if (!started && list.isNotEmpty()) {
+                    busy?.setMessage("Found ${list.size} sources\u2026")
+                    if (!timerSet) { timerSet = true; Http.postDelayed(2500) { pick() } }
+                }
             },
+            onDone = { list, _ -> latest = list; pick() },
         )
         session = s
         StreamResolver.resolve(meta.type, videoId, 9000, s)
@@ -134,6 +143,7 @@ class DetailsActivity : Activity() {
     private fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: StreamItem, auto: Boolean) {
         val resume = WatchStore.forMeta(meta.id)
         PlaySession.apply {
+            live = null
             this.meta = this@DetailsActivity.meta; this.videoId = videoId
             season = v?.season ?: -1; episode = v?.episode ?: -1; episodeTitle = v?.title
             this.ranked = ranked; current = pick; autoSelected = auto

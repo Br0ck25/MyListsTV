@@ -12,6 +12,7 @@ class App : Application() {
         ImageLoader.init(cacheDir, Prefs.memoryCacheBytes())
         AddonStore.init(this)
         WatchStore.init(this)
+        LiveStore.init(this)
     }
 
     override fun onTrimMemory(level: Int) {

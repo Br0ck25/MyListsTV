@@ -56,7 +56,7 @@ class PlayerActivity : Activity() {
     private lateinit var speedBtn: TextView
 
     private var fallback: SourceFallback? = null
-    private var current: StreamItem = PlaySession.current!!
+    private lateinit var current: StreamItem
     private var autoSelected = PlaySession.autoSelected
     private var gotFirstFrame = false
     private var triedRefresh = HashSet<String>()
@@ -67,7 +67,7 @@ class PlayerActivity : Activity() {
     private var resolveSession: StreamResolver.Session? = null
     private var speedIdx = 1
     private val speeds = floatArrayOf(0.75f, 1f, 1.25f, 1.5f, 2f)
-    private var seekAccum = 0L
+    private val live get() = PlaySession.live != null
 
     private val hideControls = Runnable { if (!panelOpen() && player.isPlaying && !controls.hasFocus()) bottom.visibility = View.GONE }
     private val startupTimeout = Runnable { onStartupTimeout() }
@@ -75,7 +75,9 @@ class PlayerActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (PlaySession.current == null || PlaySession.meta == null) { finish(); return }
+        // After the app was restarted by Android there is no session to play: go back instead of crashing.
+        current = PlaySession.current ?: run { finish(); return }
+        if (PlaySession.meta == null) { finish(); return }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         buildUi()
         buildPlayer()
@@ -116,9 +118,8 @@ class PlayerActivity : Activity() {
         if (PlaySession.meta!!.type == "series") controls.addView(Ui.button(c, "Next episode") { playNextEpisode(manual = true) })
         controls.addView(Ui.button(c, "Subtitles") { openTrackPanel(C.TRACK_TYPE_TEXT) })
         controls.addView(Ui.button(c, "Audio") { openTrackPanel(C.TRACK_TYPE_AUDIO) })
-        controls.addView(Ui.button(c, "Sources") { openSources() })
         speedBtn = Ui.button(c, "Speed 1x") { openSpeed() }
-        controls.addView(speedBtn)
+        if (!live) { controls.addView(Ui.button(c, "Sources") { openSources() }); controls.addView(speedBtn) }
         controls.addView(Ui.button(c, "Info") { openInfo() })
         bottom.addView(controls, Ui.wrap().apply { topMargin = Ui.dp(c, 10) })
         root.addView(bottom, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
@@ -167,6 +168,7 @@ class PlayerActivity : Activity() {
     private fun refreshTitle() {
         val m = PlaySession.meta!!
         titleText.text = m.name
+        if (live) { titleText.text = "CH ${PlaySession.liveIndex + 1} \u00b7 ${m.name}"; subText.text = "${current.title}   \u00b7   Up and down change channel"; return }
         val parts = ArrayList<String>()
         if (PlaySession.season >= 0) parts += "S${PlaySession.season} · E${PlaySession.episode}" + (PlaySession.episodeTitle?.let { "  $it" } ?: "")
         if (current.resolution > 0) parts += "${current.resolution}p"
@@ -298,7 +300,19 @@ class PlayerActivity : Activity() {
         StreamResolver.resolve(PlaySession.meta!!.type, PlaySession.videoId, 8000, s)
     }
 
+    /** Live TV: switch to the next or previous channel in the playlist. */
+    private fun zap(dir: Int) {
+        val list = PlaySession.live ?: return
+        val i = (PlaySession.liveIndex + dir + list.size) % list.size
+        val c = list[i]
+        PlaySession.liveIndex = i
+        PlaySession.meta = Meta("live", "tv", c.name)
+        autoSelected = false
+        startStream(StreamItem("IPTV", "iptv", c.url, c.name, c.group, null, null, 0, 0, false, false, null), 0, "Tuning ${c.name}\u2026")
+    }
+
     private fun onEnded() {
+        if (live) { finish(); return }
         saveProgress(force = true, ended = true)
         if (PlaySession.meta!!.type == "series" && Prefs.autoplayNext) playNextEpisode(manual = false) else finish()
     }
@@ -500,7 +514,7 @@ class PlayerActivity : Activity() {
 
     private fun saveProgress(force: Boolean, ended: Boolean = false) {
         val now = System.currentTimeMillis()
-        if (!force && now - lastSave < 15_000) return
+        if (live || (!force && now - lastSave < 15_000)) return
         if (!gotFirstFrame && !ended) return
         val dur = player.duration
         if (dur <= 0) return
@@ -516,7 +530,9 @@ class PlayerActivity : Activity() {
     override fun dispatchKeyEvent(e: KeyEvent): Boolean {
         if (e.action == KeyEvent.ACTION_DOWN) {
             when (e.keyCode) {
-                KeyEvent.KEYCODE_MENU -> { if (!errorOpen()) openSources(); return true }
+                KeyEvent.KEYCODE_MENU -> { if (!errorOpen() && !live) openSources(); return true }
+                KeyEvent.KEYCODE_CHANNEL_UP -> { if (live) zap(1); return true }
+                KeyEvent.KEYCODE_CHANNEL_DOWN -> { if (live) zap(-1); return true }
                 KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> { togglePlay(); return true }
                 KeyEvent.KEYCODE_MEDIA_PLAY -> { player.play(); return true }
                 KeyEvent.KEYCODE_MEDIA_PAUSE -> { player.pause(); return true }
@@ -528,11 +544,11 @@ class PlayerActivity : Activity() {
             if (!inControls) {
                 showControls()
                 when (e.keyCode) {
-                    KeyEvent.KEYCODE_DPAD_LEFT -> { seekStep(e, -1); return true }
-                    KeyEvent.KEYCODE_DPAD_RIGHT -> { seekStep(e, 1); return true }
+                    KeyEvent.KEYCODE_DPAD_LEFT -> { if (!live) seekStep(e, -1); return true }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> { if (!live) seekStep(e, 1); return true }
                     KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> { togglePlay(); return true }
-                    KeyEvent.KEYCODE_DPAD_DOWN -> { bottom.visibility = View.VISIBLE; controls.getChildAt(0)?.requestFocus(); return true }
-                    KeyEvent.KEYCODE_DPAD_UP -> return true
+                    KeyEvent.KEYCODE_DPAD_DOWN -> { if (live) zap(-1) else { bottom.visibility = View.VISIBLE; controls.getChildAt(0)?.requestFocus() }; return true }
+                    KeyEvent.KEYCODE_DPAD_UP -> { if (live) zap(1); return true }
                 }
             } else if (e.keyCode == KeyEvent.KEYCODE_DPAD_UP) { root.requestFocus(); scheduleHide(); return true }
         }

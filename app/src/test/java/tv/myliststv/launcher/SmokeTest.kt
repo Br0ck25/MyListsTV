@@ -49,8 +49,8 @@ class SmokeTest {
     @Test fun everyTabBuilds() {
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
         settle(3000)
-        val tabs = views(a.window.decorView).filterIsInstance<android.widget.TextView>().filter { it.text.toString() in listOf("Movies", "Series", "Apps", "Addons") }
-        assertEquals(4, tabs.size)
+        val tabs = views(a.window.decorView).filterIsInstance<android.widget.TextView>().filter { it.text.toString() in listOf("Movies", "Series", "Live", "Apps", "Addons") }
+        assertEquals(5, tabs.size)
         tabs.forEach { it.performClick(); settle(1500) }
     }
 

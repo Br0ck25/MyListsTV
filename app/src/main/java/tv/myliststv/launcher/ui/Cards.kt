@@ -147,3 +147,34 @@ class RowView(c: Context) : LinearLayout(c) {
         layoutParams = RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT)
     }
 }
+
+/** A vertical list of [RowView]s over [rows]. Used by Home, Movies, Series and Live so the row code exists once. */
+class RowsList(
+    c: Context,
+    private val rows: List<RowModel>,
+    private val lite: Boolean,
+    private val onFocus: (CardModel) -> Unit,
+    private val onClick: (CardModel) -> Unit,
+    private val onLong: ((CardModel) -> Unit)? = null,
+) : RecyclerView(c) {
+    init { layoutManager = LinearLayoutManager(c); itemAnimator = null; clipToPadding = false; setItemViewCacheSize(3); adapter = A() }
+
+    fun changed(i: Int) = adapter!!.notifyItemChanged(i)
+    fun changedAll() = adapter!!.notifyDataSetChanged()
+    fun inserted(i: Int) = adapter!!.notifyItemInserted(i)
+
+    private inner class A : Adapter<A.H>() {
+        inner class H(val row: RowView) : ViewHolder(row)
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = H(RowView(parent.context))
+        override fun getItemCount() = rows.size
+        override fun onBindViewHolder(h: H, position: Int) {
+            val m = rows[position]
+            val show = m.items.isNotEmpty()
+            h.row.visibility = if (show) VISIBLE else GONE
+            h.row.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, if (show) LayoutParams.WRAP_CONTENT else 0)
+            h.row.title.text = m.title
+            h.row.source.text = m.source ?: ""
+            h.row.strip.adapter = CardAdapter(m.kind, m.items, lite, onFocus, onClick, onLong)
+        }
+    }
+}
