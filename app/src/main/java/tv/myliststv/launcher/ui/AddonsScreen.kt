@@ -19,6 +19,14 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
     private val col = Ui.vbox(act)
     val view: View = scroll
     private var focusIndex = 0
+    private val phone = tv.myliststv.launcher.data.PhoneServer { link, reply ->
+        val url = AddonStore.normalize(link)
+        if (url == null) reply("That does not look like an addon link.")
+        else AddonStore.probe(url) { m, err ->
+            if (m == null) reply(err ?: "Could not install it.") else { AddonStore.add(url); reply("Installed ${m.name}. Check your TV."); reload() }
+        }
+    }
+    fun stop() = phone.stop()
 
     init {
         scroll.isFillViewport = true
@@ -26,7 +34,7 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
         scroll.addView(col)
     }
 
-    fun start() = rebuild()
+    fun start() { phone.start(); rebuild() }
 
     private fun rebuild() {
         col.removeAllViews()
@@ -34,7 +42,7 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
         col.addView(Ui.text(c, "Addons", 24f, Ui.TEXT, true))
         col.addView(Ui.text(c, "Catalog addons fill your rows. Stream addons provide the video. Order matters: earlier stream addons win ties.", 13f, Ui.DIM, false, 2),
             Ui.matchWrap().apply { topMargin = Ui.dp(c, 4); bottomMargin = Ui.dp(c, 12) })
-        val add = row("Add an addon", "Paste a manifest link. Works with Stremio addon links.", "OK") { askUrl() }
+        val add = row("Add an addon", phone.address()?.let { "From your phone, open $it and paste the link. Or press OK to type it here." } ?: "Press OK to type a link.", "OK") { askUrl() }
         col.addView(add, Ui.matchWrap().apply { bottomMargin = Ui.dp(c, 8) })
         val saved = AddonStore.saved()
         val loaded = AddonStore.loaded.associateBy { it.manifestUrl }

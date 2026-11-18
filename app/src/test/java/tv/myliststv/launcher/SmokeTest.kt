@@ -21,6 +21,12 @@ import tv.myliststv.launcher.ui.PlaySession
 @Config(sdk = [34], application = App::class)
 class SmokeTest {
 
+    /** Tests that read the live My Lists server are skipped, not failed, when it cannot be reached (for example from CI). */
+    private fun assumeAddonReachable() {
+        val ok = try { Http.fetchBlocking(AddonStore.DEFAULT_URL, 6000, 8000).contains("catalogs") } catch (_: Throwable) { false }
+        org.junit.Assume.assumeTrue("My Lists default addon is not reachable", ok)
+    }
+
     private fun views(v: View, out: MutableList<View> = ArrayList()): List<View> {
         out += v; if (v is ViewGroup) for (i in 0 until v.childCount) views(v.getChildAt(i), out); return out
     }
@@ -32,6 +38,7 @@ class SmokeTest {
     }
 
     @Test fun homeLoadsDefaultRowsFromMyLists() {
+        assumeAddonReachable()
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
         settle()
         val rv = views(a.window.decorView).filterIsInstance<RecyclerView>()
@@ -60,6 +67,7 @@ class SmokeTest {
     }
 
     @Test fun searchFindsTitlesFromTheLiveAddon() {
+        assumeAddonReachable()
         Robolectric.buildActivity(MainActivity::class.java).setup(); settle(3000)
         var found: List<Meta>? = null
         Catalogs.search("dune") { found = it }

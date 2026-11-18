@@ -78,6 +78,7 @@ class MainActivity : Activity() {
         if (i == current && !force) return
         current = i
         tabViews.forEachIndexed { idx, v -> if (!v.isFocused) v.setTextColor(if (idx == i) Ui.TEXT else Ui.DIM) }
+        (screen as? AddonsScreen)?.stop()
         content.removeAllViews()
         screen = null
         when (i) {
@@ -144,6 +145,8 @@ class MainActivity : Activity() {
         if (keyCode == KeyEvent.KEYCODE_SEARCH) { startActivity(Intent(this, SearchActivity::class.java)); return true }
         return super.onKeyDown(keyCode, event)
     }
+
+    override fun onDestroy() { (screen as? AddonsScreen)?.stop(); super.onDestroy() }
 
     override fun onTrimMemory(level: Int) { super.onTrimMemory(level); if (level >= TRIM_MEMORY_UI_HIDDEN) ImageLoader.trim() }
 }
