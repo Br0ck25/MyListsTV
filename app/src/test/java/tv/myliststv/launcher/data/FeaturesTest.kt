@@ -149,3 +149,15 @@ class HomeSetupTest {
         Class.forName("tv.myliststv.launcher.NotificationsService")
     }
 }
+
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+class ButtonMapTest {
+    @Test fun rulesRoundTripAndReplaceTheSameButtonAndPress() {
+        Prefs.init(androidx.test.core.app.ApplicationProvider.getApplicationContext())
+        Prefs.buttonMap = ""
+        ButtonMap.add(ButtonMap.Rule(183, "single", "live")); ButtonMap.add(ButtonMap.Rule(183, "double", "app:com.x")); ButtonMap.add(ButtonMap.Rule(183, "single", "search"))
+        assertEquals(listOf("double" to "app:com.x", "single" to "search").toSet(), ButtonMap.rules().map { it.press to it.action }.toSet())
+        assertTrue(ButtonMap.allowed(183)); assertFalse(ButtonMap.allowed(android.view.KeyEvent.KEYCODE_BACK)); assertFalse(ButtonMap.allowed(android.view.KeyEvent.KEYCODE_HOME))
+        Prefs.buttonMap = ""
+    }
+}

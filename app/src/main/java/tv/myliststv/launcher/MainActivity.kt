@@ -160,7 +160,7 @@ class MainActivity : Activity() {
         }
         content.addView(Ui.text(this, "Loading…", 16f, Ui.DIM).apply { gravity = Gravity.CENTER }, FrameLayout.LayoutParams(-1, -1))
         val safe = CrashGuard.safeMode(this)
-        val start = { ready = true; val t = if (safe) 4 else 0; select(t, force = true); tabViews[t].requestFocus(); afterStart(safe) }
+        val start = { ready = true; val t = if (safe) 4 else 0; select(t, force = true); tabViews[t].requestFocus(); afterStart(safe); intent.getStringExtra("go")?.let { go(it) } }
         if (safe) start() else AddonStore.load { start() }
         handler.postDelayed({ CrashGuard.clear(this) }, 30_000)
     }
@@ -207,6 +207,19 @@ class MainActivity : Activity() {
             3 -> { val s = LiveScreen(this); screen = s; content.addView(s.view); s.start() }
             4 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
             5 -> { val s = AddonsScreen(this) { }; screen = s; content.addView(s.view); s.start() }
+        }
+    }
+
+    private var lastHome = 0L
+
+    /** Where a mapped remote button sends the launcher. */
+    private fun go(where: String) {
+        val tab = listOf("home", "movies", "series", "live", "apps").indexOf(where)
+        when {
+            tab >= 0 -> { select(tab, force = true); tabViews[tab].requestFocus() }
+            where == "search" -> startActivity(Intent(this, SearchActivity::class.java))
+            where == "settings" -> startActivity(Intent(this, SettingsActivity::class.java))
+            where == "profiles" -> pickProfile()
         }
     }
 
@@ -266,9 +279,14 @@ class MainActivity : Activity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.hasCategory(Intent.CATEGORY_HOME)) {
+            // Home goes to the Home page; pressing it twice quickly asks who is watching.
+            val t = System.currentTimeMillis()
+            if (t - lastHome < 450) { lastHome = 0; pickProfile(); return }
+            lastHome = t
             if (current != 0) select(0, force = true)
             tabViews[0].requestFocus()
         }
+        intent.getStringExtra("go")?.let { go(it) }
     }
 
     @Deprecated("Back moves to the tabs; the launcher itself never closes.")

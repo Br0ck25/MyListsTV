@@ -48,6 +48,31 @@ class SettingsActivity : Activity() {
         }.show()
     }
 
+    /** Press a button, say how it is pressed, say what it does. */
+    private fun addButton() {
+        val d = android.app.AlertDialog.Builder(this).setTitle("Press a button on your remote").setMessage("Press the button you want to use.").setNegativeButton("Cancel", null).create()
+        d.setOnKeyListener { _, code, ev ->
+            if (ev.action != KeyEvent.ACTION_DOWN || code == KeyEvent.KEYCODE_BACK) return@setOnKeyListener false
+            if (!ButtonMap.allowed(code)) { Toast.makeText(this, "That button cannot be changed. Try another.", Toast.LENGTH_SHORT).show(); return@setOnKeyListener true }
+            d.dismiss(); pickPress(code); true
+        }
+        d.show()
+    }
+
+    private fun pickPress(key: Int) = android.app.AlertDialog.Builder(this).setTitle("${ButtonMap.keyName(key)}: how is it pressed?")
+        .setItems(ButtonMap.PRESSES.map { it.second }.toTypedArray()) { _, i -> pickAction(key, ButtonMap.PRESSES[i].first) }.show()
+
+    private fun pickAction(key: Int, press: String) {
+        val names = ButtonMap.ACTIONS.map { it.second } + "Open an app\u2026"
+        android.app.AlertDialog.Builder(this).setTitle("What should it do?").setItems(names.toTypedArray()) { _, i ->
+            if (i < ButtonMap.ACTIONS.size) { ButtonMap.add(ButtonMap.Rule(key, press, ButtonMap.ACTIONS[i].first)); refresh() }
+            else Http.background {
+                val apps = AppRepository.load(this)
+                Http.post { android.app.AlertDialog.Builder(this).setTitle("Open which app?").setItems(apps.map { it.label }.toTypedArray()) { _, k -> ButtonMap.add(ButtonMap.Rule(key, press, "app:" + apps[k].component.packageName)); refresh() }.show() }
+            }
+        }.show()
+    }
+
     private fun requestHome() {
         try {
             if (android.os.Build.VERSION.SDK_INT >= 29) startActivityForResult(getSystemService(android.app.role.RoleManager::class.java).createRequestRoleIntent(android.app.role.RoleManager.ROLE_HOME), 1)
@@ -190,6 +215,11 @@ class SettingsActivity : Activity() {
         add(header("Performance"))
         add(choice("Lite mode", "Less motion and memory. Auto turns on for weak boxes.", listOf("Auto", "On", "Off"), { Prefs.liteMode }, { Prefs.liteMode = it }))
         add(action("Clear caches", "Frees stored images and catalog data (${Http.cacheBytes() / 1_048_576} MB now).") { Http.clear(); ImageLoader.clearDisk(); Toast.makeText(this@SettingsActivity, "Caches cleared", Toast.LENGTH_SHORT).show() })
+        add(header("Remote buttons"))
+        add(info("Button mapper", if (HomeSetup.fallbackOn(this@SettingsActivity)) "On" else "Needs the Home button fallback (Home screen group)"))
+        ButtonMap.rules().forEach { r -> add(action("${ButtonMap.keyName(r.key)}: ${ButtonMap.pressName(r.press)}", "${ButtonMap.actionName(this@SettingsActivity, r.action)}. OK removes it.") {
+            android.app.AlertDialog.Builder(this@SettingsActivity).setTitle("Remove this button setting?").setPositiveButton("Remove") { _, _ -> ButtonMap.save(ButtonMap.rules().filterNot { it == r }); refresh() }.setNegativeButton("Keep", null).show() }) }
+        add(action("Add a button", "Give a remote button (colour keys, app keys) a job on a press, double press or hold. Home, Back, arrows, OK, volume and power cannot be changed.") { addButton() })
         add(header("Home screen"))
         add(info("Home app", if (HomeSetup.isHome(this@SettingsActivity)) "This launcher" else "Another launcher"))
         add(action("Make this my Home app", "Opens the system choice. Pick My Lists TV and choose Always.") { requestHome() })

@@ -90,6 +90,11 @@ object Prefs {
         get() = sp.getInt("navStyle", 0)
         set(v) { sp.edit().putInt("navStyle", v).apply(); epoch++ }
 
+    /** Remote button rules, see ButtonMap. */
+    var buttonMap: String
+        get() = sp.getString("buttonMap", "") ?: ""
+        set(v) = sp.edit().putString("buttonMap", v).apply()
+
     var showContinue: Boolean
         get() = sp.getBoolean("showCw", true)
         set(v) { sp.edit().putBoolean("showCw", v).apply(); epoch++ }
