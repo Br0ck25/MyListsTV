@@ -389,7 +389,7 @@ class PlayerActivity : Activity() {
         }
     }
 
-    private fun chip(label: String, onClick: () -> Unit): TextView = Ui.button(this, label, onClick).apply { textSize = 12f; setPadding(Ui.dp(this@PlayerActivity, 12), Ui.dp(this@PlayerActivity, 6), Ui.dp(this@PlayerActivity, 12), Ui.dp(this@PlayerActivity, 6)) }
+    private fun chip(label: String, onClick: () -> Unit): TextView = Ui.button(this, label, onClick).apply { Ui.size(this, 12f); setPadding(Ui.dp(this@PlayerActivity, 12), Ui.dp(this@PlayerActivity, 6), Ui.dp(this@PlayerActivity, 12), Ui.dp(this@PlayerActivity, 6)) }
 
     private fun reloadSources() {
         bannerShow("Looking for sources…")

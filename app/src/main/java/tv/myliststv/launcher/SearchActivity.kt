@@ -22,7 +22,7 @@ class SearchActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val box = EditText(this).apply {
-            hint = "Search movies and series"; setHintTextColor(Ui.DIM); setTextColor(Ui.TEXT); textSize = 20f
+            hint = "Search movies and series"; setHintTextColor(Ui.DIM); setTextColor(Ui.TEXT); Ui.size(this, 20f)
             inputType = InputType.TYPE_CLASS_TEXT; setSingleLine(true)
         }
         val status = Ui.text(this, "Type at least 2 letters.", 13f, Ui.DIM)

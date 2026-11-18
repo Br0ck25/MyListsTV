@@ -24,8 +24,14 @@ object Ui {
     const val GOOD = 0xFF59E0AE.toInt()
     const val BAD = 0xFFFF8A8E.toInt()
 
-    fun dp(c: Context, v: Int): Int = (v * c.resources.displayMetrics.density + 0.5f).toInt()
-    fun dpf(c: Context, v: Float): Float = v * c.resources.displayMetrics.density
+    /**
+     * Every size is designed for a 960-unit-wide screen and scaled by the real screen width, because TV boxes report
+     * very different densities for the same 1080p picture. Text uses the same scale (see [size]).
+     */
+    fun scale(c: Context): Float { val m = c.resources.displayMetrics; return maxOf(m.widthPixels, m.heightPixels) / 960f }
+    fun dp(c: Context, v: Int): Int = (v * scale(c) + 0.5f).toInt()
+    fun dpf(c: Context, v: Float): Float = v * scale(c)
+    fun size(t: TextView, sp: Float) = t.setTextSize(TypedValue.COMPLEX_UNIT_PX, sp * scale(t.context))
 
     /** White ring and soft fill while focused, nothing otherwise. */
     fun focusBg(c: Context, radiusDp: Int = 10, fill: Int = 0x22FFFFFF): Drawable {
@@ -49,7 +55,7 @@ object Ui {
 
     fun text(c: Context, s: CharSequence?, sp: Float, color: Int = TEXT, bold: Boolean = false, maxLines: Int = 0): TextView =
         TextView(c).apply {
-            text = s; setTextSize(TypedValue.COMPLEX_UNIT_SP, sp); setTextColor(color)
+            text = s; size(this, sp); setTextColor(color)
             if (bold) typeface = Typeface.DEFAULT_BOLD
             if (maxLines > 0) { this.maxLines = maxLines; ellipsize = android.text.TextUtils.TruncateAt.END }
             includeFontPadding = false
@@ -58,7 +64,7 @@ object Ui {
     /** A focusable pill. Dark text on a white pill while focused. */
     fun button(c: Context, label: String, onClick: () -> Unit): TextView =
         TextView(c).apply {
-            text = label; setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f); setTextColor(TEXT); typeface = Typeface.DEFAULT_BOLD
+            text = label; size(this, 15f); setTextColor(TEXT); typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             setPadding(dp(c, 18), dp(c, 9), dp(c, 18), dp(c, 9))
             background = pillBg(c); isFocusable = true; isClickable = true

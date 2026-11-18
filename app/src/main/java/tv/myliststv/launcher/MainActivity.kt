@@ -68,7 +68,7 @@ class MainActivity : Activity() {
     }
 
     private fun tabView(t: String) = TextView(this).apply {
-        text = t; textSize = 15f; setTextColor(Ui.DIM); typeface = android.graphics.Typeface.DEFAULT_BOLD
+        text = t; Ui.size(this, 15f); setTextColor(Ui.DIM); typeface = android.graphics.Typeface.DEFAULT_BOLD
         setPadding(Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 8), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 8))
         background = Ui.pillBg(this@MainActivity, 0x00000000); isFocusable = true; isClickable = true
     }
