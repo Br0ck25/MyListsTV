@@ -5,8 +5,11 @@ import android.content.ComponentCallbacks2
 import tv.myliststv.launcher.data.*
 
 class App : Application() {
+    companion object { lateinit var instance: App; private set }
+
     override fun onCreate() {
         super.onCreate()
+        instance = this
         Prefs.init(this)
         CrashGuard.install(this)
         Http.init(this)

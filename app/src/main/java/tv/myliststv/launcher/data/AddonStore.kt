@@ -15,6 +15,8 @@ object AddonStore {
     private lateinit var sp: SharedPreferences
     @Volatile var loaded: List<Addon> = emptyList()
         private set
+    /** Set when addons changed behind the home screen's back (a restored backup), so it reloads when it comes back. */
+    @Volatile var needsRefresh = false
 
     fun init(c: Context) {
         sp = c.getSharedPreferences("addons", Context.MODE_PRIVATE)
@@ -45,6 +47,8 @@ object AddonStore {
         if (!s.endsWith("/manifest.json")) s = s.trimEnd('/') + "/manifest.json"
         return s
     }
+
+    fun restore(list: List<Saved>) { if (list.isNotEmpty()) write(list) }
 
     /** Back to just the default My Lists addon. */
     fun reset() { write(listOf(Saved(DEFAULT_URL, true))) }

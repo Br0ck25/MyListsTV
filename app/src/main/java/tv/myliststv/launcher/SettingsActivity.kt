@@ -42,7 +42,36 @@ class SettingsActivity : Activity() {
             .setPositiveButton("Add") { _, _ -> Profiles.add(e.text.toString(), kids); build(col) }.setNegativeButton("Cancel", null).show()
     }
 
+    private fun backupNow() {
+        val first = Prefs.backupCode.isEmpty()
+        val code = Backup.codeForThisBox()
+        Toast.makeText(this, "Backing up\u2026", Toast.LENGTH_SHORT).show()
+        Backup.upload(code) { msg ->
+            if (first) showCode(code, msg) else Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+            build(col)
+        }
+    }
+
+    private fun showCode(code: String, extra: String = "") = android.app.AlertDialog.Builder(this).setTitle("Your recovery code")
+        .setMessage("$code\n\nWrite this down. It is the only way to restore your setup on another box, and My Lists cannot recover it for you.${if (extra.isNotEmpty()) "\n\n$extra" else ""}")
+        .setPositiveButton("I wrote it down", null).show()
+
+    private fun restoreDialog() {
+        val e = android.widget.EditText(this).apply { hint = "XXXX-XXXX-XXXX-XXXX"; setSingleLine(true); setTextColor(0xFF000000.toInt()); inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS }
+        android.app.AlertDialog.Builder(this).setTitle("Restore a backup").setMessage("Enter the recovery code from your backup. This replaces your addons, playlists, profiles and settings on this box.").setView(e)
+            .setPositiveButton("Restore") { _, _ ->
+                val code = Backup.clean(e.text.toString())
+                if (!Backup.isCode(code)) Toast.makeText(this, "That does not look like a recovery code.", Toast.LENGTH_LONG).show()
+                else { Toast.makeText(this, "Restoring\u2026", Toast.LENGTH_SHORT).show(); Backup.restore(this, code) { msg -> Toast.makeText(this, msg, Toast.LENGTH_LONG).show(); build(col) } }
+            }.setNegativeButton("Cancel", null).show()
+    }
+
+    private fun lastBackupText() = Prefs.lastBackup.let { if (it == 0L) "Never" else android.text.format.DateFormat.format("MMM d, h:mm a", it).toString() }
+
     private val simple get() = listOf(
+        Opt("Back up my setup", "Encrypts your addons, playlists, profiles and settings and stores them online. My Lists cannot read them.", { lastBackupText() }, { backupNow() }),
+        Opt("Restore a backup", "Use your recovery code. You can also paste it on the phone page from the Addons tab.", { "OK" }, { restoreDialog() }),
+        Opt("Show recovery code", "The code that opens your backup.", { if (Prefs.backupCode.isEmpty()) "None yet" else "OK" }, { if (Prefs.backupCode.isNotEmpty()) showCode(Prefs.backupCode) }),
         Opt("Profile", "Who is watching. Each profile keeps its own history; kids profiles hide adult titles.", { Profiles.active().name + if (Profiles.active().kids) " (kids)" else "" }, { profileMenu() }),
         Opt("Auto-pick best stream", "Play starts at once. Off shows the source list first.", { onOff(Prefs.autoPick) }, { Prefs.autoPick = !Prefs.autoPick }),
         Opt("Maximum resolution", "Auto keeps weak boxes at 1080p.", { Prefs.maxResolution.let { if (it == 0) "Auto" else "${it}p" } },

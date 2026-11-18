@@ -36,7 +36,7 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
         col.addView(Ui.text(c, "Addons", 24f, Ui.TEXT, true))
         col.addView(Ui.text(c, "Catalog addons fill your rows. Stream addons provide the video. Order matters: earlier stream addons win ties.", 13f, Ui.DIM, false, 2),
             Ui.matchWrap().apply { topMargin = Ui.dp(c, 4); bottomMargin = Ui.dp(c, 12) })
-        val add = row("Add an addon or playlist", phone.address()?.let { "From your phone, open $it and paste the link. Or press OK to type it here." } ?: "Press OK to type a link.", "OK") { askUrl() }
+        val add = row("Add an addon or playlist", phone.address()?.let { "From your phone, open $it and paste a link or a recovery code. Or press OK to type it here." } ?: "Press OK to type a link.", "OK") { askUrl() }
         col.addView(add, Ui.matchWrap().apply { bottomMargin = Ui.dp(c, 8) })
         val saved = AddonStore.saved()
         val loaded = AddonStore.loaded.associateBy { it.manifestUrl }

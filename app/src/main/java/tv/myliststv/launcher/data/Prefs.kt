@@ -52,6 +52,24 @@ object Prefs {
         get() = sp.getBoolean("showCw", true)
         set(v) = sp.edit().putBoolean("showCw", v).apply()
 
+    /** Recovery code for this box's online backup. Empty until the first backup. */
+    var backupCode: String
+        get() = sp.getString("backupCode", "") ?: ""
+        set(v) = sp.edit().putString("backupCode", v).apply()
+
+    var lastBackup: Long
+        get() = sp.getLong("lastBackup", 0L)
+        set(v) = sp.edit().putLong("lastBackup", v).apply()
+
+    /** Settings as JSON for a backup. The recovery code, last-backup time and first-run flag stay on the box. */
+    fun export(): org.json.JSONObject = org.json.JSONObject(sp.all.filterKeys { it !in setOf("backupCode", "lastBackup", "setupDone") })
+
+    fun import(o: org.json.JSONObject) {
+        val e = sp.edit()
+        o.keys().forEach { k -> when (val v = o.get(k)) { is Boolean -> e.putBoolean(k, v); is Int -> e.putInt(k, v); is String -> e.putString(k, v) } }
+        e.apply()
+    }
+
     var setupDone: Boolean
         get() = sp.getBoolean("setupDone", false)
         set(v) = sp.edit().putBoolean("setupDone", v).apply()

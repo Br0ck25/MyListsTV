@@ -1,5 +1,6 @@
 package tv.myliststv.launcher.data
 
+import tv.myliststv.launcher.App
 import android.content.Context
 import android.content.SharedPreferences
 
@@ -42,6 +43,7 @@ object LiveStore {
     fun playlists(): List<String> = (sp.getString("list", "") ?: "").split('\n').filter { it.isNotBlank() }
     fun add(url: String) { if (url !in playlists()) sp.edit().putString("list", (playlists() + url).joinToString("\n")).apply() }
     fun remove(url: String) { sp.edit().putString("list", (playlists() - url).joinToString("\n")).apply() }
+    fun restore(list: List<String>) { sp.edit().putString("list", list.joinToString("\n")).apply() }
 
     /** Loads every playlist (cached first) and returns the channels once, grouped. [cb] runs on the main thread. */
     fun load(cb: (List<Channel>, List<String>) -> Unit) {
@@ -68,12 +70,13 @@ object Links {
 
     fun add(link: String, reply: (String) -> Unit) {
         val t = link.trim()
+        if (Backup.isCode(t)) { Backup.restore(App.instance, t, reply); return }   // a recovery code pasted from the phone page
         if (isAddon(t)) {
             val url = AddonStore.normalize(t) ?: return reply("That does not look like an addon link.")
-            AddonStore.probe(url) { m, err -> if (m == null) reply(err ?: "Could not install it.") else { AddonStore.add(url); reply("Installed ${m.name}") } }
+            AddonStore.probe(url) { m, err -> if (m == null) reply(err ?: "Could not install it.") else { AddonStore.add(url); Backup.auto(); reply("Installed ${m.name}") } }
         } else if (t.startsWith("http://") || t.startsWith("https://")) {
-            LiveStore.add(t); reply("Playlist added. Open the Live tab.")
-        } else reply("That does not look like an addon or playlist link.")
+            LiveStore.add(t); Backup.auto(); reply("Playlist added. Open the Live tab.")
+        } else reply("That does not look like an addon, playlist link or recovery code.")
     }
 }
 

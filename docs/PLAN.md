@@ -26,6 +26,7 @@ Test on the reference box, per Android version:
 Record what works per device here.
 
 ## Build status (keep this current)
-Done: Home (My Lists default rows, Continue watching, apps row), Movies, Series, Live (M3U), Apps, Addons (add by phone page or typing), Search, Settings (Simple/Advanced), Details with episodes, stream picker, Media3 player (Sources panel, automatic fallback, expired-link refresh, next episode, subtitles/audio/speed/info), sideload updater, 25 unit and smoke tests, CI that tests, builds and publishes the APK.
-Not done yet: account pairing and encrypted backup (needs My Lists Addon endpoints), Watch Next channel, profiles and PIN, first-run wizard, crash guard, EPG for Live, subtitles from addons, skip intro.
+Done: Home (My Lists default rows, Continue watching, apps row), Movies, Series, Live (M3U with XMLTV guide), Apps, Addons (add by phone page or typing), Search, Settings (Simple/Advanced), Details with episodes, stream picker, Media3 player (Sources panel, automatic fallback, expired-link refresh, next episode, subtitles from files and from subtitle addons, audio, speed, info), Watch Next on the system home screen, profiles with a kids filter, crash guard with safe mode, first-run welcome, encrypted online backup and restore (recovery code; needs /api/tv-backup deployed on My Lists, branch `tv-backup-endpoint`), sideload updater, unit and smoke tests, CI that tests, builds and publishes the APK.
+Not done by the owner's choice: PIN lock.
+Not done yet: skip intro (needs a verified data source), account sign-in (the personal My Lists link works as a normal addon meanwhile), pairing code flow, Keystore-wrapped storage for addon links and recovery code (they are in app-private storage, plain).
 Not tested: anything on a real TV box. First job after sideloading: confirm the home role (see below) and note per-device results here.

@@ -77,6 +77,17 @@ object Http {
         throw IllegalStateException("Too many redirects")
     }
 
+    /** Sends [body] with PUT and returns the HTTP status. For use from a background thread. */
+    fun put(url: String, body: String): Int {
+        val c = URL(url).openConnection() as HttpURLConnection
+        try {
+            c.requestMethod = "PUT"; c.doOutput = true; c.connectTimeout = 10_000; c.readTimeout = 20_000
+            c.setRequestProperty("User-Agent", "MyListsTV/0.1"); c.setRequestProperty("Content-Type", "text/plain")
+            c.outputStream.use { it.write(body.toByteArray()) }
+            return c.responseCode
+        } finally { c.disconnect() }
+    }
+
     /** Streams a download straight to a file (large guides must never be held in memory). */
     fun download(url: String, to: File) {
         var current = url

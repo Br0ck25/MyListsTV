@@ -146,6 +146,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        if (AddonStore.needsRefresh) { AddonStore.needsRefresh = false; AddonStore.load { select(current.coerceAtLeast(0), force = true) } }
         (screen as? BrowseScreen)?.refreshContinue()
     }
 
