@@ -162,7 +162,7 @@ class RowsList(
     private val onClick: (CardModel) -> Unit,
     private val onLong: ((CardModel) -> Unit)? = null,
 ) : RecyclerView(c) {
-    init { layoutManager = LinearLayoutManager(c); itemAnimator = null; clipToPadding = false; setItemViewCacheSize(3); adapter = A() }
+    init { layoutManager = LinearLayoutManager(c); itemAnimator = null; clipToPadding = false; setPadding(0, 0, 0, Ui.dp(c, 56)); setItemViewCacheSize(3); adapter = A() }
 
     fun changed(i: Int) = adapter!!.notifyItemChanged(i)
     fun changedAll() = adapter!!.notifyDataSetChanged()

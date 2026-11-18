@@ -30,8 +30,10 @@ class MainActivity : Activity() {
     private val tabs = listOf("Home", "Movies", "Series", "Live", "Apps", "Addons")
     private val tabViews = ArrayList<TextView>()
     private lateinit var content: FrameLayout
-    private lateinit var searchBtn: TextView
-    private lateinit var settingsBtn: TextView
+    private lateinit var searchBtn: View
+    private lateinit var settingsBtn: View
+    private lateinit var profileAvatar: TextView
+    private lateinit var profileName: TextView
     private var current = -1
     private var screen: Any? = null
     private val handler = Handler(Looper.getMainLooper())
@@ -39,10 +41,33 @@ class MainActivity : Activity() {
     private var ready = false
     private lateinit var bg: ImageView
     private lateinit var scrims: List<View>
-    private lateinit var bellBtn: TextView
+    private lateinit var bellBtn: View
+    private lateinit var bellBadge: TextView
     private var backdropUrl: String? = null
 
-    private fun updateBell() { val n = Notices.list(this).size; bellBtn.text = if (n > 0) "Notifications ($n)" else "Notifications" }
+    private fun updateBell() { val n = Notices.list(this).size; bellBadge.text = n.toString(); bellBadge.visibility = if (n > 0) View.VISIBLE else View.GONE }
+
+    private fun updateProfile() { val n = Profiles.active().name; profileName.text = n; profileAvatar.text = n.take(1).uppercase() }
+
+    /** Who is watching: the current profile at the top right; OK switches. */
+    private fun profileChip(): View = Ui.hbox(this, 8).apply {
+        gravity = Gravity.CENTER_VERTICAL
+        setPadding(Ui.dp(this@MainActivity, 6), Ui.dp(this@MainActivity, 5), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 5))
+        background = Ui.pillBg(this@MainActivity); isFocusable = true; isClickable = true
+        profileAvatar = Ui.text(this@MainActivity, "", 14f, Ui.TEXT, true).apply { gravity = Gravity.CENTER; background = Ui.rounded(this@MainActivity, Ui.BRAND_FILL, Ui.R_PILL) }
+        profileName = Ui.text(this@MainActivity, "", 14f, Ui.TEXT, true, 1)
+        addView(profileAvatar, LinearLayout.LayoutParams(Ui.dp(this@MainActivity, 30), Ui.dp(this@MainActivity, 30)))
+        addView(profileName, Ui.wrap())
+        setOnFocusChangeListener { _, f -> profileName.setTextColor(if (f) Ui.ON_FOCUS else Ui.TEXT) }
+        setOnClickListener { pickProfile() }
+    }
+
+    private fun pickProfile() {
+        val l = Profiles.all()
+        AlertDialog.Builder(this).setTitle("Who is watching?").setItems(l.map { it.name + if (it.kids) " (kids)" else "" }.toTypedArray()) { _, i ->
+            Profiles.activeId = l[i].id; WatchStore.init(this); updateProfile(); select(0, force = true)
+        }.show()
+    }
 
     private fun showNotices() {
         if (!Notices.allowed(this)) {
@@ -76,7 +101,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Notices.onChange = { handler.post { if (::bellBtn.isInitialized) updateBell() } }
+        Notices.onChange = { handler.post { if (::bellBadge.isInitialized) updateBell() } }
         // Layers, back to front: the focused title's backdrop, two dark fades for readability, the screen, then the tab bar.
         val root = FrameLayout(this).apply { setBackgroundColor(Ui.BG) }
         bg = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
@@ -97,19 +122,30 @@ class MainActivity : Activity() {
             val v = tabView(t)
             v.setOnFocusChangeListener { view, f ->
                 (view as TextView).setTextColor(if (f) Ui.ON_FOCUS else if (i == current) Ui.TEXT else Ui.DIM)
-                if (f) { pendingSelect?.let { handler.removeCallbacks(it) }; pendingSelect = Runnable { select(i) }.also { handler.postDelayed(it, 140) } }
             }
             v.setOnClickListener { select(i, force = true) }
             tabViews += v
             bar.addView(v)
         }
         bar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        bellBtn = Ui.button(this, "Notifications") { showNotices() }
-        searchBtn = Ui.button(this, "Search") { startActivity(Intent(this, SearchActivity::class.java)) }
-        settingsBtn = Ui.button(this, "Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }
-        bar.addView(bellBtn); bar.addView(searchBtn); bar.addView(settingsBtn)
+        val icon = Ui.dp(this, 40)
+        bellBadge = Ui.text(this, "", 11f, Ui.TEXT, true).apply { gravity = Gravity.CENTER; background = Ui.rounded(this@MainActivity, Ui.BRAND_FILL, Ui.R_PILL); visibility = View.GONE; setPadding(Ui.dp(this@MainActivity, 5), 0, Ui.dp(this@MainActivity, 5), 0) }
+        bellBtn = FrameLayout(this).apply {
+            addView(Ui.iconButton(this@MainActivity, R.drawable.ic_bell, "Notifications") { showNotices() }, FrameLayout.LayoutParams(icon, icon))
+            addView(bellBadge, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, Ui.dp(this@MainActivity, 16), Gravity.TOP or Gravity.END))
+        }
+        searchBtn = Ui.iconButton(this, R.drawable.ic_search, "Search") { startActivity(Intent(this, SearchActivity::class.java)) }
+        settingsBtn = Ui.iconButton(this, R.drawable.ic_settings, "Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }
+        bar.addView(profileChip(), LinearLayout.LayoutParams(-2, icon).apply { rightMargin = Ui.dp(this@MainActivity, 8) })
+        bar.addView(bellBtn, LinearLayout.LayoutParams(icon, icon)); bar.addView(searchBtn, LinearLayout.LayoutParams(icon, icon)); bar.addView(settingsBtn, LinearLayout.LayoutParams(icon, icon))
+        updateProfile()
         root.addView(bar, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
         setContentView(root)
+        // Moving along the tabs switches page; coming up from a page onto the tabs does not (OK does).
+        root.viewTreeObserver.addOnGlobalFocusChangeListener { old, new ->
+            val i = tabViews.indexOf(new)
+            if (i >= 0 && old != null && old in tabViews) { pendingSelect?.let { handler.removeCallbacks(it) }; pendingSelect = Runnable { select(i) }.also { handler.postDelayed(it, 140) } }
+        }
         content.addView(Ui.text(this, "Loading…", 16f, Ui.DIM).apply { gravity = Gravity.CENTER }, FrameLayout.LayoutParams(-1, -1))
         val safe = CrashGuard.safeMode(this)
         val start = { ready = true; val t = if (safe) 4 else 0; select(t, force = true); tabViews[t].requestFocus(); afterStart(safe) }
@@ -130,9 +166,7 @@ class MainActivity : Activity() {
             .setNegativeButton("Skip") { _, _ -> Prefs.setupDone = true }.show()
         else if (Profiles.all().size > 1 && !Profiles.askedThisRun) {
             Profiles.askedThisRun = true
-            val l = Profiles.all()
-            AlertDialog.Builder(this).setTitle("Who is watching?").setCancelable(false)
-                .setItems(l.map { it.name + if (it.kids) " (kids)" else "" }.toTypedArray()) { _, i -> Profiles.activeId = l[i].id; WatchStore.init(this); select(0, force = true) }.show()
+            pickProfile()
         }
         Profiles.askedThisRun = true
     }
@@ -183,8 +217,21 @@ class MainActivity : Activity() {
     }
 
     private fun appMenu(a: AppEntry) {
-        AlertDialog.Builder(this).setTitle(a.label).setItems(arrayOf("App info", "Uninstall")) { _, which ->
-            val pkg = a.component.packageName
+        val pkg = a.component.packageName
+        val onHome = current == 0
+        val items = if (onHome) arrayOf("Move earlier", "Move later", "Hide from Home", "App info", "Uninstall") else arrayOf("App info", "Uninstall")
+        AlertDialog.Builder(this).setTitle(a.label).setItems(items) { _, i ->
+            val which = i - if (onHome) 3 else 0
+            if (which < 0) {
+                Http.background {
+                    val order = AppRepository.forHome(this).map { it.component.packageName }.toMutableList()
+                    val at = order.indexOf(pkg)
+                    if (i == 2) Prefs.appHidden = Prefs.appHidden + pkg
+                    else if (at >= 0) { val to = (at + if (i == 0) -1 else 1).coerceIn(0, order.size - 1); order.add(to, order.removeAt(at)); Prefs.appOrder = order }
+                    Http.post { select(current, force = true) }
+                }
+                return@setItems
+            }
             try {
                 if (which == 0) startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg")))
                 else startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg")))
@@ -196,7 +243,8 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        if (::bellBtn.isInitialized) updateBell()
+        if (::bellBadge.isInitialized) updateBell()
+        if (::profileName.isInitialized) updateProfile()
         if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; if (ready && current >= 0) select(current, force = true) }
         if (AddonStore.needsRefresh) { AddonStore.needsRefresh = false; AddonStore.load { select(current.coerceAtLeast(0), force = true) } }
         (screen as? BrowseScreen)?.refreshContinue()

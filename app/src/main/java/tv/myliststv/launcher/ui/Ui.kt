@@ -37,6 +37,7 @@ object Ui {
     const val FOCUS_FILL = 0x22FFFFFF          // soft fill inside the white focus ring
     const val TRACK = 0x33FFFFFF               // empty part of a progress bar
     const val TOGGLE_OFF = 0xFF39393D.toInt()
+    const val SCRIM_SLATE = 0xB3000000.toInt()  // a loading screen over the title's backdrop
     const val OVERLAY = 0xE6000000.toInt()     // dims everything behind a slate or an error
     const val BRAND_LINE = 0x800A84FF.toInt()  // brand outline on a banner
     const val R_PILL = 999
@@ -80,6 +81,17 @@ object Ui {
     }
 
     /** A pill: white when focused, brand blue when selected (the open tab), otherwise [normal]. */
+    /** A round icon button for the top bar: white circle with a dark icon while focused. */
+    fun iconButton(c: Context, icon: Int, desc: String, onClick: () -> Unit): android.widget.ImageView =
+        android.widget.ImageView(c).apply {
+            setImageResource(icon); contentDescription = desc; setColorFilter(TEXT)
+            val p = dp(c, 9); setPadding(p, p, p, p)
+            background = pillBg(c)
+            isFocusable = true; isClickable = true
+            setOnFocusChangeListener { v, f -> (v as android.widget.ImageView).setColorFilter(if (f) ON_FOCUS else TEXT) }
+            setOnClickListener { onClick() }
+        }
+
     fun pillBg(c: Context, normal: Int = FILL, focusedFill: Int = Color.WHITE): Drawable {
         val pill = { color: Int -> GradientDrawable().apply { setColor(color); cornerRadius = dpf(c, 40f) } }
         return StateListDrawable().apply {

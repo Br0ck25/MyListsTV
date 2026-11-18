@@ -38,6 +38,7 @@ class PlayerActivity : Activity() {
     private lateinit var root: FrameLayout
     private lateinit var slate: LinearLayout
     private lateinit var slateText: TextView
+    private lateinit var slateBg: ImageView
     private lateinit var bottom: LinearLayout
     private lateinit var titleText: TextView
     private lateinit var subText: TextView
@@ -140,6 +141,8 @@ class PlayerActivity : Activity() {
         }
         root.addView(skipBtn, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END).apply { bottomMargin = Ui.dp(c, 150); rightMargin = Ui.dp(c, 48) })
 
+        slateBg = ImageView(c).apply { scaleType = ImageView.ScaleType.CENTER_CROP; visibility = View.GONE }
+        root.addView(slateBg, FrameLayout.LayoutParams(-1, -1))
         slate = Ui.vbox(c).apply { gravity = Gravity.CENTER; setBackgroundColor(Ui.OVERLAY); isClickable = true }
         slate.addView(ProgressBar(c), LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)))
         slateText = Ui.text(c, "", 20f, Ui.TEXT, true).apply { gravity = Gravity.CENTER }
@@ -517,8 +520,14 @@ class PlayerActivity : Activity() {
 
     // ---------------------------------------------------------------- helpers
 
-    private fun showSlate(msg: String) { slateText.text = msg; slate.visibility = View.VISIBLE; bottom.visibility = View.GONE }
-    private fun hideSlate() { slate.visibility = View.GONE }
+    /** The loading screen shows the title's own backdrop behind a dark fade. */
+    private fun showSlate(msg: String) {
+        slateText.text = msg; slate.visibility = View.VISIBLE; bottom.visibility = View.GONE
+        val art = PlaySession.meta?.let { it.background ?: it.poster }
+        if (art != null && slateBg.visibility != View.VISIBLE) { slateBg.visibility = View.VISIBLE; ImageLoader.load(slateBg, art, Ui.dp(this, 960), Ui.dp(this, 540), fade = !Prefs.lite()) }
+        slate.setBackgroundColor(if (art != null) Ui.SCRIM_SLATE else Ui.OVERLAY)
+    }
+    private fun hideSlate() { slate.visibility = View.GONE; slateBg.visibility = View.GONE }
     private fun showError(msg: String) { hideSlate(); errorText.text = msg; errorBox.visibility = View.VISIBLE; errorBox.getChildAt(2)?.let { (it as LinearLayout).getChildAt(0).requestFocus() } }
     private fun hideError() { errorBox.visibility = View.GONE }
 

@@ -1,0 +1,8 @@
+<resources>
+    <!-- Mirrors the tokens in ui/Ui.kt (docs/DESIGN.md section 2) for the system dialog theme. Change both together. -->
+    <color name="card">#FF1C1C1E</color>
+    <color name="text">#FFFFFFFF</color>
+    <color name="text2">#FFEBEBF5</color>
+    <color name="brand">#FF0A84FF</color>
+    <color name="focus_fill">#22FFFFFF</color>
+</resources>

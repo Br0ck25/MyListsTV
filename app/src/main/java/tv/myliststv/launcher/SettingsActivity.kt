@@ -167,11 +167,11 @@ class SettingsActivity : Activity() {
         add(toggle("Auto-pick the best source", "Play starts at once. Off shows the source list first.", { Prefs.autoPick }, { Prefs.autoPick = it }))
         add(choice("Maximum resolution", "Auto keeps weak boxes at 1080p.", listOf(0, 2160, 1080, 720), { Prefs.maxResolution }, { Prefs.maxResolution = it }, { if (it == 0) "Auto" else "${it}p" }))
         add(choice("Subtitle language", "Used when a file or a subtitle addon has it.", listOf("en", "es", "fr", "de", "off"), { Prefs.subtitleLang }, { Prefs.subtitleLang = it }, { if (it == "off") "Off" else it.uppercase() }))
-        add(toggle("Play next episode automatically", "", { Prefs.autoplayNext }, { Prefs.autoplayNext = it }))
+        add(toggle("Play next episode automatically", "When an episode ends, the next one starts by itself with the same kind of source.", { Prefs.autoplayNext }, { Prefs.autoplayNext = it }))
+        add(choice("Sources to try", "If a source will not play, how many others to try before giving up.", listOf(1, 2, 3, 4, 5, 6, 8, 10), { Prefs.fallbackTries }, { Prefs.fallbackTries = it }))
         add(toggle("Show Skip intro", "A button appears during intros and recaps. Times come from IntroDB.", { Prefs.skipIntro }, { Prefs.skipIntro = it }))
         if (Prefs.advanced) {
             add(toggle("Try the next source if one fails", "Switches by itself when a source does not start.", { Prefs.fallbackOn }, { Prefs.fallbackOn = it }))
-            add(choice("Source tries", "How many other sources to try.", listOf(1, 2, 3, 5), { Prefs.fallbackTries }, { Prefs.fallbackTries = it }))
             add(choice("Source start timeout", "How long to wait for the first picture.", listOf(6, 10, 15), { Prefs.startupTimeoutSec }, { Prefs.startupTimeoutSec = it }, { "$it s" }))
         }
         add(header("Home"))

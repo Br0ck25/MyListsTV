@@ -85,3 +85,8 @@ Plain words, sentence case, no jargon (say "source", not "stream resolver"; "add
 3. Write its empty, loading and error sentences.
 4. Check focus order with the D-pad only.
 5. Check it in lite mode.
+
+## 9. Dialogs and top bar
+- Every system dialog and menu gets its look from `Theme.MyListsTV.Dialog` (res/values/themes.xml, colours in res/values/colors.xml, which mirror the tokens in Ui.kt). Use `AlertDialog.Builder` as usual; do not style a dialog by hand.
+- The top bar has the tabs on the left and, on the right, the profile chip (who is watching), then round icon buttons (`Ui.iconButton`): notifications, search, settings. New bar actions are icon buttons, not text pills.
+- Moving along the tabs switches page; moving up from a page onto the tabs does not (OK does).
