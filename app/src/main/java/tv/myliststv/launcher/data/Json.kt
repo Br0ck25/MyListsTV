@@ -73,7 +73,7 @@ object Json {
         put("id", m.id); put("type", m.type); put("name", m.name)
         put("poster", m.poster ?: ""); put("background", m.background ?: ""); put("logo", m.logo ?: "")
         put("description", m.description ?: ""); put("releaseInfo", m.year ?: ""); put("imdbRating", m.rating ?: "")
-        put("runtime", m.runtime ?: ""); put("genres", JSONArray(m.genres))
+        put("runtime", m.runtime ?: ""); put("certification", m.certification ?: ""); put("genres", JSONArray(m.genres))
         put("videos", JSONArray().also { a -> m.videos.forEach { v ->
             a.put(JSONObject().put("id", v.id).put("title", v.title).put("season", v.season).put("episode", v.episode)
                 .put("thumbnail", v.thumbnail ?: "").put("overview", v.overview ?: "")) } })
@@ -115,6 +115,7 @@ object Json {
             year = o.optString("releaseInfo").ifEmpty { o.optString("year") }.ifEmpty { null },
             rating = rating.ifEmpty { null },
             runtime = o.optString("runtime").ifEmpty { null },
+            certification = o.optString("certification").ifEmpty { null },
             genres = genres,
             videos = videos.sortedWith(compareBy({ it.season }, { it.episode })),
         )

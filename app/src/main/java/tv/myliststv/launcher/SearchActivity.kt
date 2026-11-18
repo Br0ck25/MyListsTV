@@ -41,7 +41,7 @@ class SearchActivity : Activity() {
                     Catalogs.search(q) { list ->
                         if (q != wanted) return@search
                         status.text = if (list.isEmpty()) "No matches for “$q”." else "${list.size} results"
-                        grid.adapter = CardAdapter(CardKind.POSTER, list.map { CardModel(it.name, it.poster, payload = it) }, Prefs.lite(), { }, { m ->
+                        grid.adapter = CardAdapter(CardKind.POSTER, list.filter(Profiles::allows).map { CardModel(it.name, it.poster, payload = it) }, Prefs.lite(), { }, { m ->
                             startActivity(Intent(this@SearchActivity, DetailsActivity::class.java).putExtra("meta", Json.metaToJson(m.payload as Meta)))
                         })
                     }

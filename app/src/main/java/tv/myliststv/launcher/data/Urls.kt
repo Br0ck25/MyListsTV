@@ -18,4 +18,6 @@ object Urls {
     fun meta(base: String, type: String, id: String) = "$base/meta/${seg(type)}/${seg(id)}.json"
 
     fun stream(base: String, type: String, id: String) = "$base/stream/${seg(type)}/${seg(id)}.json"
+
+    fun subtitles(base: String, type: String, id: String) = "$base/subtitles/${seg(type)}/${seg(id)}.json"
 }

@@ -27,7 +27,8 @@ object WatchStore {
         val fraction: Float get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
     }
 
-    fun init(c: Context) { sp = c.getSharedPreferences("watch", Context.MODE_PRIVATE) }
+    /** Each profile has its own history. Call again after switching profile. */
+    fun init(c: Context) { sp = c.getSharedPreferences(if (Profiles.activeId == "p1") "watch" else "watch_${Profiles.activeId}", Context.MODE_PRIVATE) }
 
     fun all(): List<Entry> {
         val raw = sp.getString("items", null) ?: return emptyList()

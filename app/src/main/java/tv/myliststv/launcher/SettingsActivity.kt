@@ -21,7 +21,29 @@ class SettingsActivity : Activity() {
         set(options[(options.indexOf(get()).coerceAtLeast(-1) + 1) % options.size])
     }
 
+    private lateinit var col: LinearLayout
+
+    private fun profileMenu() {
+        val l = Profiles.all()
+        val items = l.map { it.name + if (it.kids) " (kids)" else "" } + listOf("Add profile", "Add kids profile", "Remove ${Profiles.active().name}")
+        android.app.AlertDialog.Builder(this).setTitle("Profiles").setItems(items.toTypedArray()) { _, i ->
+            when {
+                i < l.size -> { Profiles.activeId = l[i].id; WatchStore.init(this); build(col) }
+                i == l.size -> askName(false)
+                i == l.size + 1 -> askName(true)
+                else -> { Profiles.remove(Profiles.activeId); WatchStore.init(this); build(col) }
+            }
+        }.show()
+    }
+
+    private fun askName(kids: Boolean) {
+        val e = android.widget.EditText(this).apply { setSingleLine(true); setTextColor(0xFF000000.toInt()) }
+        android.app.AlertDialog.Builder(this).setTitle(if (kids) "New kids profile" else "New profile").setView(e)
+            .setPositiveButton("Add") { _, _ -> Profiles.add(e.text.toString(), kids); build(col) }.setNegativeButton("Cancel", null).show()
+    }
+
     private val simple get() = listOf(
+        Opt("Profile", "Who is watching. Each profile keeps its own history; kids profiles hide adult titles.", { Profiles.active().name + if (Profiles.active().kids) " (kids)" else "" }, { profileMenu() }),
         Opt("Auto-pick best stream", "Play starts at once. Off shows the source list first.", { onOff(Prefs.autoPick) }, { Prefs.autoPick = !Prefs.autoPick }),
         Opt("Maximum resolution", "Auto keeps weak boxes at 1080p.", { Prefs.maxResolution.let { if (it == 0) "Auto" else "${it}p" } },
             cycle(listOf(0, 2160, 1080, 720), { Prefs.maxResolution }, { Prefs.maxResolution = it })),
@@ -44,7 +66,7 @@ class SettingsActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val col = Ui.vbox(this).apply { setPadding(Ui.dp(this@SettingsActivity, 80), Ui.dp(this@SettingsActivity, 24), Ui.dp(this@SettingsActivity, 80), Ui.dp(this@SettingsActivity, 24)) }
+        col = Ui.vbox(this).apply { setPadding(Ui.dp(this@SettingsActivity, 80), Ui.dp(this@SettingsActivity, 24), Ui.dp(this@SettingsActivity, 80), Ui.dp(this@SettingsActivity, 24)) }
         setContentView(ScrollView(this).apply { setBackgroundColor(Ui.BG); addView(col) })
         build(col)
     }

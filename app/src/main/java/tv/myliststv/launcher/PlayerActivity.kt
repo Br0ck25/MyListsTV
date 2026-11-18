@@ -66,6 +66,8 @@ class PlayerActivity : Activity() {
     private var tickRunning = false
     private var resolveSession: StreamResolver.Session? = null
     private var speedIdx = 1
+    private var subs: List<Sub> = emptyList()
+    private var subsFor: String? = null
     private val speeds = floatArrayOf(0.75f, 1f, 1.25f, 1.5f, 2f)
     private val live get() = PlaySession.live != null
 
@@ -83,7 +85,7 @@ class PlayerActivity : Activity() {
         buildPlayer()
         fallback = SourceFallback(PlaySession.ranked, Prefs.fallbackTries)
         fallback!!.markTried(current)
-        startStream(current, PlaySession.resumeMs, "Starting stream via ${current.addonName}…")
+        begin(current, PlaySession.resumeMs, "Starting stream via ${current.addonName}…")
     }
 
     // ---------------------------------------------------------------- UI
@@ -214,6 +216,20 @@ class PlayerActivity : Activity() {
 
     private fun playerHasVideo(): Boolean = player.currentTracks.groups.any { it.type == C.TRACK_TYPE_VIDEO && it.isSelected }
 
+    /** Starts a stream for a new video: asks subtitle addons first (3 s at most), then plays. Later restarts of the same video reuse the answer. */
+    private fun begin(s: StreamItem, pos: Long, msg: String) {
+        val vid = PlaySession.videoId
+        if (live || subsFor == vid) { startStream(s, pos, msg); return }
+        subsFor = vid; showSlate("Finding subtitles…")
+        Subs.fetch(PlaySession.meta!!.type, vid, Prefs.subtitleLang) { found -> if (!isFinishing) { subs = found; startStream(s, pos, msg) } }
+    }
+
+    private fun subMime(url: String) = when {
+        url.substringBefore('?').endsWith(".vtt") -> MimeTypes.TEXT_VTT
+        url.substringBefore('?').let { it.endsWith(".ass") || it.endsWith(".ssa") } -> MimeTypes.TEXT_SSA
+        else -> MimeTypes.APPLICATION_SUBRIP
+    }
+
     private fun startStream(s: StreamItem, positionMs: Long, message: String) {
         current = s
         gotFirstFrame = false
@@ -225,7 +241,10 @@ class PlayerActivity : Activity() {
             .setConnectTimeoutMs(10_000).setReadTimeoutMs(20_000)
             .setAllowCrossProtocolRedirects(true)
             .setDefaultRequestProperties(s.headers)
-        player.setMediaSource(DefaultMediaSourceFactory(this).setDataSourceFactory(http).createMediaSource(MediaItem.fromUri(Uri.parse(s.url))), positionMs)
+        val item = MediaItem.Builder().setUri(Uri.parse(s.url)).setSubtitleConfigurations(subs.mapIndexed { i, x ->
+            MediaItem.SubtitleConfiguration.Builder(Uri.parse(x.url)).setMimeType(subMime(x.url)).setLanguage(x.lang)
+                .setLabel(x.lang.uppercase() + " (addon)").setSelectionFlags(if (i == 0) C.SELECTION_FLAG_DEFAULT else 0).build() }).build()
+        player.setMediaSource(DefaultMediaSourceFactory(this).setDataSourceFactory(http).createMediaSource(item), positionMs)
         player.playWhenReady = true
         player.prepare()
         handler.removeCallbacks(startupTimeout)
@@ -335,7 +354,7 @@ class PlayerActivity : Activity() {
             PlaySession.ranked = ranked; PlaySession.current = pick; PlaySession.autoSelected = true; PlaySession.resumeMs = 0
             fallback = SourceFallback(ranked, Prefs.fallbackTries); fallback!!.markTried(pick)
             autoSelected = true; triedRefresh.clear()
-            startStream(pick, 0, "Starting stream via ${pick.addonName}…")
+            begin(pick, 0, "Starting stream via ${pick.addonName}…")
         })
         resolveSession = s
         StreamResolver.resolve(m.type, next.id, 9000, s)

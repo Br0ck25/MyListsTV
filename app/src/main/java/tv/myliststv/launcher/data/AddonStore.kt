@@ -46,6 +46,8 @@ object AddonStore {
         return s
     }
 
+    /** Back to just the default My Lists addon. */
+    fun reset() { write(listOf(Saved(DEFAULT_URL, true))) }
     fun add(url: String) { val l = saved(); if (l.none { it.url == url }) write(l + Saved(url, true)) }
     fun remove(url: String) { write(saved().filter { it.url != url }) }
     fun setEnabled(url: String, on: Boolean) { write(saved().map { if (it.url == url) it.copy(enabled = on) else it }) }

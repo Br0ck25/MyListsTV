@@ -64,7 +64,30 @@ class MainActivity : Activity() {
         root.addView(content, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         setContentView(root)
         content.addView(Ui.text(this, "Loading…", 16f, Ui.DIM).apply { gravity = Gravity.CENTER }, FrameLayout.LayoutParams(-1, -1))
-        AddonStore.load { ready = true; select(0, force = true); tabViews[0].requestFocus() }
+        val safe = CrashGuard.safeMode(this)
+        val start = { ready = true; val t = if (safe) 4 else 0; select(t, force = true); tabViews[t].requestFocus(); afterStart(safe) }
+        if (safe) start() else AddonStore.load { start() }
+        handler.postDelayed({ CrashGuard.clear(this) }, 30_000)
+    }
+
+    /** Safe mode, first-run welcome, or the "who is watching" question, whichever applies. */
+    private fun afterStart(safe: Boolean) {
+        if (safe) AlertDialog.Builder(this).setTitle("Safe mode").setCancelable(false)
+            .setMessage("My Lists TV stopped several times in a row, so addons are off for this start.")
+            .setPositiveButton("Start normally") { _, _ -> CrashGuard.clear(this); recreate() }
+            .setNegativeButton("Reset addons and caches") { _, _ -> AddonStore.reset(); Http.clear(); ImageLoader.clearDisk(); CrashGuard.clear(this); recreate() }.show()
+        else if (!Prefs.setupDone) AlertDialog.Builder(this).setTitle("Welcome to My Lists TV")
+            .setMessage("You are seeing the default My Lists catalogs. To play video, add a stream addon in the Addons tab; you can paste its link from your phone. Simple mode hides settings most people never need.")
+            .setPositiveButton("Set up addons") { _, _ -> Prefs.setupDone = true; select(5, force = true); tabViews[5].requestFocus() }
+            .setNeutralButton("Advanced mode") { _, _ -> Prefs.setupDone = true; Prefs.advanced = true }
+            .setNegativeButton("Skip") { _, _ -> Prefs.setupDone = true }.show()
+        else if (Profiles.all().size > 1 && !Profiles.askedThisRun) {
+            Profiles.askedThisRun = true
+            val l = Profiles.all()
+            AlertDialog.Builder(this).setTitle("Who is watching?").setCancelable(false)
+                .setItems(l.map { it.name + if (it.kids) " (kids)" else "" }.toTypedArray()) { _, i -> Profiles.activeId = l[i].id; WatchStore.init(this); select(0, force = true) }.show()
+        }
+        Profiles.askedThisRun = true
     }
 
     private fun tabView(t: String) = TextView(this).apply {

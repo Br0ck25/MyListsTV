@@ -52,6 +52,10 @@ object Prefs {
         get() = sp.getBoolean("showCw", true)
         set(v) = sp.edit().putBoolean("showCw", v).apply()
 
+    var setupDone: Boolean
+        get() = sp.getBoolean("setupDone", false)
+        set(v) = sp.edit().putBoolean("setupDone", v).apply()
+
     var advanced: Boolean
         get() = sp.getBoolean("advanced", false)
         set(v) = sp.edit().putBoolean("advanced", v).apply()

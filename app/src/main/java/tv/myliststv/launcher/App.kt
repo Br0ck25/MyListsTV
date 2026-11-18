@@ -8,9 +8,11 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         Prefs.init(this)
+        CrashGuard.install(this)
         Http.init(this)
         ImageLoader.init(cacheDir, Prefs.memoryCacheBytes())
         AddonStore.init(this)
+        Profiles.init(this)
         WatchStore.init(this)
         LiveStore.init(this)
     }

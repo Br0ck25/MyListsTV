@@ -12,6 +12,7 @@ data class Meta(
     val year: String? = null,
     val rating: String? = null,
     val runtime: String? = null,
+    val certification: String? = null,
     val genres: List<String> = emptyList(),
     val videos: List<Video> = emptyList(),
 )

@@ -69,7 +69,7 @@ class BrowseScreen(
                 val idx = rows.indexOf(row)
                 if (idx < 0) return@load
                 if (metas != null) {
-                    row.items = metas.take(30).map { CardModel(it.name, it.poster, payload = it) }
+                    row.items = metas.filter(Profiles::allows).take(30).map { CardModel(it.name, it.poster, payload = it) }
                     row.loaded = true
                 } else if (row.items.isEmpty()) row.loaded = true
                 list.changed(idx)
