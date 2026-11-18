@@ -15,7 +15,7 @@ object Prefs {
 
     fun init(c: Context) {
         appContext = c.applicationContext; sp = c.getSharedPreferences("settings", Context.MODE_PRIVATE)
-        if (Secure.needsWrap(sp.getString("backupCode", null))) backupCode = backupCode    // wraps a code saved before the Keystore was used
+        sp.getString("backupCode", null)?.let { if (Secure.needsWrap(it)) sp.edit().putString("backupCode", Secure.wrap(it)).apply() }    // wraps a code saved before the Keystore was used
     }
 
     var liteMode: String                 // "Auto", "On", "Off"
@@ -111,20 +111,23 @@ object Prefs {
 
     /** Recovery code for this box's online backup. Empty until the first backup. */
     var backupCode: String
-        get() = Secure.unwrap(sp.getString("backupCode", "") ?: "").orEmpty()
-        set(v) = sp.edit().putString("backupCode", Secure.wrap(v)).apply()
+        get() = Secure.unwrap(sp.getString(Profiles.key("backupCode"), "") ?: "").orEmpty()
+        set(v) = sp.edit().putString(Profiles.key("backupCode"), Secure.wrap(v)).apply()
 
     /** The signed-in My Lists addon link, or empty when using the default catalogs. */
     var accountLink: String
-        get() = Secure.unwrap(sp.getString("accountLink", "") ?: "").orEmpty()
-        set(v) = sp.edit().putString("accountLink", Secure.wrap(v)).apply()
+        get() = Secure.unwrap(sp.getString(Profiles.key("accountLink"), "") ?: "").orEmpty()
+        set(v) = sp.edit().putString(Profiles.key("accountLink"), Secure.wrap(v)).apply()
 
     var lastBackup: Long
-        get() = sp.getLong("lastBackup", 0L)
-        set(v) = sp.edit().putLong("lastBackup", v).apply()
+        get() = sp.getLong(Profiles.key("lastBackup"), 0L)
+        set(v) = sp.edit().putLong(Profiles.key("lastBackup"), v).apply()
+
+    /** Forgets what a removed profile kept here. */
+    fun forget(id: String) { sp.edit().remove(Profiles.key("accountLink", id)).remove(Profiles.key("backupCode", id)).remove(Profiles.key("lastBackup", id)).apply() }
 
     /** Settings as JSON for a backup. The recovery code, last-backup time and first-run flag stay on the box. */
-    fun export(): org.json.JSONObject = org.json.JSONObject(sp.all.filterKeys { !it.startsWith("tr_") && it !in setOf("backupCode", "lastBackup", "setupDone", "accountLink") })
+    fun export(): org.json.JSONObject = org.json.JSONObject(sp.all.filterKeys { !it.startsWith("tr_") && !it.startsWith("accountLink") && !it.startsWith("backupCode") && !it.startsWith("lastBackup") && it != "setupDone" })
 
     fun import(o: org.json.JSONObject) {
         val e = sp.edit()

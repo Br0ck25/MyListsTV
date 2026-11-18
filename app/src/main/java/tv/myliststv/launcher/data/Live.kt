@@ -43,10 +43,12 @@ object LiveStore {
     private lateinit var sp: SharedPreferences
     // Playlist links can carry a login, so the list is kept wrapped by the Keystore (see Secure).
     fun init(c: Context) { sp = c.getSharedPreferences("live", Context.MODE_PRIVATE); if (Secure.needsWrap(sp.getString("list", null))) restore(playlists()) }
-    fun playlists(): List<String> = Secure.unwrap(sp.getString("list", "") ?: "").orEmpty().split('\n').filter { it.isNotBlank() }
+    /** Each profile has its own playlists. */
+    fun playlists(): List<String> = Secure.unwrap(sp.getString(Profiles.key("list"), "") ?: "").orEmpty().split('\n').filter { it.isNotBlank() }
+    fun forget(id: String) { sp.edit().remove(Profiles.key("list", id)).apply() }
     fun add(url: String) { if (url !in playlists()) restore(playlists() + url) }
     fun remove(url: String) { restore(playlists() - url) }
-    fun restore(list: List<String>) { sp.edit().putString("list", Secure.wrap(list.joinToString("\n"))).apply() }
+    fun restore(list: List<String>) { sp.edit().putString(Profiles.key("list"), Secure.wrap(list.joinToString("\n"))).apply() }
 
     /** Loads every playlist (cached first) and returns the channels once, grouped. [cb] runs on the main thread. */
     fun load(cb: (List<Channel>, List<String>) -> Unit) {

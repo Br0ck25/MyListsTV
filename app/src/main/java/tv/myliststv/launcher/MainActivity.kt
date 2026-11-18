@@ -71,7 +71,7 @@ class MainActivity : Activity() {
     private fun pickProfile() {
         val l = Profiles.all()
         AlertDialog.Builder(this).setTitle("Who is watching?").setItems(l.map { it.name + if (it.kids) " (kids)" else "" }.toTypedArray()) { _, i ->
-            Profiles.activeId = l[i].id; WatchStore.init(this); updateProfile(); select(0, force = true)
+            Profiles.switchTo(this, l[i].id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { select(0, force = true) }; Library.pull { }
         }.show()
     }
 

@@ -108,10 +108,10 @@ class SettingsActivity : Activity() {
         val items = l.map { it.name + if (it.kids) " (kids)" else "" } + listOf("Add profile", "Add kids profile", "Remove ${Profiles.active().name}")
         android.app.AlertDialog.Builder(this).setTitle("Profiles").setItems(items.toTypedArray()) { _, i ->
             when {
-                i < l.size -> { Profiles.activeId = l[i].id; WatchStore.init(this); refresh() }
+                i < l.size -> { Profiles.switchTo(this, l[i].id); refresh() }
                 i == l.size -> askName(false)
                 i == l.size + 1 -> askName(true)
-                else -> { Profiles.remove(Profiles.activeId); WatchStore.init(this); refresh() }
+                else -> { Profiles.remove(Profiles.activeId); Profiles.switchTo(this, Profiles.activeId); refresh() }
             }
         }.show()
     }
@@ -166,7 +166,7 @@ class SettingsActivity : Activity() {
         .setMessage("$code\n\nWrite this down. It is the only way to restore your setup on another box, and My Lists cannot recover it for you.${if (extra.isNotEmpty()) "\n\n$extra" else ""}")
         .setPositiveButton("I wrote it down", null).show()
 
-    private fun restoreDialog() = Ui.askText(this, "Restore a backup", "XXXX-XXXX-XXXX-XXXX", "Restore", "Enter the recovery code from your backup. This replaces your addons, playlists, profiles and settings on this box.", caps = true) { raw ->
+    private fun restoreDialog() = Ui.askText(this, "Restore a backup", "XXXX-XXXX-XXXX-XXXX", "Restore", "Enter the recovery code from your backup. This replaces the addons, playlists and Library of the profile in use.", caps = true) { raw ->
         val code = Backup.clean(raw)
         if (!Backup.isCode(code)) Toast.makeText(this, "That does not look like a recovery code.", Toast.LENGTH_LONG).show()
         else { Toast.makeText(this, "Restoring\u2026", Toast.LENGTH_SHORT).show(); Backup.restore(this, code) { msg -> Toast.makeText(this, msg, Toast.LENGTH_LONG).show(); refresh() } }
@@ -199,9 +199,9 @@ class SettingsActivity : Activity() {
         add(action("Manage addons and playlists", "Catalog and stream addons, IPTV playlists, order, on and off. You can paste links from your phone.") { startActivity(Intent(this@SettingsActivity, AddonsActivity::class.java)) })
         add(action("Test my sources", "Asks every stream addon for a well-known movie and says which answered, how fast, and why not if one did not.") { testSources() })
         add(header("General"))
-        if (Prefs.accountLink.isEmpty()) add(action("Sign in with My Lists", "Replaces the default catalogs with your own lists. Takes 30 seconds with your phone.") { signIn() })
+        if (Prefs.accountLink.isEmpty()) add(action("Sign in with My Lists", "For ${Profiles.active().name}: replaces the default catalogs with your own lists, and syncs the Library. Takes 30 seconds with your phone.") { signIn() })
         else { add(info("Signed in", Pairing.userOf(Prefs.accountLink))); add(action("Sign out", "Goes back to the default catalogs. Your other addons stay.") { signOut() }) }
-        add(action("Switch profile", "Now: ${Profiles.active().name}${if (Profiles.active().kids) " (kids)" else ""}. Each profile keeps its own history.") { profileMenu() })
+        add(action("Switch profile", "Now: ${Profiles.active().name}${if (Profiles.active().kids) " (kids)" else ""}. Each profile keeps its own account, addons, playlists, Library and history.") { profileMenu() })
         add(action("Android settings", "Wi-Fi, display, sound, Bluetooth, apps and the rest of the TV's own settings.") { androidSettings() })
         add(toggle("Advanced settings", "Shows more options in each group.", { Prefs.advanced }, { Prefs.advanced = it }))
         add(header("Playback"))
@@ -225,7 +225,7 @@ class SettingsActivity : Activity() {
         add(toggle("Show Continue watching", "", { Prefs.showContinue }, { Prefs.showContinue = it }))
         add(toggle("Show apps row", "", { Prefs.showAppsRow }, { Prefs.showAppsRow = it }))
         add(header("Backup"))
-        add(action("Back up my setup", "Encrypts your addons, playlists, profiles and settings. Last backup: ${lastBackupText()}.") { backupNow() })
+        add(action("Back up my setup", "Encrypts ${Profiles.active().name}'s addons, playlists and Library (the first profile also saves the profile list and settings). Last backup: ${lastBackupText()}.") { backupNow() })
         add(action("Restore a backup", "Use your recovery code. You can also paste it on the phone page in Settings, then Addons.") { restoreDialog() })
         if (Prefs.backupCode.isNotEmpty()) add(action("Show recovery code", "The code that opens your backup.") { showCode(Prefs.backupCode) })
         add(header("Performance"))

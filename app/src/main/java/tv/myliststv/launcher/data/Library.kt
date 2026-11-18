@@ -18,9 +18,9 @@ object Library {
         sp(profile).edit().putString("items", a.toString()).apply()
     }
 
-    // ---- sync with the account's Watchlist (signed in, main profile only; kids and other profiles stay on the box) ----
+    // ---- sync with the account's Watchlist: each profile that is signed in syncs its own list with its own account ----
     private const val ORIGIN = "https://mylistsaddon.com"
-    private fun syncOn() = Prefs.accountLink.isNotEmpty() && Profiles.activeId == "p1"
+    private fun syncOn() = Prefs.accountLink.isNotEmpty()
     private fun post(o: JSONObject): Pair<Int, String> = Http.send("POST", "$ORIGIN/api/nuvio-tv/library", o.put("targetId", Pairing.targetOf(Prefs.accountLink)).toString())
     private fun items(l: List<Meta>) = JSONArray().also { a -> l.forEach { a.put(JSONObject().put("id", it.id).put("type", it.type).put("name", it.name).put("poster", it.poster ?: "")) } }
 
@@ -50,8 +50,8 @@ object Library {
                     r.optString("id").takeIf { it.startsWith("tt") }?.let { id -> Meta(id, if (r.optString("type") == "series") "series" else "movie", r.optString("name").ifEmpty { r.optString("title") }.ifEmpty { id }, r.optString("poster").ifEmpty { null }) }
                 }
                 val first = sp().getLong("syncedAt", 0L) == 0L
-                if (first) { val mine = all(); write("p1", mine + theirs.filter { t -> mine.none { it.id == t.id } }); if (theirs.size != all().size || at == 0L) push() else sp().edit().putLong("syncedAt", at).apply() }
-                else if (at > sp().getLong("syncedAt", 0L)) write("p1", theirs).also { sp().edit().putLong("syncedAt", at).apply() }
+                if (first) { val mine = all(); write(Profiles.activeId, mine + theirs.filter { t -> mine.none { it.id == t.id } }); if (theirs.size != all().size || at == 0L) push() else sp().edit().putLong("syncedAt", at).apply() }
+                else if (at > sp().getLong("syncedAt", 0L)) write(Profiles.activeId, theirs).also { sp().edit().putLong("syncedAt", at).apply() }
                 else return@background
                 Http.post(changed)
             } catch (_: Exception) {}
@@ -72,8 +72,12 @@ object Library {
 
     fun remove(id: String) { write(Profiles.activeId, all().filter { it.id != id }); push() }
 
-    /** Every profile's list, for a backup. */
-    fun export(): JSONObject = JSONObject().also { o -> Profiles.all().forEach { p -> o.put(p.id, JSONArray(sp(p.id).getString("items", "[]"))) } }
+    /** This profile's list, for a backup. */
+    fun export(): JSONArray = JSONArray(sp().getString("items", "[]"))
 
-    fun import(o: JSONObject?) { o?.keys()?.forEach { id -> sp(id).edit().putString("items", o.getJSONArray(id).toString()).apply() } }
+    /** Restores this profile's list from a backup (an array; the first version of backups held an object with every profile's list). */
+    fun import(o: Any?) {
+        val a = when (o) { is JSONArray -> o; is JSONObject -> o.optJSONArray(Profiles.activeId); else -> null } ?: return
+        sp().edit().putString("items", a.toString()).apply()
+    }
 }

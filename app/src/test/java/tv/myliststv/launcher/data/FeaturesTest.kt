@@ -225,3 +225,33 @@ class AlertsAndWatchedTest {
         Watched.set("tt1", "tt1:1:2", false); Watched.set("tt2", "tt2:1:1", false); assertTrue(Watched.of("tt1").isEmpty())
     }
 }
+
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34], application = tv.myliststv.launcher.App::class)
+class ProfileAccountsTest {
+    private val ctx get() = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+
+    @Test fun eachProfileKeepsItsOwnAccountAddonsPlaylistsLibraryAndBackupCode() {
+        val main = Profiles.activeId
+        Prefs.accountLink = "https://mylistsaddon.com/i/MAINTOKEN/tv/manifest.json"; AddonStore.add("https://a.example/manifest.json"); LiveStore.add("http://iptv.example/a.m3u"); Prefs.backupCode = "AAAA-AAAA-AAAA-AAAA"
+        Library.toggle(Meta("tt1", "movie", "Main film"))
+        Profiles.add("Sam", false); val sam = Profiles.all().last().id
+        Profiles.switchTo(ctx, sam)
+        assertEquals("a new profile is signed out", "", Prefs.accountLink)
+        assertEquals("and starts with the default addon only", listOf(AddonStore.DEFAULT_URL), AddonStore.saved().map { it.url })
+        assertTrue(LiveStore.playlists().isEmpty()); assertEquals("", Prefs.backupCode); assertTrue(Library.all().isEmpty())
+        Prefs.accountLink = "https://mylistsaddon.com/i/SAMTOKEN/tv/manifest.json"; AddonStore.add("https://b.example/manifest.json")
+        assertEquals("SAMTOKEN", Pairing.targetOf(Prefs.accountLink))
+        Profiles.switchTo(ctx, main)
+        assertEquals("MAINTOKEN", Pairing.targetOf(Prefs.accountLink)); assertTrue(AddonStore.saved().any { it.url == "https://a.example/manifest.json" }); assertFalse(AddonStore.saved().any { it.url == "https://b.example/manifest.json" })
+        assertEquals(listOf("http://iptv.example/a.m3u"), LiveStore.playlists()); assertEquals("AAAA-AAAA-AAAA-AAAA", Prefs.backupCode); assertTrue(Library.has("tt1"))
+        // The main profile's backup carries the profile list and settings; another profile's does not.
+        assertTrue(org.json.JSONObject(Backup.snapshot()).has("profiles"))
+        Profiles.switchTo(ctx, sam)
+        assertFalse(org.json.JSONObject(Backup.snapshot()).has("profiles")); assertTrue(org.json.JSONObject(Backup.snapshot()).getString("account").contains("SAMTOKEN"))
+        // Removing a profile removes what it kept.
+        Profiles.remove(sam); Profiles.switchTo(ctx, Profiles.activeId)
+        assertEquals(main, Profiles.activeId)
+        Profiles.switchTo(ctx, main); Prefs.accountLink = ""; AddonStore.reset(); LiveStore.restore(emptyList()); Prefs.backupCode = ""; Library.remove("tt1")
+    }
+}

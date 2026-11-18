@@ -56,29 +56,29 @@ object Backup {
         String(c.doFinal(b, 29, b.size - 29))
     } catch (_: Exception) { null }
 
-    /** What a backup holds: addons (with their keys), IPTV playlists, profiles, Library and settings. Not caches, not watch history. */
+    /** What a backup holds for the profile in use: its addons (with their keys), IPTV playlists, Library and account. The main profile's backup also holds the profile list and the box settings. Not caches, not watch history. */
     fun snapshot(): String = JSONObject().apply {
         put("v", 1)
         put("addons", JSONArray().also { a -> AddonStore.saved().forEach { a.put(JSONObject().put("url", it.url).put("on", it.enabled)) } })
         put("playlists", JSONArray(LiveStore.playlists()))
-        put("profiles", JSONArray().also { a -> Profiles.all().forEach { a.put(JSONObject().put("id", it.id).put("name", it.name).put("kids", it.kids)) } })
-        put("activeProfile", Profiles.activeId)
         put("account", Prefs.accountLink)
-        put("settings", Prefs.export())
         put("library", Library.export())
+        if (Profiles.activeId == Profiles.all().first().id) {
+            put("profiles", JSONArray().also { a -> Profiles.all().forEach { a.put(JSONObject().put("id", it.id).put("name", it.name).put("kids", it.kids)) } })
+            put("settings", Prefs.export())
+        }
     }.toString()
 
-    /** Returns a short summary of what was restored, or null if the data is not a backup. */
+    /** Returns a short summary of what was restored, or null if the data is not a backup. Goes to the profile in use. */
     fun apply(c: Context, json: String): String? = try {
         val o = JSONObject(json)
         if (o.optInt("v") != 1) null else {
             val addons = o.getJSONArray("addons"); val lists = o.getJSONArray("playlists")
             AddonStore.restore((0 until addons.length()).map { addons.getJSONObject(it).let { a -> AddonStore.Saved(a.getString("url"), a.optBoolean("on", true)) } })
             LiveStore.restore((0 until lists.length()).map { lists.getString(it) })
-            val ps = o.getJSONArray("profiles")
-            Profiles.restore((0 until ps.length()).map { ps.getJSONObject(it).let { p -> Profiles.P(p.getString("id"), p.getString("name"), p.optBoolean("kids")) } }, o.optString("activeProfile"))
-            Prefs.accountLink = o.optString("account"); Prefs.import(o.getJSONObject("settings")); Library.import(o.optJSONObject("library")); WatchStore.init(c); AddonStore.needsRefresh = true
-            "${addons.length()} addons, ${lists.length()} playlists, ${ps.length()} profiles and your settings"
+            o.optJSONArray("profiles")?.let { ps -> Profiles.restore((0 until ps.length()).map { ps.getJSONObject(it).let { p -> Profiles.P(p.getString("id"), p.getString("name"), p.optBoolean("kids")) } }, Profiles.activeId) }
+            Prefs.accountLink = o.optString("account"); o.optJSONObject("settings")?.let { Prefs.import(it) }; Library.import(o.opt("library")); WatchStore.init(c); AddonStore.needsRefresh = true
+            "${addons.length()} addons, ${lists.length()} playlists" + (if (o.has("settings")) ", the profiles and your settings" else "") + " for ${Profiles.active().name}"
         }
     } catch (_: Exception) { null }
 

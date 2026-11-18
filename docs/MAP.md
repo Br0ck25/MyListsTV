@@ -47,21 +47,23 @@ Find a symbol with grep on this file, then read only that file around the line n
    330   fun onDestroy()
    332   fun onTrimMemory(level: Int)
 
-## data/AddonStore.kt (100 lines) - The user's installed addons, kept as a list of manifest URLs.
+## data/AddonStore.kt (104 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
     13   class Saved
     21   fun init(c: Context)
-    26   fun saved()
-    36   fun write(list: List<Saved>)
-    43   fun normalize(input: String)  - Accepts stremio:// links and bare folders.
-    52   fun restore(list: List<Saved>)
-    55   fun reset()  - Back to just the default My Lists addon.
-    56   fun add(url: String)
-    57   fun remove(url: String)
-    58   fun setEnabled(url: String, on: Boolean)
-    59   fun move(url: String, delta: Int)
-    67   fun load(cb: (List<Addon>)  - Fetches every saved manifest (from cache first), then calls [cb] once on the main thread with those that loade
-    89   fun probe(url: String, cb: (Manifest?, String?)  - Fetches a manifest to check it before installing.
+    27   fun listKey()  - Each profile has its own addon list; a new profile starts with just the default.
+    28   fun forget(id: String)
+    30   fun saved()
+    40   fun write(list: List<Saved>)
+    47   fun normalize(input: String)  - Accepts stremio:// links and bare folders.
+    56   fun restore(list: List<Saved>)
+    59   fun reset()  - Back to just the default My Lists addon.
+    60   fun add(url: String)
+    61   fun remove(url: String)
+    62   fun setEnabled(url: String, on: Boolean)
+    63   fun move(url: String, delta: Int)
+    71   fun load(cb: (List<Addon>)  - Fetches every saved manifest (from cache first), then calls [cb] once on the main thread with those that loade
+    93   fun probe(url: String, cb: (Manifest?, String?)  - Fetches a manifest to check it before installing.
 
 ## data/Alerts.kt (52 lines) - New-episode alerts for series in the Library, shown in the bell.
     12 object Alerts  - New-episode alerts for series in the Library, shown in the bell.
@@ -84,8 +86,8 @@ Find a symbol with grep on this file, then read only that file around the line n
     36   fun key(code: String, salt: ByteArray, sha256: Boolean)
     43   fun encrypt(plain: String, code: String)  - Blob = base64( format byte, 16-byte salt, 12-byte iv, AES-256-GCM ciphertext ).
     52   fun decrypt(blob: String, code: String)  - Null when the code is wrong or the blob was changed: GCM checks both.
-    60   fun snapshot()  - What a backup holds: addons (with their keys), IPTV playlists, profiles, Library and settings.
-    72   fun apply(c: Context, json: String)  - Returns a short summary of what was restored, or null if the data is not a backup.
+    60   fun snapshot()  - What a backup holds for the profile in use: its addons (with their keys), IPTV playlists, Library and account.
+    73   fun apply(c: Context, json: String)  - Returns a short summary of what was restored, or null if the data is not a backup.
     88   fun codeForThisBox()  - The code for this box, made on first use.
     90   fun upload(code: String, reply: (String)
     98   fun restore(c: Context, code: String, reply: (String)
@@ -176,7 +178,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    188   fun youtubeIds(o: JSONObject)  - Trailers appear as trailerStreams [{ytId}] or trailers [{source, type}]; both carry a YouTube id.
    195   fun strings(a: JSONArray?)
 
-## data/Library.kt (79 lines) - "Library": titles the viewer saved with + on a details page.
+## data/Library.kt (83 lines) - "Library": titles the viewer saved with + on a details page.
      8 object Library  - "Library": titles the viewer saved with + on a details page.
      9   fun sp(profile: String = Profiles.activeId)
     11   fun read(profile: String)
@@ -190,32 +192,33 @@ Find a symbol with grep on this file, then read only that file around the line n
     62   fun has(id: String)
     65   fun toggle(m: Meta)  - Adds the title, or takes it out if it is already there.
     73   fun remove(id: String)
-    76   fun export()  - Every profile's list, for a backup.
-    78   fun import(o: JSONObject?)
+    76   fun export()  - This profile's list, for a backup.
+    79   fun import(o: Any?)  - Restores this profile's list from a backup (an array; the first version of backups held an object with every p
 
-## data/Live.kt (148 lines)
+## data/Live.kt (150 lines)
      9 class Channel
     12 object M3u  - M3U playlist parsing.
     16   fun epgUrls(text: String)  - Guide (XMLTV) links named in the playlist's first line, if any.
     20   fun parse(text: String, max: Int = 6000)
     42 object LiveStore  - Saved IPTV playlist links.
     45   fun init(c: Context)  - Playlist links can carry a login, so the list is kept wrapped by the Keystore (see Secure).
-    46   fun playlists()
-    47   fun add(url: String)
-    48   fun remove(url: String)
-    49   fun restore(list: List<String>)
-    52   fun load(cb: (List<Channel>, List<String>)  - Loads every playlist (cached first) and returns the channels once, grouped.
-    71 object Links  - One place that decides what a pasted link is: a Stremio addon or an IPTV playlist.
-    72   fun isAddon(link: String)
-    74   fun add(link: String, reply: (String)
-    86 class Prog
-    89 object Epg  - Programme guide from XMLTV.
-    92   fun nowNext(tvgId: String?, t: Long = System.currentTimeMillis()
-    98   fun setGuide(g: Map<String, List<Prog>>)
-   100   fun schedule(tvgId: String?)
-   102   fun time(s: String)
-   110   fun parse(input: java.io.InputStream, ids: Set<String>, from: Long, until: Long)
-   133   fun load(urls: List<String>, ids: Set<String>, cb: ()  - Downloads each guide (gzip is detected), parses it off the main thread, then calls [cb] on the main thread.
+    47   fun playlists()  - Each profile has its own playlists.
+    48   fun forget(id: String)
+    49   fun add(url: String)
+    50   fun remove(url: String)
+    51   fun restore(list: List<String>)
+    54   fun load(cb: (List<Channel>, List<String>)  - Loads every playlist (cached first) and returns the channels once, grouped.
+    73 object Links  - One place that decides what a pasted link is: a Stremio addon or an IPTV playlist.
+    74   fun isAddon(link: String)
+    76   fun add(link: String, reply: (String)
+    88 class Prog
+    91 object Epg  - Programme guide from XMLTV.
+    94   fun nowNext(tvgId: String?, t: Long = System.currentTimeMillis()
+   100   fun setGuide(g: Map<String, List<Prog>>)
+   102   fun schedule(tvgId: String?)
+   104   fun time(s: String)
+   112   fun parse(input: java.io.InputStream, ids: Set<String>, from: Long, until: Long)
+   135   fun load(urls: List<String>, ids: Set<String>, cb: ()  - Downloads each guide (gzip is detected), parses it off the main thread, then calls [cb] on the main thread.
 
 ## data/Models.kt (99 lines) - A catalog or search item, also the detail record (meta).
      4 class Meta  - A catalog or search item, also the detail record (meta).
@@ -264,7 +267,7 @@ Find a symbol with grep on this file, then read only that file around the line n
      7   fun describe(httpStatus: Int?, kind: Kind)
     19   fun worthTryingAnotherSource(httpStatus: Int?, kind: Kind)  - True when a different source is likely to help, so fallback should run.
 
-## data/Prefs.kt (154 lines) - All user settings in one place.
+## data/Prefs.kt (157 lines) - All user settings in one place.
      8 object Prefs  - All user settings in one place.
     16   fun init(c: Context)
     21   var liteMode
@@ -296,27 +299,31 @@ Find a symbol with grep on this file, then read only that file around the line n
    113   var backupCode  - Recovery code for this box's online backup.
    118   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
    122   var lastBackup
-   127   fun export()  - Settings as JSON for a backup.
-   129   fun import(o: org.json.JSONObject)
-   135   var setupDone
-   139   var advanced
-   143   fun isLowRamBox()
-   148   fun lite()
-   151   fun effectiveMaxResolution()  - The highest resolution to prefer.
-   153   fun memoryCacheBytes()
+   127   fun forget(id: String)  - Forgets what a removed profile kept here.
+   130   fun export()  - Settings as JSON for a backup.
+   132   fun import(o: org.json.JSONObject)
+   138   var setupDone
+   142   var advanced
+   146   fun isLowRamBox()
+   151   fun lite()
+   154   fun effectiveMaxResolution()  - The highest resolution to prefer.
+   156   fun memoryCacheBytes()
 
-## data/Profiles.kt (51 lines) - Viewer profiles.
+## data/Profiles.kt (68 lines) - Viewer profiles.
      9 object Profiles  - Viewer profiles.
     10   class P
     16   fun init(c: Context)
     21   fun all()
     26   fun write(l: List<P>)
-    35   fun active()
-    37   fun add(name: String, kids: Boolean)
-    40   fun remove(id: String)  - The last profile cannot be removed.
-    43   fun restore(l: List<P>, active: String)  - Replaces the whole list (used when restoring a backup).
-    48   fun allows(m: Meta)
-    50   fun safeForKids(m: Meta)
+    36   fun key(base: String, id: String = activeId)  - The storage key for something each profile keeps for itself (its account, addons, playlists, backup code).
+    39   fun switchTo(c: Context, id: String)  - Makes [id] the profile in use.
+    41   fun active()
+    43   fun add(name: String, kids: Boolean)
+    46   fun remove(id: String)  - The last profile cannot be removed.
+    53   fun forget(id: String)  - Deletes what a removed profile kept: history, Library, watched ticks, alerts, addons, playlists, account and b
+    60   fun restore(l: List<P>, active: String)  - Replaces the whole list (used when restoring a backup).
+    65   fun allows(m: Meta)
+    67   fun safeForKids(m: Meta)
 
 ## data/Progress.kt (35 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
     10 object Progress  - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
