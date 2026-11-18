@@ -16,6 +16,7 @@ The full plan lives in the "My Lists TV: Build Plan" doc the owner shares; `docs
 9. **Ask only about product decisions.** Decide technical choices yourself and say what you chose.
 10. Small, root-cause changes. Don't refactor unrelated code. Never skip or loosen a test to get green.
 11. Don't commit secrets, keystores or `local.properties`.
+12. **No source file over 2,000 lines** (Kotlin, XML, Gradle, workflow). Split by job before it gets there. `SizeGuardTest` fails the build if one does.
 
 ## Working rules (added at the owner's request, from the Karpathy-style guidelines)
 These bias toward care over speed. For trivial work, use judgment. Where they meet the owner's rules above, ask only about product decisions and decide technical choices yourself.
