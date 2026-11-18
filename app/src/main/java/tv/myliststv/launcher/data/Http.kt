@@ -77,6 +77,25 @@ object Http {
         throw IllegalStateException("Too many redirects")
     }
 
+    /** Streams a download straight to a file (large guides must never be held in memory). */
+    fun download(url: String, to: File) {
+        var current = url
+        for (hop in 0..5) {
+            val c = URL(current).openConnection() as HttpURLConnection
+            c.connectTimeout = 12_000; c.readTimeout = 30_000; c.instanceFollowRedirects = false
+            c.setRequestProperty("User-Agent", "MyListsTV/0.1")
+            try {
+                val code = c.responseCode
+                if (code in 300..399) { current = URL(URL(current), c.getHeaderField("Location") ?: throw IllegalStateException("Redirect with no location")).toString(); continue }
+                if (code !in 200..299) throw IllegalStateException("HTTP $code")
+                val tmp = File(to.path + ".part")
+                c.inputStream.use { i -> tmp.outputStream().use { o -> i.copyTo(o) } }
+                tmp.renameTo(to); return
+            } finally { c.disconnect() }
+        }
+        throw IllegalStateException("Too many redirects")
+    }
+
     /** Downloads raw bytes (images). */
     fun fetchBytes(url: String, connectMs: Int = 10_000, readMs: Int = 20_000): ByteArray {
         var current = url

@@ -20,14 +20,21 @@ class LiveScreen(private val act: Activity) {
 
     fun start() {
         note.text = if (LiveStore.playlists().isEmpty()) "No IPTV playlist yet. In the Addons tab choose “Add an addon or playlist” and paste an M3U link." else "Loading channels…"
-        LiveStore.load { channels ->
+        LiveStore.load { channels, guides ->
             all = channels
+            Epg.load(guides, channels.mapNotNull { it.tvgId }.toSet()) { fill(); list.changedAll() }
             rows.clear()
-            channels.groupBy { it.group }.entries.take(40).forEach { (g, chs) ->
-                rows += RowModel(g, "${chs.size} channels", CardKind.WIDE, chs.take(80).map { CardModel(it.name, it.logo, payload = it) })
-            }
+            fill()
             if (channels.isNotEmpty()) note.text = "${channels.size} channels. Up and down change channel while watching."
             list.changedAll()
+        }
+    }
+
+    /** One row per group; each card shows what is on now when a guide is loaded. */
+    private fun fill() {
+        rows.clear()
+        all.groupBy { it.group }.entries.take(40).forEach { (g, chs) ->
+            rows += RowModel(g, "${chs.size} channels", CardKind.WIDE, chs.take(80).map { CardModel(it.name, it.logo, Epg.nowNext(it.tvgId).first?.title, payload = it) })
         }
     }
 

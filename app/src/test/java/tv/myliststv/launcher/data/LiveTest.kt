@@ -41,3 +41,24 @@ class UpdaterTest {
         assertEquals(12, r.build); assertEquals("https://x/12.apk", r.apkUrl)
     }
 }
+
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34])
+class EpgTest {
+    @Test fun readsGuideForOurChannelsOnly() {
+        val now = 1_795_000_000_000L
+        fun x(t: Long) = java.text.SimpleDateFormat("yyyyMMddHHmmss Z", java.util.Locale.US).format(java.util.Date(t))
+        val xml = """<tv><programme start="${x(now - 600_000)}" stop="${x(now + 600_000)}" channel="a"><title>News Now</title><desc>x</desc></programme>
+          <programme start="${x(now + 600_000)}" stop="${x(now + 2_400_000)}" channel="a"><title lang="en">Weather</title></programme>
+          <programme start="${x(now)}" stop="${x(now + 1000)}" channel="other"><title>Ignored</title></programme></tv>"""
+        val g = Epg.parse(xml.byteInputStream(), setOf("a"), now, now + 12 * 3600_000L)
+        assertEquals(listOf("News Now", "Weather"), g["a"]!!.map { it.title })
+        assertNull(g["other"])
+    }
+
+    @Test fun readsPlaylistGuideLinksAndChannelIds() {
+        val m3u = "#EXTM3U url-tvg=\"https://g/x.xml.gz,https://g/y.xml\"\n#EXTINF:-1 tvg-id=\"a\" group-title=\"G\",A\nhttp://h/a"
+        assertEquals(listOf("https://g/x.xml.gz", "https://g/y.xml"), M3u.epgUrls(m3u))
+        assertEquals("a", M3u.parse(m3u)[0].tvgId)
+    }
+}

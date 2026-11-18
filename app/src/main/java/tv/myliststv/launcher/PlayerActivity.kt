@@ -170,7 +170,12 @@ class PlayerActivity : Activity() {
     private fun refreshTitle() {
         val m = PlaySession.meta!!
         titleText.text = m.name
-        if (live) { titleText.text = "CH ${PlaySession.liveIndex + 1} \u00b7 ${m.name}"; subText.text = "${current.title}   \u00b7   Up and down change channel"; return }
+        if (live) {
+            val (now, next) = Epg.nowNext(PlaySession.live!![PlaySession.liveIndex].tvgId)
+            titleText.text = "CH ${PlaySession.liveIndex + 1} \u00b7 ${m.name}"
+            subText.text = if (now != null) "Now: ${now.title}" + (next?.let { "   \u00b7   Next: ${it.title}" } ?: "") else "${current.title}   \u00b7   Up and down change channel"
+            return
+        }
         val parts = ArrayList<String>()
         if (PlaySession.season >= 0) parts += "S${PlaySession.season} · E${PlaySession.episode}" + (PlaySession.episodeTitle?.let { "  $it" } ?: "")
         if (current.resolution > 0) parts += "${current.resolution}p"
@@ -599,6 +604,7 @@ class PlayerActivity : Activity() {
     override fun onStop() {
         super.onStop()
         saveProgress(force = true)
+        if (!live) WatchNext.publish(this)
         player.pause()
     }
 
