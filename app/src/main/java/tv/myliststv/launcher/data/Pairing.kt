@@ -51,8 +51,13 @@ object Pairing {
         Http.post { if (!cancelled || result != null) done(result) }
     }
 
-    /** Who the link belongs to: the first path segment of /user/tv/manifest.json. */
-    fun userOf(manifestUrl: String): String = manifestUrl.removePrefix("https://").removePrefix("http://").split('/').getOrNull(1) ?: "your account"
+    private fun parts(manifestUrl: String) = manifestUrl.removePrefix("https://").removePrefix("http://").split('/')
+
+    /** Who the link belongs to, for display: the user in /user/tv/manifest.json. A paired TV's link is /i/<secret>/tv/..., which names nobody and must never be shown. */
+    fun userOf(manifestUrl: String): String = parts(manifestUrl).getOrNull(1)?.takeIf { it != "i" } ?: "your account"
+
+    /** What My Lists wants as the TV's id: the secret in /i/<secret>/tv/... (a username is refused for history and progress). */
+    fun targetOf(manifestUrl: String): String = parts(manifestUrl).let { p -> if (p.getOrNull(1) == "i") p.getOrNull(2) ?: "" else p.getOrNull(1) ?: "" }
 
     fun signIn(manifestUrl: String) {
         AddonStore.remove(AddonStore.DEFAULT_URL)

@@ -96,8 +96,8 @@ object Prefs {
 
     /** The signed-in My Lists addon link, or empty when using the default catalogs. */
     var accountLink: String
-        get() = sp.getString("accountLink", "") ?: ""
-        set(v) = sp.edit().putString("accountLink", v).apply()
+        get() = Secure.unwrap(sp.getString("accountLink", "") ?: "").orEmpty()
+        set(v) = sp.edit().putString("accountLink", Secure.wrap(v)).apply()
 
     var lastBackup: Long
         get() = sp.getLong("lastBackup", 0L)

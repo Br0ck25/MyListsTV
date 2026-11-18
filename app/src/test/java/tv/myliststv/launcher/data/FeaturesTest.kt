@@ -118,11 +118,11 @@ class HomeLayoutTest {
 }
 
 class ProgressTest {
-    private val link = "https://mylistsaddon.com/jim/tv/manifest.json"
+    private val link = "https://mylistsaddon.com/i/SECRETTOKEN/tv/manifest.json"
     private fun e(id: String, type: String, pos: Long, dur: Long = 100_000) = WatchStore.Entry(id, type, "Show", "p.jpg", null, "$id:1:2", 1, 2, "Ep Two", pos, dur, 1L)
     @Test fun partWayGoesToProgressFinishedToHistory() {
         val (url, body) = Progress.request(link, e("tt1", "series", 25_000))!!
-        assertTrue(url.endsWith("/api/nuvio-tv/progress")); assertTrue(body.contains("\"targetId\":\"jim\"")); assertTrue(body.contains("\"episode\":2")); assertTrue(body.contains("\"positionMs\":25000"))
+        assertTrue(url.endsWith("/api/nuvio-tv/progress")); assertTrue(body.contains("\"targetId\":\"SECRETTOKEN\"")); assertEquals("your account", Pairing.userOf(link)); assertTrue(body.contains("\"episode\":2")); assertTrue(body.contains("\"positionMs\":25000"))
         assertTrue(Progress.request(link, e("tt1", "series", 95_000))!!.first.endsWith("/api/nuvio-tv/history"))
     }
     @Test fun nothingIsSentWhenSignedOutOrJustStartedOrNotAnImdbTitle() {

@@ -15,7 +15,7 @@ object Progress {
     fun request(link: String, e: WatchStore.Entry): Pair<String, String>? {
         if (link.isEmpty() || !Regex("tt\\d+").matches(e.metaId) || e.durationMs <= 0) return null
         val series = e.type == "series"
-        val o = JSONObject().put("targetId", Pairing.userOf(link)).put("type", if (series) "series" else "movie").put("imdbId", e.metaId)
+        val o = JSONObject().put("targetId", Pairing.targetOf(link)).put("type", if (series) "series" else "movie").put("imdbId", e.metaId)
         if (series) o.put("season", e.season).put("episode", e.episode)
         if (e.fraction >= 0.9f) return "$ORIGIN/api/nuvio-tv/history" to o.put("completed", true).put("watchedAt", e.updated).toString()
         if (e.fraction < 0.02f) return null
