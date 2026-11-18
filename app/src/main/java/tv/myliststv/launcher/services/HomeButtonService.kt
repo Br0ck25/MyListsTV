@@ -1,4 +1,7 @@
-package tv.myliststv.launcher
+package tv.myliststv.launcher.services
+
+import tv.myliststv.launcher.*
+import tv.myliststv.launcher.screens.*
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent

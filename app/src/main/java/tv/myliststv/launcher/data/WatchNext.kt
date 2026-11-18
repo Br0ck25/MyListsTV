@@ -1,12 +1,15 @@
 package tv.myliststv.launcher.data
 
+import tv.myliststv.launcher.screens.*
+import tv.myliststv.launcher.services.*
+
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.tvprovider.media.tv.TvContractCompat
 import androidx.tvprovider.media.tv.WatchNextProgram
-import tv.myliststv.launcher.DetailsActivity
+import tv.myliststv.launcher.screens.DetailsActivity
 
 /** Puts Continue watching on the system home screen's Watch Next row. Silently does nothing on devices without it. */
 object WatchNext {

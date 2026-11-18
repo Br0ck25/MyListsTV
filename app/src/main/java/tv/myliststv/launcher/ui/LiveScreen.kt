@@ -1,5 +1,8 @@
 package tv.myliststv.launcher.ui
 
+import tv.myliststv.launcher.screens.*
+import tv.myliststv.launcher.services.*
+
 import android.app.Activity
 import android.content.Intent
 import android.view.Gravity
@@ -11,7 +14,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import tv.myliststv.launcher.PlayerActivity
+import tv.myliststv.launcher.screens.PlayerActivity
 import tv.myliststv.launcher.data.*
 
 /**

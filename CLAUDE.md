@@ -26,6 +26,12 @@ These bias toward care over speed. For trivial work, use judgment. Where they me
 3. **Surgical changes.** Touch only what the task needs. Do not "improve" nearby code, comments or formatting, and do not refactor what is not broken. Match the existing style. Mention unrelated dead code instead of deleting it. Remove only what your own change made unused. Every changed line should trace back to the request.
 4. **Goal-driven execution.** Turn each task into a check you can run: "add validation" becomes "write tests for bad input, then make them pass"; "fix the bug" becomes "write a test that reproduces it, then make it pass"; "refactor" means tests pass before and after. For multi-step work, state a short plan with a check after each step. Loop until the checks pass.
 
+## Finding code cheaply (read this before opening source files)
+- `docs/INDEX.md` (2 KB): which files to touch for which kind of change.
+- `grep -n <name> docs/MAP.md`: every file, class and function with its line number. Then read only that range of that file.
+- After adding, moving or renaming code run `python3 tools/gen_map.py` and commit `docs/MAP.md` (CI fails if it is stale).
+- Layout: `ui/` shared views and screens, `screens/` activities, `services/` background services, `data/` logic, storage and network.
+
 ## Keep the code small (owner's rule)
 - UI changes follow `docs/DESIGN.md` (tokens, components, menu rules). Read it before touching a screen.
 - Fewest lines that do the job. Before writing anything, look for an existing helper: `ui/Ui.kt` (views, colors, focus), `ui/Cards.kt` (`CardAdapter` for any strip or grid), `data/Http.kt` (all network), `data/Prefs.kt` (all settings), `data/AddonStore.kt` and `data/Catalogs.kt` (addons and catalogs).

@@ -1,12 +1,16 @@
 package tv.myliststv.launcher.data
 
+import tv.myliststv.launcher.*
+import tv.myliststv.launcher.screens.*
+import tv.myliststv.launcher.services.*
+
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 
 /** What the Home screen setup page needs: where we stand, how to change it, and the commands for the phone page. */
 object HomeSetup {
-    private val SERVICE = "tv.myliststv.launcher/tv.myliststv.launcher.HomeButtonService"
+    private val SERVICE = "tv.myliststv.launcher/tv.myliststv.launcher.services.HomeButtonService"
 
     private fun homeIntent() = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
 
@@ -32,6 +36,6 @@ object HomeSetup {
         "adb shell pm grant tv.myliststv.launcher android.permission.WRITE_SECURE_SETTINGS",
         "adb shell settings put secure enabled_accessibility_services $SERVICE",
         "adb shell settings put secure accessibility_enabled 1",
-        "adb shell cmd notification allow_listener tv.myliststv.launcher/tv.myliststv.launcher.NotificationsService",
+        "adb shell cmd notification allow_listener tv.myliststv.launcher/tv.myliststv.launcher.services.NotificationsService",
     )
 }

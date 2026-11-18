@@ -59,27 +59,27 @@
         </provider>
 
         <!-- Exported so the system home screen can open it from a Watch Next card. -->
-        <activity android:name=".DetailsActivity"
+        <activity android:name=".screens.DetailsActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="true" android:screenOrientation="landscape" />
-        <activity android:name=".StreamsActivity"
+        <activity android:name=".screens.StreamsActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" />
-        <activity android:name=".SearchActivity"
+        <activity android:name=".screens.SearchActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" android:windowSoftInputMode="stateHidden|adjustPan" />
-        <service android:name=".BackdropDream" android:exported="true" android:permission="android.permission.BIND_DREAM_SERVICE">
+        <service android:name=".services.BackdropDream" android:exported="true" android:permission="android.permission.BIND_DREAM_SERVICE">
             <intent-filter><action android:name="android.service.dreams.DreamService" /><category android:name="android.intent.category.DEFAULT" /></intent-filter>
         </service>
-        <service android:name=".NotificationsService" android:exported="false" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+        <service android:name=".services.NotificationsService" android:exported="false" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
         </service>
-        <service android:name=".HomeButtonService" android:exported="false" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+        <service android:name=".services.HomeButtonService" android:exported="false" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/home_button_service" />
         </service>
-        <activity android:name=".AddonsActivity"
+        <activity android:name=".screens.AddonsActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" android:windowSoftInputMode="stateHidden|adjustPan" />
-        <activity android:name=".SettingsActivity"
+        <activity android:name=".screens.SettingsActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" />
-        <activity android:name=".PlayerActivity" android:exported="false" android:screenOrientation="landscape"
+        <activity android:name=".screens.PlayerActivity" android:exported="false" android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|keyboardHidden|keyboard|smallestScreenSize|screenLayout|uiMode"
             android:theme="@style/Theme.MyListsTV" />
     </application>

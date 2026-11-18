@@ -19,6 +19,8 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
+      - name: Code map is up to date
+        run: python3 tools/gen_map.py --check
       - name: Test and build
         run: ./gradlew --no-daemon -PbuildNumber=${{ github.run_number }} :app:testDebugUnitTest :app:assembleDebug
       - name: Name the APK

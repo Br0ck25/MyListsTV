@@ -1,5 +1,9 @@
 package tv.myliststv.launcher.data
 
+import tv.myliststv.launcher.*
+import tv.myliststv.launcher.screens.*
+import tv.myliststv.launcher.services.*
+
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -137,16 +141,16 @@ class HomeSetupTest {
     @Test fun commandsUseThisBoxAndTheRealServiceName() {
         val c = HomeSetup.commands("192.168.1.9")
         assertTrue(c[0] == "adb connect 192.168.1.9:5555")
-        assertTrue(c.any { it.contains("tv.myliststv.launcher/tv.myliststv.launcher.HomeButtonService") })
+        assertTrue(c.any { it.contains("tv.myliststv.launcher/tv.myliststv.launcher.services.HomeButtonService") })
         // The service class named in the commands must exist, or the fallback could never be switched on.
-        Class.forName("tv.myliststv.launcher.HomeButtonService")
+        Class.forName("tv.myliststv.launcher.services.HomeButtonService")
     }
     @Test fun fallbackIsOffUntilEnabled() {
         val c = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
         assertFalse(HomeSetup.fallbackOn(c))
-        assertFalse(tv.myliststv.launcher.Notices.allowed(c))
-        assertTrue(tv.myliststv.launcher.Notices.list(c).isEmpty())
-        Class.forName("tv.myliststv.launcher.NotificationsService")
+        assertFalse(tv.myliststv.launcher.services.Notices.allowed(c))
+        assertTrue(tv.myliststv.launcher.services.Notices.list(c).isEmpty())
+        Class.forName("tv.myliststv.launcher.services.NotificationsService")
     }
 }
 

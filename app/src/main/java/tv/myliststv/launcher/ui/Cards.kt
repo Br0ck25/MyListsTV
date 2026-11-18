@@ -1,5 +1,7 @@
 package tv.myliststv.launcher.ui
 
+import tv.myliststv.launcher.*
+
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable

@@ -1,5 +1,8 @@
 package tv.myliststv.launcher
 
+import tv.myliststv.launcher.screens.*
+import tv.myliststv.launcher.services.*
+
 import android.app.Activity
 import android.content.Intent
 import android.os.Looper
@@ -40,9 +43,11 @@ class SmokeTest {
     @Test fun homeLoadsDefaultRowsFromMyLists() {
         assumeAddonReachable()
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
-        settle()
-        val rv = views(a.window.decorView).filterIsInstance<RecyclerView>()
-        assertTrue("home has rows", rv.any { it.adapter != null && it.adapter!!.itemCount >= 2 })
+        // The catalog is a live server: wait up to 25 s for its rows instead of a fixed 6 s.
+        fun rowsShown() = views(a.window.decorView).filterIsInstance<RecyclerView>().any { it.adapter != null && it.adapter!!.itemCount >= 2 }
+        val end = System.currentTimeMillis() + 25_000
+        while (!rowsShown() && System.currentTimeMillis() < end) settle(1000)
+        assertTrue("home has rows", rowsShown())
         assertTrue("addon loaded", AddonStore.loaded.any { it.name == "My Lists" })
     }
 

@@ -1,5 +1,7 @@
 package tv.myliststv.launcher.data
 
+import tv.myliststv.launcher.*
+
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.*
 import org.junit.Test
