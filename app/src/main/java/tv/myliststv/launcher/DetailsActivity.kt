@@ -42,12 +42,12 @@ class DetailsActivity : Activity() {
         frame.addView(bg, FrameLayout.LayoutParams(-1, -1))
         val body = Ui.vbox(this).apply { setPadding(Ui.dp(this@DetailsActivity, 48), Ui.dp(this@DetailsActivity, 28), Ui.dp(this@DetailsActivity, 48), Ui.dp(this@DetailsActivity, 12)) }
         val top = Ui.hbox(this, 20).apply { gravity = Gravity.TOP }
-        poster = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; setBackgroundColor(Ui.CARD) }
+        poster = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; background = Ui.rounded(this@DetailsActivity, Ui.CARD, Ui.R_CARD); clipToOutline = true }
         top.addView(poster, LinearLayout.LayoutParams(Ui.dp(this, 120), Ui.dp(this, 180)))
         val info = Ui.vbox(this)
         title = Ui.text(this, meta.name, 30f, Ui.TEXT, true, 2)
         metaLine = Ui.text(this, "", 14f, Ui.ACCENT, true, 1)
-        desc = Ui.text(this, "", 14f, 0xFFC3C8DC.toInt(), false, 5)
+        desc = Ui.text(this, "", 14f, Ui.TEXT2, false, 5)
         info.addView(title); info.addView(metaLine, Ui.wrap().apply { topMargin = Ui.dp(this@DetailsActivity, 6) })
         info.addView(desc, Ui.matchWrap().apply { topMargin = Ui.dp(this@DetailsActivity, 8) })
         val buttons = Ui.hbox(this, 10)
@@ -172,9 +172,9 @@ class DetailsActivity : Activity() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): H {
             val c = parent.context
             val box = Ui.vbox(c).apply {
-                setBackgroundColor(Ui.CARD); setPadding(Ui.dp(c, 12), Ui.dp(c, 10), Ui.dp(c, 12), Ui.dp(c, 10))
+                setPadding(Ui.dp(c, 12), Ui.dp(c, 10), Ui.dp(c, 12), Ui.dp(c, 10))
                 layoutParams = RecyclerView.LayoutParams(Ui.dp(c, 200), Ui.dp(c, 100)).also { it.setMargins(Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4)) }
-                isFocusable = true; isClickable = true; foreground = Ui.focusBg(c, 6, 0x14FFFFFF)
+                isFocusable = true; isClickable = true; Ui.rowStyle(c, this, Ui.R_CARD)
             }
             val t = Ui.text(c, "", 14f, Ui.TEXT, true, 2)
             val s = Ui.text(c, "", 12f, Ui.DIM, false, 3)

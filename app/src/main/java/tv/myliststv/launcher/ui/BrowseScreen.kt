@@ -27,7 +27,7 @@ class BrowseScreen(
     private val rows = ArrayList<RowModel>()
     private val heroTitle = Ui.text(c, "", 26f, Ui.TEXT, true, 1)
     private val heroMeta = Ui.text(c, "", 14f, Ui.ACCENT, true, 1)
-    private val heroDesc = Ui.text(c, "", 14f, 0xFFC3C8DC.toInt(), false, 3)
+    private val heroDesc = Ui.text(c, "", 14f, Ui.TEXT2, false, 3)
     private val list = RowsList(c, rows, lite, ::hero, { model ->
         when (val p = model.payload) {
             is Meta -> onMeta(p)

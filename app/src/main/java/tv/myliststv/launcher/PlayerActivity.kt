@@ -68,6 +68,8 @@ class PlayerActivity : Activity() {
     private var speedIdx = 1
     private var subs: List<Sub> = emptyList()
     private var subsFor: String? = null
+    private var segs: List<Segments.Seg> = emptyList()
+    private lateinit var skipBtn: TextView
     private val speeds = floatArrayOf(0.75f, 1f, 1.25f, 1.5f, 2f)
     private val live get() = PlaySession.live != null
 
@@ -106,7 +108,7 @@ class PlayerActivity : Activity() {
             setPadding(Ui.dp(c, 48), Ui.dp(c, 60), Ui.dp(c, 48), Ui.dp(c, 24))
         }
         titleText = Ui.text(c, "", 26f, Ui.TEXT, true, 1)
-        subText = Ui.text(c, "", 13f, 0xFFCFD4E6.toInt(), false, 1)
+        subText = Ui.text(c, "", 13f, Ui.TEXT2, false, 1)
         bottom.addView(titleText); bottom.addView(subText, Ui.wrap().apply { topMargin = Ui.dp(c, 4) })
         track = FrameLayout(c).apply { setBackgroundColor(0x33FFFFFF) }
         fill = View(c).apply { setBackgroundColor(Ui.ACCENT) }
@@ -131,6 +133,12 @@ class PlayerActivity : Activity() {
             background = GradientDrawable().apply { setColor(0xEE141620.toInt()); setStroke(Ui.dp(c, 1), 0x80FFC65C.toInt()); cornerRadius = Ui.dpf(c, 30f) }
         }
         root.addView(banner, FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = Ui.dp(c, 28) })
+        // Skip intro / recap / credits: shown only while inside one of those; OK skips it.
+        skipBtn = Ui.text(c, "", 16f, Ui.TEXT, true).apply {
+            setPadding(Ui.dp(c, 22), Ui.dp(c, 11), Ui.dp(c, 22), Ui.dp(c, 11)); visibility = View.GONE
+            background = Ui.rounded(c, Ui.ELEVATED, 999)
+        }
+        root.addView(skipBtn, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END).apply { bottomMargin = Ui.dp(c, 150); rightMargin = Ui.dp(c, 48) })
 
         slate = Ui.vbox(c).apply { gravity = Gravity.CENTER; setBackgroundColor(0xE0080A0E.toInt()); isClickable = true }
         slate.addView(ProgressBar(c), LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)))
@@ -153,7 +161,7 @@ class PlayerActivity : Activity() {
 
         errorBox = Ui.vbox(c).apply { gravity = Gravity.CENTER; setBackgroundColor(0xF0080A0E.toInt()); visibility = View.GONE; setPadding(Ui.dp(c, 80), 0, Ui.dp(c, 80), 0) }
         errorBox.addView(Ui.text(c, "Playback error", 26f, Ui.TEXT, true))
-        errorText = Ui.text(c, "", 16f, 0xFFC3C8DC.toInt()).apply { gravity = Gravity.CENTER }
+        errorText = Ui.text(c, "", 16f, Ui.TEXT2).apply { gravity = Gravity.CENTER }
         errorBox.addView(errorText, Ui.wrap().apply { topMargin = Ui.dp(c, 8); bottomMargin = Ui.dp(c, 16) })
         val eb = Ui.hbox(c, 10)
         eb.addView(Ui.button(c, "Choose a source") { hideError(); openSources() })
@@ -225,7 +233,7 @@ class PlayerActivity : Activity() {
     private fun begin(s: StreamItem, pos: Long, msg: String) {
         val vid = PlaySession.videoId
         if (live || subsFor == vid) { startStream(s, pos, msg); return }
-        subsFor = vid; showSlate("Finding subtitles…")
+        subsFor = vid; segs = emptyList(); showSlate("Finding subtitles…")
         Subs.fetch(PlaySession.meta!!.type, vid, Prefs.subtitleLang) { found -> if (!isFinishing) { subs = found; startStream(s, pos, msg) } }
     }
 
@@ -261,6 +269,8 @@ class PlayerActivity : Activity() {
         if (gotFirstFrame) return
         gotFirstFrame = true
         handler.removeCallbacks(startupTimeout)
+        val vid = PlaySession.videoId
+        if (Prefs.skipIntro && !live) Segments.load(vid) { if (vid == PlaySession.videoId) segs = it }
         hideSlate()
         scheduleHide()
         if (fallback != null && fallback!!.attempts > 0 && autoSelected) bannerShow("The first source failed. Playing the next best match.")
@@ -387,8 +397,8 @@ class PlayerActivity : Activity() {
     private fun item(label: String, sub: String?, tag: String?, tagColor: Int = Ui.GOOD, onClick: () -> Unit): View {
         val c = this
         val r = Ui.vbox(c).apply {
-            setPadding(Ui.dp(c, 12), Ui.dp(c, 8), Ui.dp(c, 12), Ui.dp(c, 8)); setBackgroundColor(Ui.CARD)
-            foreground = Ui.focusBg(c, 8, 0x14FFFFFF); isFocusable = true; isClickable = true; setOnClickListener { onClick() }
+            setPadding(Ui.dp(c, 12), Ui.dp(c, 8), Ui.dp(c, 12), Ui.dp(c, 8)); Ui.rowStyle(c, this)
+            isFocusable = true; isClickable = true; setOnClickListener { onClick() }
         }
         val line = Ui.hbox(c, 8)
         line.addView(Ui.text(c, label, 14f, Ui.TEXT, true, 1), LinearLayout.LayoutParams(0, -2, 1f))
@@ -525,7 +535,21 @@ class PlayerActivity : Activity() {
 
     private fun togglePlay() { if (player.isPlaying) player.pause() else player.play() }
 
+    /** The segment under the playhead, or null; also what the skip button says and does. */
+    private fun skipTarget(): Segments.Seg? = if (live || !Prefs.skipIntro || panelOpen() || errorOpen() || slate.visibility == View.VISIBLE) null else Segments.at(segs, player.currentPosition)
+
+    private fun updateSkip() {
+        val s = skipTarget()
+        skipBtn.visibility = if (s == null) View.GONE else View.VISIBLE
+        if (s != null) skipBtn.text = when (s.kind) { "intro" -> "Skip intro"; "recap" -> "Skip recap"; else -> if (PlaySession.meta?.type == "series" && Prefs.autoplayNext) "Next episode" else "Skip credits" } + "   \u00b7   OK"
+    }
+
+    private fun doSkip(s: Segments.Seg) {
+        if (s.kind == "credits" && PlaySession.meta?.type == "series" && Prefs.autoplayNext) playNextEpisode(manual = false) else seekBy(s.endMs - player.currentPosition)
+    }
+
     private fun updateProgress() {
+        updateSkip()
         val dur = player.duration
         val pos = player.currentPosition
         if (dur > 0) {
@@ -570,7 +594,7 @@ class PlayerActivity : Activity() {
                 when (e.keyCode) {
                     KeyEvent.KEYCODE_DPAD_LEFT -> { if (!live) seekStep(e, -1); return true }
                     KeyEvent.KEYCODE_DPAD_RIGHT -> { if (!live) seekStep(e, 1); return true }
-                    KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> { togglePlay(); return true }
+                    KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> { skipTarget()?.let { doSkip(it) } ?: togglePlay(); return true }
                     KeyEvent.KEYCODE_DPAD_DOWN -> { if (live) zap(-1) else { bottom.visibility = View.VISIBLE; controls.getChildAt(0)?.requestFocus() }; return true }
                     KeyEvent.KEYCODE_DPAD_UP -> { if (live) zap(1); return true }
                 }

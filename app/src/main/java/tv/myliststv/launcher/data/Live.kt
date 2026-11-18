@@ -39,11 +39,12 @@ object M3u {
 /** Saved IPTV playlist links. */
 object LiveStore {
     private lateinit var sp: SharedPreferences
-    fun init(c: Context) { sp = c.getSharedPreferences("live", Context.MODE_PRIVATE) }
-    fun playlists(): List<String> = (sp.getString("list", "") ?: "").split('\n').filter { it.isNotBlank() }
-    fun add(url: String) { if (url !in playlists()) sp.edit().putString("list", (playlists() + url).joinToString("\n")).apply() }
-    fun remove(url: String) { sp.edit().putString("list", (playlists() - url).joinToString("\n")).apply() }
-    fun restore(list: List<String>) { sp.edit().putString("list", list.joinToString("\n")).apply() }
+    // Playlist links can carry a login, so the list is kept wrapped by the Keystore (see Secure).
+    fun init(c: Context) { sp = c.getSharedPreferences("live", Context.MODE_PRIVATE); if (Secure.needsWrap(sp.getString("list", null))) restore(playlists()) }
+    fun playlists(): List<String> = Secure.unwrap(sp.getString("list", "") ?: "").orEmpty().split('\n').filter { it.isNotBlank() }
+    fun add(url: String) { if (url !in playlists()) restore(playlists() + url) }
+    fun remove(url: String) { restore(playlists() - url) }
+    fun restore(list: List<String>) { sp.edit().putString("list", Secure.wrap(list.joinToString("\n"))).apply() }
 
     /** Loads every playlist (cached first) and returns the channels once, grouped. [cb] runs on the main thread. */
     fun load(cb: (List<Channel>, List<String>) -> Unit) {

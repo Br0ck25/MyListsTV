@@ -20,11 +20,12 @@ object AddonStore {
 
     fun init(c: Context) {
         sp = c.getSharedPreferences("addons", Context.MODE_PRIVATE)
-        if (!sp.contains("list")) write(listOf(Saved(DEFAULT_URL, true)))
+        if (!sp.contains("list")) write(listOf(Saved(DEFAULT_URL, true))) else if (Secure.needsWrap(sp.getString("list", null))) write(saved())    // wraps an older plain list
     }
 
     fun saved(): List<Saved> {
-        val raw = sp.getString("list", null) ?: return emptyList()
+        // If a wrapped list cannot be opened (its key is gone), fall back to the default rather than show nothing.
+        val raw = sp.getString("list", null)?.let { Secure.unwrap(it) } ?: return listOf(Saved(DEFAULT_URL, true))
         return try {
             val a = JSONArray(raw)
             (0 until a.length()).mapNotNull { i -> a.optJSONObject(i)?.let { Saved(it.optString("url"), it.optBoolean("on", true)) } }
@@ -35,7 +36,7 @@ object AddonStore {
     private fun write(list: List<Saved>) {
         val a = JSONArray()
         list.forEach { a.put(JSONObject().put("url", it.url).put("on", it.enabled)) }
-        sp.edit().putString("list", a.toString()).apply()
+        sp.edit().putString("list", Secure.wrap(a.toString())).apply()
     }
 
     /** Accepts stremio:// links and bare folders. Returns null if it cannot be an addon URL. */

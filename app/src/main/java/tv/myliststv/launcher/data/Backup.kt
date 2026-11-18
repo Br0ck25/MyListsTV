@@ -63,6 +63,7 @@ object Backup {
         put("playlists", JSONArray(LiveStore.playlists()))
         put("profiles", JSONArray().also { a -> Profiles.all().forEach { a.put(JSONObject().put("id", it.id).put("name", it.name).put("kids", it.kids)) } })
         put("activeProfile", Profiles.activeId)
+        put("account", Prefs.accountLink)
         put("settings", Prefs.export())
     }.toString()
 
@@ -75,7 +76,7 @@ object Backup {
             LiveStore.restore((0 until lists.length()).map { lists.getString(it) })
             val ps = o.getJSONArray("profiles")
             Profiles.restore((0 until ps.length()).map { ps.getJSONObject(it).let { p -> Profiles.P(p.getString("id"), p.getString("name"), p.optBoolean("kids")) } }, o.optString("activeProfile"))
-            Prefs.import(o.getJSONObject("settings")); WatchStore.init(c); AddonStore.needsRefresh = true
+            Prefs.accountLink = o.optString("account"); Prefs.import(o.getJSONObject("settings")); WatchStore.init(c); AddonStore.needsRefresh = true
             "${addons.length()} addons, ${lists.length()} playlists, ${ps.length()} profiles and your settings"
         }
     } catch (_: Exception) { null }

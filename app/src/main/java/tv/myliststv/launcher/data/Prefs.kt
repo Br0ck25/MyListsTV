@@ -9,7 +9,10 @@ object Prefs {
     private lateinit var sp: SharedPreferences
     private lateinit var appContext: Context
 
-    fun init(c: Context) { appContext = c.applicationContext; sp = c.getSharedPreferences("settings", Context.MODE_PRIVATE) }
+    fun init(c: Context) {
+        appContext = c.applicationContext; sp = c.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        if (Secure.needsWrap(sp.getString("backupCode", null))) backupCode = backupCode    // wraps a code saved before the Keystore was used
+    }
 
     var liteMode: String                 // "Auto", "On", "Off"
         get() = sp.getString("lite", "Auto") ?: "Auto"
@@ -40,6 +43,10 @@ object Prefs {
         get() = sp.getString("subLang", "en") ?: "en"
         set(v) = sp.edit().putString("subLang", v).apply()
 
+    var skipIntro: Boolean
+        get() = sp.getBoolean("skipIntro", true)
+        set(v) = sp.edit().putBoolean("skipIntro", v).apply()
+
     var autoplayNext: Boolean
         get() = sp.getBoolean("autoNext", true)
         set(v) = sp.edit().putBoolean("autoNext", v).apply()
@@ -54,15 +61,20 @@ object Prefs {
 
     /** Recovery code for this box's online backup. Empty until the first backup. */
     var backupCode: String
-        get() = sp.getString("backupCode", "") ?: ""
-        set(v) = sp.edit().putString("backupCode", v).apply()
+        get() = Secure.unwrap(sp.getString("backupCode", "") ?: "").orEmpty()
+        set(v) = sp.edit().putString("backupCode", Secure.wrap(v)).apply()
+
+    /** The signed-in My Lists addon link, or empty when using the default catalogs. */
+    var accountLink: String
+        get() = sp.getString("accountLink", "") ?: ""
+        set(v) = sp.edit().putString("accountLink", v).apply()
 
     var lastBackup: Long
         get() = sp.getLong("lastBackup", 0L)
         set(v) = sp.edit().putLong("lastBackup", v).apply()
 
     /** Settings as JSON for a backup. The recovery code, last-backup time and first-run flag stay on the box. */
-    fun export(): org.json.JSONObject = org.json.JSONObject(sp.all.filterKeys { it !in setOf("backupCode", "lastBackup", "setupDone") })
+    fun export(): org.json.JSONObject = org.json.JSONObject(sp.all.filterKeys { it !in setOf("backupCode", "lastBackup", "setupDone", "accountLink") })
 
     fun import(o: org.json.JSONObject) {
         val e = sp.edit()

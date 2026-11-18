@@ -10,7 +10,7 @@ The full plan lives in the "My Lists TV: Build Plan" doc the owner shares; `docs
 3. ExoPlayer (Media3) only for playback. No libmpv, no torrent engine, no on-device P2P.
 4. Ship `armeabi-v7a` and `arm64-v8a`. Never assume 64-bit.
 5. No analytics, no tracking, no network call that isn't for catalogs, streams, subtitles, updates or sync.
-6. Debrid keys and IPTV logins are secrets: Keystore-backed storage, never logged, never sent unencrypted. Backups are encrypted before leaving the device.
+6. Debrid keys and IPTV logins are secrets: kept wrapped by the Android Keystore (`data/Secure.kt`: addon list, IPTV playlists, backup recovery code), never logged, never sent unencrypted. Backups are encrypted before leaving the device. Any new place that stores a link or key must use `Secure.wrap`/`unwrap`.
 7. Images decode at card size. Caches are byte-bounded. Never block the main thread with I/O.
 8. Every phase ends in a gate measured on the reference 1 GB box (see docs/PLAN.md).
 9. **Ask only about product decisions.** Decide technical choices yourself and say what you chose.
@@ -26,11 +26,13 @@ These bias toward care over speed. For trivial work, use judgment. Where they me
 4. **Goal-driven execution.** Turn each task into a check you can run: "add validation" becomes "write tests for bad input, then make them pass"; "fix the bug" becomes "write a test that reproduces it, then make it pass"; "refactor" means tests pass before and after. For multi-step work, state a short plan with a check after each step. Loop until the checks pass.
 
 ## Keep the code small (owner's rule)
+- UI changes follow `docs/DESIGN.md` (tokens, components, menu rules). Read it before touching a screen.
 - Fewest lines that do the job. Before writing anything, look for an existing helper: `ui/Ui.kt` (views, colors, focus), `ui/Cards.kt` (`CardAdapter` for any strip or grid), `data/Http.kt` (all network), `data/Prefs.kt` (all settings), `data/AddonStore.kt` and `data/Catalogs.kt` (addons and catalogs).
 - One implementation per job. Add to a shared helper instead of copying code into a screen.
 - No new library when the platform already does it. Delete code a change made unused.
 
 ## Build
+- To look at screens without a TV: `SHOTS_DIR=/some/dir ./gradlew :app:testDebugUnitTest --tests '*ShotTest*'` draws Settings and Home to PNG files (ShotTest skips itself otherwise).
 - CI builds the APK on every push (`.github/workflows/build.yml`), downloadable from the run's artifacts.
 - Locally: `./gradlew :app:assembleDebug` (needs the Android SDK).
 

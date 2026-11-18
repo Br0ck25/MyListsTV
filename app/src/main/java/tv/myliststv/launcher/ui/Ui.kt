@@ -16,13 +16,29 @@ import android.widget.TextView
 
 /** Colors and small view builders. Everything is built in code on plain Views, no XML layouts and no theme library. */
 object Ui {
-    const val BG = 0xFF0A0B11.toInt()
-    const val CARD = 0xFF171925.toInt()
-    const val TEXT = 0xFFEEF0F7.toInt()
-    const val DIM = 0xFF9AA1B8.toInt()
-    const val ACCENT = 0xFFFFC65C.toInt()
-    const val GOOD = 0xFF59E0AE.toInt()
-    const val BAD = 0xFFFF8A8E.toInt()
+    // The My Lists palette (dark values) and shape scale. The rules are in docs/DESIGN.md.
+    const val BG = 0xFF000000.toInt()
+    const val CARD = 0xFF1C1C1E.toInt()
+    const val ELEVATED = 0xFF2C2C2E.toInt()
+    const val TEXT = 0xFFFFFFFF.toInt()
+    const val TEXT2 = 0xFFEBEBF5.toInt()
+    const val DIM = 0xFFAEAEB2.toInt()
+    const val BRAND = 0xFF0A84FF.toInt()
+    const val BRAND_FILL = 0xFF0A64D8.toInt()
+    const val ACCENT = BRAND
+    const val GOOD = 0xFF30D158.toInt()
+    const val WARN = 0xFFFF9F0A.toInt()
+    const val BAD = 0xFFFF453A.toInt()
+    const val R_CARD = 14
+    const val R_PANEL = 16
+    const val R_DIALOG = 20
+
+    fun rounded(c: Context, color: Int, radius: Int): Drawable = GradientDrawable().apply { setColor(color); cornerRadius = dpf(c, radius.toFloat()) }
+
+    /** The look of a focusable row or panel: rounded CARD fill, clipped to its corners, white focus ring at the same radius. */
+    fun rowStyle(c: Context, v: View, radius: Int = R_PANEL, fill: Int = CARD) {
+        v.background = rounded(c, fill, radius); v.clipToOutline = true; v.foreground = focusBg(c, radius, 0x22FFFFFF)
+    }
 
     /**
      * Every size is designed for a 960-unit-wide screen and scaled by the real screen width, because TV boxes report
@@ -68,7 +84,7 @@ object Ui {
             gravity = Gravity.CENTER
             setPadding(dp(c, 18), dp(c, 9), dp(c, 18), dp(c, 9))
             background = pillBg(c); isFocusable = true; isClickable = true
-            setOnFocusChangeListener { v, f -> (v as TextView).setTextColor(if (f) 0xFF12131A.toInt() else TEXT) }
+            setOnFocusChangeListener { v, f -> (v as TextView).setTextColor(if (f) 0xFF000000.toInt() else TEXT) }
             setOnClickListener { onClick() }
         }
 

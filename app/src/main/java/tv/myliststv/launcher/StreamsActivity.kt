@@ -62,7 +62,7 @@ class StreamsActivity : Activity() {
         val c = this
         val r = Ui.hbox(c, 14).apply {
             setPadding(Ui.dp(c, 14), Ui.dp(c, 10), Ui.dp(c, 14), Ui.dp(c, 10))
-            setBackgroundColor(Ui.CARD); foreground = Ui.focusBg(c, 8, 0x14FFFFFF); isFocusable = true; isClickable = true
+            Ui.rowStyle(c, this); isFocusable = true; isClickable = true
         }
         r.addView(Ui.text(c, if (s.resolution > 0) "${s.resolution}p" else "?", 20f, Ui.TEXT, true), LinearLayout.LayoutParams(Ui.dp(c, 70), -2))
         val mid = Ui.vbox(c)

@@ -38,7 +38,7 @@ data class RowModel(
 class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
     val img = ImageView(c).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
     val label = Ui.text(c, "", 13f, Ui.TEXT, true, 3)
-    val subLabel = Ui.text(c, "", 11f, 0xFFD6DAE9.toInt(), false, 1)
+    val subLabel = Ui.text(c, "", 11f, Ui.TEXT2, false, 1)
     val bar = View(c).apply { setBackgroundColor(Ui.ACCENT); visibility = GONE }
     val appIcon = ImageView(c).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
     private var wPx = 0; private var hPx = 0
@@ -53,7 +53,7 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
         wPx = w; hPx = h
         layoutParams = RecyclerView.LayoutParams(w, h).also { it.setMargins(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6)) }
         isFocusable = true; isClickable = true
-        setBackgroundColor(Ui.CARD)
+        background = Ui.rounded(c, Ui.CARD, Ui.R_CARD); clipToOutline = true
         if (kind == CardKind.APP) {
             addView(appIcon, LayoutParams(Ui.dp(c, 56), Ui.dp(c, 56), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = Ui.dp(c, 12) })
             label.gravity = Gravity.CENTER; label.maxLines = 2
@@ -69,7 +69,7 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
                 addView(bar, LayoutParams(0, Ui.dp(c, 3), Gravity.BOTTOM or Gravity.START))
             }
         }
-        foreground = Ui.focusBg(c, 6, 0x00000000)
+        foreground = Ui.focusBg(c, Ui.R_CARD, 0x00000000)
     }
 
     fun bind(m: CardModel) {

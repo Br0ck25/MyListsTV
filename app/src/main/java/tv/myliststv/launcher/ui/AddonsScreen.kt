@@ -75,14 +75,15 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
         val r = LinearLayout(c).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             setPadding(Ui.dp(c, 18), Ui.dp(c, 12), Ui.dp(c, 18), Ui.dp(c, 12))
-            setBackgroundColor(Ui.CARD); foreground = Ui.focusBg(c, 8, 0x14FFFFFF)
+            Ui.rowStyle(c, this)
             isFocusable = true; isClickable = true; setOnClickListener { onClick() }
         }
         val mid = Ui.vbox(c)
         mid.addView(Ui.text(c, title, 16f, Ui.TEXT, true, 1))
         mid.addView(Ui.text(c, sub, 12f, Ui.DIM, false, 1))
         r.addView(mid, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        r.addView(Ui.text(c, trailing, 14f, if (trailing == "On") Ui.GOOD else if (trailing == "Off") Ui.DIM else Ui.TEXT, true))
+        // An on/off state is a toggle (docs/DESIGN.md); anything else is a short word such as OK.
+        r.addView(if (trailing == "On" || trailing == "Off") Toggle(c, trailing == "On") else Ui.text(c, trailing, 14f, Ui.TEXT, true))
         return r
     }
 

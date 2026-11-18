@@ -77,16 +77,21 @@ object Http {
         throw IllegalStateException("Too many redirects")
     }
 
-    /** Sends [body] with PUT and returns the HTTP status. For use from a background thread. */
-    fun put(url: String, body: String): Int {
+    /** One request with any method. Returns the HTTP status and the body text (empty for none). Never throws on a 4xx/5xx. For a background thread. */
+    fun send(method: String, url: String, body: String?): Pair<Int, String> {
         val c = URL(url).openConnection() as HttpURLConnection
         try {
-            c.requestMethod = "PUT"; c.doOutput = true; c.connectTimeout = 10_000; c.readTimeout = 20_000
-            c.setRequestProperty("User-Agent", "MyListsTV/0.1"); c.setRequestProperty("Content-Type", "text/plain")
-            c.outputStream.use { it.write(body.toByteArray()) }
-            return c.responseCode
+            c.requestMethod = method; c.connectTimeout = 10_000; c.readTimeout = 20_000
+            c.setRequestProperty("User-Agent", "MyListsTV/0.1"); c.setRequestProperty("Accept", "application/json,*/*")
+            if (body != null) { c.doOutput = true; c.setRequestProperty("Content-Type", "text/plain"); c.outputStream.use { it.write(body.toByteArray()) } }
+            val code = c.responseCode
+            val text = (if (code in 200..299) c.inputStream else c.errorStream)?.bufferedReader()?.use { it.readText() } ?: ""
+            return code to text
         } finally { c.disconnect() }
     }
+
+    /** Sends [body] with PUT and returns the HTTP status. */
+    fun put(url: String, body: String): Int = send("PUT", url, body).first
 
     /** Streams a download straight to a file (large guides must never be held in memory). */
     fun download(url: String, to: File) {
