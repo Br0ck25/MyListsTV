@@ -183,3 +183,22 @@ class StatusTest {
         assertEquals("Continuing", Catalogs.fillGaps(Meta("tt1", "series", "S"), m).status)
     }
 }
+
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34], application = tv.myliststv.launcher.App::class)
+class LibraryTest {
+    @Test fun addRemoveAndEachProfileHasItsOwnList() {
+        val m = Meta("tt1", "movie", "One", "p.jpg"); val n = Meta("tt2", "series", "Two")
+        assertTrue(Library.toggle(m)); assertTrue(Library.toggle(n))
+        assertEquals(listOf("tt2", "tt1"), Library.all().map { it.id })       // newest first
+        assertFalse(Library.toggle(m)); assertFalse(Library.has("tt1"))
+        val before = Profiles.activeId
+        Profiles.add("Kid", true); Profiles.activeId = Profiles.all().last().id
+        assertTrue("another profile starts empty", Library.all().isEmpty())
+        Profiles.activeId = before
+        assertTrue(Library.has("tt2"))
+        val exported = Library.export(); Library.remove("tt2"); assertTrue(Library.all().isEmpty())
+        Library.import(exported); assertEquals(listOf("tt2"), Library.all().map { it.id })
+        Library.remove("tt2")
+    }
+}

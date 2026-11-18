@@ -78,4 +78,15 @@ class ShotTest {
         val m = Robolectric.buildActivity(MainActivity::class.java).setup().get(); settle(7000); lay(m); settle(300); lay(m); shot(m, "side")
         tv.myliststv.launcher.data.Prefs.navStyle = 0
     }
+
+    @Test fun library() {
+        Assume.assumeTrue(dir != null)
+        val a = Robolectric.buildActivity(Activity::class.java).setup().get()
+        a.setTheme(R.style.Theme_MyListsTV)
+        listOf("tt1160419" to "Dune", "tt0133093" to "The Matrix", "tt0816692" to "Interstellar").forEach { (id, n) -> tv.myliststv.launcher.data.Library.toggle(tv.myliststv.launcher.data.Meta(id, "movie", n, "https://image.tmdb.org/t/p/w500/v1tRXZ4JtD2Iv6fjkPvT4GiwslV.jpg")) }
+        val screen = tv.myliststv.launcher.ui.LibraryScreen(a) { }
+        a.setContentView(android.widget.FrameLayout(a).apply { setBackgroundColor(tv.myliststv.launcher.ui.Ui.BG); addView(screen.view) })
+        screen.start(); settle(3000); shot(a, "library")
+        tv.myliststv.launcher.data.Library.all().forEach { tv.myliststv.launcher.data.Library.remove(it.id) }
+    }
 }

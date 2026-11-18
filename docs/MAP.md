@@ -18,7 +18,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     33   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
     39   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (326 lines) - The home screen.
+## MainActivity.kt (327 lines) - The home screen.
     31 class MainActivity  - The home screen.
     54   fun updateBell()
     56   fun updateProfile()
@@ -31,21 +31,21 @@ Find a symbol with grep on this file, then read only that file around the line n
    172   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
    189   fun tabView(t: String)
    195   fun select(i: Int, force: Boolean = false)
-   218   fun go(where: String)  - Where a mapped remote button sends the launcher.
-   228   fun openMeta(m: Meta)
-   232   fun resumeEntry(e: WatchStore.Entry)
-   237   fun launch(a: AppEntry)
-   246   fun appMenu(a: AppEntry)
-   271   fun onResume()
-   281   fun onNewIntent(intent: Intent)
-   295   fun onBackPressed()
-   303   fun dispatchKeyEvent(e: KeyEvent)  - Hidden side bar: Left from the left edge of a page opens it; Right, OK on a page or Back closes it.
-   314   fun isInContent(v: View)
-   315   fun openSide()
-   316   fun closeSide()
-   318   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   323   fun onDestroy()
-   325   fun onTrimMemory(level: Int)
+   219   fun go(where: String)  - Where a mapped remote button sends the launcher.
+   229   fun openMeta(m: Meta)
+   233   fun resumeEntry(e: WatchStore.Entry)
+   238   fun launch(a: AppEntry)
+   247   fun appMenu(a: AppEntry)
+   272   fun onResume()
+   282   fun onNewIntent(intent: Intent)
+   296   fun onBackPressed()
+   304   fun dispatchKeyEvent(e: KeyEvent)  - Hidden side bar: Left from the left edge of a page opens it; Right, OK on a page or Back closes it.
+   315   fun isInContent(v: View)
+   316   fun openSide()
+   317   fun closeSide()
+   319   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   324   fun onDestroy()
+   326   fun onTrimMemory(level: Int)
 
 ## data/AddonStore.kt (100 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
@@ -63,7 +63,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     67   fun load(cb: (List<Addon>)  - Fetches every saved manifest (from cache first), then calls [cb] once on the main thread with those that loade
     89   fun probe(url: String, cb: (Manifest?, String?)  - Fetches a manifest to check it before installing.
 
-## data/Backup.kt (109 lines) - Encrypted backup of the whole setup.
+## data/Backup.kt (110 lines) - Encrypted backup of the whole setup.
     19 object Backup  - Encrypted backup of the whole setup.
     24   fun isCode(s: String)
     25   fun clean(s: String)
@@ -72,12 +72,12 @@ Find a symbol with grep on this file, then read only that file around the line n
     36   fun key(code: String, salt: ByteArray, sha256: Boolean)
     43   fun encrypt(plain: String, code: String)  - Blob = base64( format byte, 16-byte salt, 12-byte iv, AES-256-GCM ciphertext ).
     52   fun decrypt(blob: String, code: String)  - Null when the code is wrong or the blob was changed: GCM checks both.
-    60   fun snapshot()  - What a backup holds: addons (with their keys), IPTV playlists, profiles and settings.
-    71   fun apply(c: Context, json: String)  - Returns a short summary of what was restored, or null if the data is not a backup.
-    87   fun codeForThisBox()  - The code for this box, made on first use.
-    89   fun upload(code: String, reply: (String)
-    97   fun restore(c: Context, code: String, reply: (String)
-   108   fun auto()  - After a change, refresh the online backup if this box already has a code.
+    60   fun snapshot()  - What a backup holds: addons (with their keys), IPTV playlists, profiles, My list and settings.
+    72   fun apply(c: Context, json: String)  - Returns a short summary of what was restored, or null if the data is not a backup.
+    88   fun codeForThisBox()  - The code for this box, made on first use.
+    90   fun upload(code: String, reply: (String)
+    98   fun restore(c: Context, code: String, reply: (String)
+   109   fun auto()  - After a change, refresh the online backup if this box already has a code.
 
 ## data/ButtonMap.kt (43 lines) - Remote buttons the owner has given a job: a button (the colour keys, a streaming-app key...) plus how it is pr
     15 object ButtonMap  - Remote buttons the owner has given a job: a button (the colour keys, a streaming-app key...) plus how it is pr
@@ -163,6 +163,18 @@ Find a symbol with grep on this file, then read only that file around the line n
    182   fun names(a: JSONArray?)  - People are plain names, or objects with a name.
    188   fun youtubeIds(o: JSONObject)  - Trailers appear as trailerStreams [{ytId}] or trailers [{source, type}]; both carry a YouTube id.
    195   fun strings(a: JSONArray?)
+
+## data/Library.kt (38 lines) - "My list": titles the viewer saved with + on a details page.
+     8 object Library  - "My list": titles the viewer saved with + on a details page.
+     9   fun sp(profile: String = Profiles.activeId)
+    11   fun read(profile: String)
+    16   fun write(profile: String, list: List<Meta>)
+    21   fun all()
+    22   fun has(id: String)
+    25   fun toggle(m: Meta)  - Adds the title, or takes it out if it is already there.
+    32   fun remove(id: String)
+    35   fun export()  - Every profile's list, for a backup.
+    37   fun import(o: JSONObject?)
 
 ## data/Live.kt (148 lines)
      9 class Channel
@@ -375,33 +387,33 @@ Find a symbol with grep on this file, then read only that file around the line n
     16   fun onCreate(savedInstanceState: Bundle?)
     23   fun onDestroy()
 
-## screens/DetailsActivity.kt (320 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
+## screens/DetailsActivity.kt (324 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     26 class DetailsActivity  - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     49   fun onCreate(savedInstanceState: Bundle?)
     88   fun render()
-   126   fun statusLabel()
-   129   fun nextEpisodeLine()  - "Next episode: S4 \u00b7 E6 \u00b7 Friday, Nov 19" for the first episode that has not aired yet.
-   135   fun chip(text: String)
-   141   fun people()  - People shown in Cast & crew: directors first, then writers, then cast, each name once.
-   144   fun renderTabs()
-   162   fun showTab(names: List<String>, i: Int)
-   169   fun strip(h: Int)
-   175   fun episodesPanel()
-   196   fun episodeBadge(v: Video)  - "EPISODE 6" with its air date: "Nov 12, 2026" once aired, "AIRS Nov 19, 2026" before.
-   202   fun castPanel()
-   204   fun openTrailer(id: String)
-   209   fun toggleWatched(watched: Boolean)
-   216   fun mainVideoId()  - The episode to play from the main button: where the viewer left off, else the first one.
-   223   fun playMain()
-   224   fun sourcesMain()
-   226   fun videoFor(id: String)
-   229   fun playVideo(videoId: String)  - Finds streams, picks the best, and starts the player.
-   259   fun openSources(videoId: String)
-   263   fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: Stre
-   275   fun noStreams(statuses: List<StreamResolver.AddonStatus>)
-   282   fun showBusy(msg: String)
-   287   fun dismissBusy()
-   289   fun onDestroy()
+   130   fun statusLabel()
+   133   fun nextEpisodeLine()  - "Next episode: S4 \u00b7 E6 \u00b7 Friday, Nov 19" for the first episode that has not aired yet.
+   139   fun chip(text: String)
+   145   fun people()  - People shown in Cast & crew: directors first, then writers, then cast, each name once.
+   148   fun renderTabs()
+   166   fun showTab(names: List<String>, i: Int)
+   173   fun strip(h: Int)
+   179   fun episodesPanel()
+   200   fun episodeBadge(v: Video)  - "EPISODE 6" with its air date: "Nov 12, 2026" once aired, "AIRS Nov 19, 2026" before.
+   206   fun castPanel()
+   208   fun openTrailer(id: String)
+   213   fun toggleWatched(watched: Boolean)
+   220   fun mainVideoId()  - The episode to play from the main button: where the viewer left off, else the first one.
+   227   fun playMain()
+   228   fun sourcesMain()
+   230   fun videoFor(id: String)
+   233   fun playVideo(videoId: String)  - Finds streams, picks the best, and starts the player.
+   263   fun openSources(videoId: String)
+   267   fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: Stre
+   279   fun noStreams(statuses: List<StreamResolver.AddonStatus>)
+   286   fun showBusy(msg: String)
+   291   fun dismissBusy()
+   293   fun onDestroy()
 
 ## screens/PlayerActivity.kt (685 lines) - Full-screen player.
     35 class PlayerActivity  - Full-screen player.
@@ -576,6 +588,11 @@ Find a symbol with grep on this file, then read only that file around the line n
    182   fun changedAll()
    183   fun inserted(i: Int)
 
+## ui/LibraryScreen.kt (55 lines) - "My list" as a page: every saved title in a grid, with All, Movies and Series filters.
+    12 class LibraryScreen  - "My list" as a page: every saved title in a grid, with All, Movies and Series filters.
+    34   fun start()
+    44   fun show()
+
 ## ui/LiveScreen.kt (131 lines) - Live TV as a programme guide: groups across the top, a time axis, and one row per channel with what is on now 
     24 class LiveScreen  - Live TV as a programme guide: groups across the top, a time axis, and one row per channel with what is on now 
     48   fun start()
@@ -624,7 +641,9 @@ Find a symbol with grep on this file, then read only that file around the line n
   res/drawable/banner.xml
   res/drawable/dialog_bg.xml
   res/drawable/dialog_item.xml
+  res/drawable/ic_add.xml
   res/drawable/ic_bell.xml
+  res/drawable/ic_bookmark.xml
   res/drawable/ic_check.xml
   res/drawable/ic_launcher.xml
   res/drawable/ic_list.xml

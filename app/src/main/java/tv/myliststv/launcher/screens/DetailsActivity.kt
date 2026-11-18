@@ -97,13 +97,17 @@ class DetailsActivity : Activity() {
         val resume = WatchStore.forMeta(meta.id)
         val resumable = resume != null && resume.fraction in 0.02f..0.93f
         val watched = resume != null && resume.fraction > 0.93f
-        val sig = "$resumable|$watched|${meta.trailers.firstOrNull()}|${meta.type}"
+        val sig = "$resumable|$watched|${meta.trailers.firstOrNull()}|${meta.type}|${Library.has(meta.id)}"
         if (sig != buttonsSig) {
             buttonsSig = sig; buttons.removeAllViews()
             val at = if (meta.type == "series" && resume != null && resume.season >= 0) " S${resume.season} E${resume.episode}" else ""
             val play = Ui.button(c, (if (resumable) "Resume" else if (at.isNotEmpty()) "Next" else "Play") + at, primary = true) { playMain() }
             val round = Ui.dp(c, 48)
             buttons.addView(play, LinearLayout.LayoutParams(-2, round))
+            val saved = Library.has(meta.id)
+            buttons.addView(Ui.iconButton(c, if (saved) R.drawable.ic_bookmark else R.drawable.ic_add, if (saved) "Remove from My list" else "Add to My list") {
+                val now = Library.toggle(meta); Toast.makeText(c, if (now) "Added to My list" else "Removed from My list", Toast.LENGTH_SHORT).show(); buttonsSig = ""; render(); buttons.getChildAt(1)?.requestFocus()
+            }.also { it.isSelected = saved }, LinearLayout.LayoutParams(round, round))
             buttons.addView(Ui.iconButton(c, R.drawable.ic_list, "Choose a source") { sourcesMain() }, LinearLayout.LayoutParams(round, round))
             meta.trailers.firstOrNull()?.let { id -> buttons.addView(Ui.iconButton(c, R.drawable.ic_trailer, "Trailer") { openTrailer(id) }, LinearLayout.LayoutParams(round, round)) }
             if (meta.type == "movie") buttons.addView(Ui.iconButton(c, R.drawable.ic_check, if (watched) "Mark unwatched" else "Mark watched") { toggleWatched(watched) }.also { it.isSelected = watched }, LinearLayout.LayoutParams(round, round))

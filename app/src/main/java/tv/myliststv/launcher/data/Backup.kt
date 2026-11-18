@@ -56,7 +56,7 @@ object Backup {
         String(c.doFinal(b, 29, b.size - 29))
     } catch (_: Exception) { null }
 
-    /** What a backup holds: addons (with their keys), IPTV playlists, profiles and settings. Not caches, not watch history. */
+    /** What a backup holds: addons (with their keys), IPTV playlists, profiles, My list and settings. Not caches, not watch history. */
     fun snapshot(): String = JSONObject().apply {
         put("v", 1)
         put("addons", JSONArray().also { a -> AddonStore.saved().forEach { a.put(JSONObject().put("url", it.url).put("on", it.enabled)) } })
@@ -65,6 +65,7 @@ object Backup {
         put("activeProfile", Profiles.activeId)
         put("account", Prefs.accountLink)
         put("settings", Prefs.export())
+        put("library", Library.export())
     }.toString()
 
     /** Returns a short summary of what was restored, or null if the data is not a backup. */
@@ -76,7 +77,7 @@ object Backup {
             LiveStore.restore((0 until lists.length()).map { lists.getString(it) })
             val ps = o.getJSONArray("profiles")
             Profiles.restore((0 until ps.length()).map { ps.getJSONObject(it).let { p -> Profiles.P(p.getString("id"), p.getString("name"), p.optBoolean("kids")) } }, o.optString("activeProfile"))
-            Prefs.accountLink = o.optString("account"); Prefs.import(o.getJSONObject("settings")); WatchStore.init(c); AddonStore.needsRefresh = true
+            Prefs.accountLink = o.optString("account"); Prefs.import(o.getJSONObject("settings")); Library.import(o.optJSONObject("library")); WatchStore.init(c); AddonStore.needsRefresh = true
             "${addons.length()} addons, ${lists.length()} playlists, ${ps.length()} profiles and your settings"
         }
     } catch (_: Exception) { null }
