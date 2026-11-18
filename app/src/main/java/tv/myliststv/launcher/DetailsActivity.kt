@@ -109,14 +109,24 @@ class DetailsActivity : Activity() {
         metaLine.text = listOfNotNull(if (meta.type == "series") "Series" else "Movie", meta.genres.take(3).joinToString(", ").ifEmpty { null }, meta.runtime, meta.year).joinToString("  \u2022  ")
         chips.removeAllViews()
         meta.certification?.let { chips.addView(chip(it)) }
+        statusLabel()?.let { chips.addView(chip(it)) }
         meta.rating?.let { chips.addView(chip("\u2605 $it  IMDb")) }
         chips.visibility = if (chips.childCount == 0) View.GONE else View.VISIBLE
         crew.text = listOfNotNull(meta.directors.take(3).takeIf { it.isNotEmpty() }?.let { "Director: ${it.joinToString(", ")}" }, meta.writers.take(3).takeIf { it.isNotEmpty() }?.let { "Writers: ${it.joinToString(", ")}" }).joinToString("     ")
         crew.visibility = if (crew.text.isEmpty()) View.GONE else View.VISIBLE
         desc.text = meta.description ?: ""
-        extras.text = listOfNotNull(meta.country, meta.awards).joinToString("  \u2022  ")
+        extras.text = listOfNotNull(nextEpisodeLine(), meta.country, meta.awards).joinToString("  \u2022  ")
         extras.visibility = if (extras.text.isEmpty()) View.GONE else View.VISIBLE
         renderTabs()
+    }
+
+    private fun statusLabel(): String? = when (meta.status?.lowercase()) { "continuing", "returning series", "ongoing" -> "ONGOING"; "ended", "canceled", "cancelled" -> "ENDED"; else -> null }
+
+    /** "Next episode: S4 \u00b7 E6 \u00b7 Friday, Nov 19" for the first episode that has not aired yet. */
+    private fun nextEpisodeLine(): String? {
+        val now = System.currentTimeMillis()
+        val v = meta.videos.filter { it.season > 0 }.firstOrNull { (it.airDate()?.time ?: 0L) > now } ?: return null
+        return "Next episode: S${v.season} \u00b7 E${v.episode} \u00b7 " + java.text.SimpleDateFormat("EEEE, MMM d", java.util.Locale.US).format(v.airDate()!!)
     }
 
     private fun chip(text: String) = Ui.text(this, text, 13f, Ui.TEXT, true).apply {

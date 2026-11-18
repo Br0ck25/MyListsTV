@@ -22,6 +22,8 @@ data class Meta(
     val awards: String? = null,
     val genres: List<String> = emptyList(),
     val videos: List<Video> = emptyList(),
+    /** Series state as the addon gave it, e.g. "Continuing" or "Ended". */
+    val status: String? = null,
 )
 
 /** An episode of a series. [id] is the stream id, such as tt1234567:1:2. */

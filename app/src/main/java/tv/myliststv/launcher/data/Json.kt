@@ -75,7 +75,7 @@ object Json {
         put("description", m.description ?: ""); put("releaseInfo", m.year ?: ""); put("imdbRating", m.rating ?: "")
         put("runtime", m.runtime ?: ""); put("certification", m.certification ?: ""); put("genres", JSONArray(m.genres))
         put("cast", JSONArray(m.cast)); put("director", JSONArray(m.directors)); put("writer", JSONArray(m.writers))
-        put("trailerStreams", JSONArray().also { a -> m.trailers.forEach { a.put(JSONObject().put("ytId", it)) } }); put("country", m.country ?: ""); put("awards", m.awards ?: "")
+        put("trailerStreams", JSONArray().also { a -> m.trailers.forEach { a.put(JSONObject().put("ytId", it)) } }); put("country", m.country ?: ""); put("awards", m.awards ?: ""); put("status", m.status ?: "")
         put("videos", JSONArray().also { a -> m.videos.forEach { v ->
             a.put(JSONObject().put("id", v.id).put("title", v.title).put("season", v.season).put("episode", v.episode)
                 .put("thumbnail", v.thumbnail ?: "").put("overview", v.overview ?: "").put("released", v.released ?: "")) } })
@@ -121,7 +121,7 @@ object Json {
             runtime = o.optString("runtime").ifEmpty { null },
             certification = o.optString("certification").ifEmpty { null },
             cast = names(o.optJSONArray("cast")), directors = names(o.optJSONArray("director")), writers = names(o.optJSONArray("writer")),
-            trailers = youtubeIds(o), country = o.optString("country").ifEmpty { null }, awards = o.optString("awards").ifEmpty { null },
+            trailers = youtubeIds(o), country = o.optString("country").ifEmpty { null }, awards = o.optString("awards").ifEmpty { null }, status = o.optString("status").ifEmpty { null },
             genres = genres,
             videos = videos.sortedWith(compareBy({ it.season }, { it.episode })),
         )

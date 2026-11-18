@@ -84,7 +84,7 @@ object Catalogs {
         runtime = base.runtime ?: extra.runtime, certification = base.certification ?: extra.certification,
         genres = base.genres.ifEmpty { extra.genres }, cast = base.cast.ifEmpty { extra.cast }, directors = base.directors.ifEmpty { extra.directors },
         writers = base.writers.ifEmpty { extra.writers }, trailers = base.trailers.ifEmpty { extra.trailers },
-        country = base.country ?: extra.country, awards = base.awards ?: extra.awards, videos = base.videos.ifEmpty { extra.videos },
+        country = base.country ?: extra.country, awards = base.awards ?: extra.awards, videos = base.videos.ifEmpty { extra.videos }, status = base.status ?: extra.status,
     )
 
     /** Detail data wins, but anything missing there (a poster, say) is kept from the catalog item. */

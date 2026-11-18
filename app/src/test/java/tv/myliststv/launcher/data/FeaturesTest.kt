@@ -170,3 +170,12 @@ class AirDateTest {
         assertEquals("2026-11-19T00:00:00.000Z", Json.metaFromJson(Json.metaToJson(m))!!.videos[0].released)
     }
 }
+
+class StatusTest {
+    @Test fun statusSurvivesParsingStoringAndMerging() {
+        val m = Json.parseMeta("""{"meta":{"id":"tt1","type":"series","name":"S","status":"Continuing"}}""")!!
+        assertEquals("Continuing", m.status)
+        assertEquals("Continuing", Json.metaFromJson(Json.metaToJson(m))!!.status)
+        assertEquals("Continuing", Catalogs.fillGaps(Meta("tt1", "series", "S"), m).status)
+    }
+}
