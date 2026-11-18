@@ -159,7 +159,7 @@ class SettingsActivity : Activity() {
         add(header("About"))
         add(action("Check for updates", "Version 0.1.${Updater.installedBuild(this@SettingsActivity)} installed.") { checkUpdate() })
         add(info("Make this your home screen", "adb shell cmd package set-home-activity tv.myliststv.launcher/.MainActivity"))
-        add(info("Privacy", "No analytics, no tracking. Skip-intro times from IntroDB (introdb.app)."))
+        add(info("Privacy", "No analytics, no tracking. Signed in, your watch progress goes to your My Lists account. Skip-intro times from IntroDB (introdb.app)."))
     }
 
     private fun checkUpdate() {

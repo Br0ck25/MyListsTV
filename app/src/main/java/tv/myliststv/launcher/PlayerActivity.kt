@@ -569,8 +569,10 @@ class PlayerActivity : Activity() {
         lastSave = now
         val m = PlaySession.meta!!
         val pos = if (ended) dur else player.currentPosition
-        WatchStore.save(WatchStore.Entry(m.id, m.type, m.name, m.poster, m.background, PlaySession.videoId, PlaySession.season, PlaySession.episode,
-            PlaySession.episodeTitle, pos, dur, now))
+        val entry = WatchStore.Entry(m.id, m.type, m.name, m.poster, m.background, PlaySession.videoId, PlaySession.season, PlaySession.episode,
+            PlaySession.episodeTitle, pos, dur, now)
+        WatchStore.save(entry)
+        Progress.report(entry, force)
     }
 
     // ---------------------------------------------------------------- keys and lifecycle
