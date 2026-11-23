@@ -217,20 +217,21 @@ Find a symbol with grep on this file, then read only that file around the line n
     70 class Addon  - One installed addon.
     81 class StreamItem  - One playable stream option from an addon.
 
-## data/Pairing.kt (80 lines) - Sign in with a code.
+## data/Pairing.kt (88 lines) - Sign in with a code.
     12 object Pairing  - Sign in with a code.
     14   class Start
     16   fun parseStart(text: String)
     21   fun parsePoll(text: String)  - The personal addon link once the phone has approved, else null (still waiting).
     26   fun linkUrl(s: Start)  - The page to open on the phone.
-    30   fun start(cb: (Start?)
-    36   fun cancel()
-    39   fun poll(s: Start, done: (String?)  - Checks every 3 seconds for up to 10 minutes.
-    54   fun parts(manifestUrl: String)
-    57   fun userOf(manifestUrl: String)  - Who the link belongs to, for display: the user in /user/tv/manifest.json.
-    60   fun targetOf(manifestUrl: String)  - What My Lists wants as the TV's id: the secret in /i/<secret>/tv/...
-    62   fun signIn(manifestUrl: String)
-    73   fun signOut()  - Back to the default My Lists catalogs.
+    31   fun start(cb: (Start?, String?)  - [cb] gets the code, or null and a short reason (no network, or My Lists answering with something else, such as
+    41   fun reason(status: Int)
+    44   fun cancel()
+    47   fun poll(s: Start, done: (String?)  - Checks every 3 seconds for up to 10 minutes.
+    62   fun parts(manifestUrl: String)
+    65   fun userOf(manifestUrl: String)  - Who the link belongs to, for display: the user in /user/tv/manifest.json.
+    68   fun targetOf(manifestUrl: String)  - What My Lists wants as the TV's id: the secret in /i/<secret>/tv/...
+    70   fun signIn(manifestUrl: String)
+    81   fun signOut()  - Back to the default My Lists catalogs.
 
 ## data/People.kt (18 lines) - Cast photos.
      7 object People  - Cast photos.
@@ -507,7 +508,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     20 class SearchActivity  - Search across the catalog addons.
     24   fun onCreate(savedInstanceState: Bundle?)
 
-## screens/SettingsActivity.kt (365 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
+## screens/SettingsActivity.kt (368 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     25 class SettingsActivity  - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     29   fun header(t: String)
     30   fun toggle(label: String, desc: String, get: ()
@@ -538,10 +539,10 @@ Find a symbol with grep on this file, then read only that file around the line n
    273   fun checkUpdate()
    285   fun onCreate(savedInstanceState: Bundle?)
    298   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
-   312   fun railItem(name: String, i: Int)
-   320   fun buildPanel(keep: Int)
-   336   fun view(r: Row, changed: ()
-   362   fun onBackPressed()
+   315   fun railItem(name: String, i: Int)
+   323   fun buildPanel(keep: Int)
+   339   fun view(r: Row, changed: ()
+   365   fun onBackPressed()
 
 ## screens/StreamsActivity.kt (97 lines) - The stream picker: every source from every stream addon, best first.
     15 class StreamsActivity  - The stream picker: every source from every stream addon, best first.

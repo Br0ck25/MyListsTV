@@ -309,3 +309,12 @@ class AddonSharingTest {
         Profiles.shareAddons(main, null); Profiles.remove(b)
     }
 }
+
+class SignInReasonTest {
+    @Test fun aRedirectIsNamedAsOneAndNeverFollowed() {
+        assertTrue(Pairing.reason(301).contains("redirect")); assertTrue(Pairing.reason(301).contains("301"))
+        assertTrue(Pairing.reason(500).contains("error"))
+        // Only a real device-code answer is accepted.
+        assertNull(Pairing.parseStart("<html>301 Moved Permanently</html>")); assertNull(Pairing.parseStart("""{"ok":false}"""))
+    }
+}

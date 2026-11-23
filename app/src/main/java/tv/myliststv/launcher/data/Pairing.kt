@@ -27,11 +27,19 @@ object Pairing {
 
     @Volatile private var cancelled = false
 
-    fun start(cb: (Start?) -> Unit) = Http.background {
-        val s = try { parseStart(Http.send("POST", "$ORIGIN/api/nuvio-tv/device/code", "").second) } catch (_: Exception) { null }
+    /** [cb] gets the code, or null and a short reason (no network, or My Lists answering with something else, such as a redirect). */
+    fun start(cb: (Start?, String?) -> Unit) = Http.background {
+        var why: String? = null
+        val s = try {
+            val (status, body) = Http.send("POST", "$ORIGIN/api/nuvio-tv/device/code", "")
+            parseStart(body).also { if (it == null) why = reason(status) }
+        } catch (_: Exception) { why = "Could not reach My Lists. Check your network."; null }
         cancelled = false
-        Http.post { cb(s) }
+        Http.post { cb(s, why) }
     }
+
+    fun reason(status: Int) = if (status in 300..399) "mylistsaddon.com answered with a redirect (HTTP $status) instead of the sign-in service. The site's address may be set up wrongly; check its Cloudflare rules."
+        else "My Lists answered with an error (HTTP $status). Try again in a moment."
 
     fun cancel() { cancelled = true }
 

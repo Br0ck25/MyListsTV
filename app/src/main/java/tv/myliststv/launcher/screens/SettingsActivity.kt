@@ -188,8 +188,8 @@ class SettingsActivity : Activity() {
 
     private fun signIn() {
         Toast.makeText(this, "Getting a code\u2026", Toast.LENGTH_SHORT).show()
-        Pairing.start { s ->
-            if (s == null) { Toast.makeText(this, "Could not reach My Lists. Check your network.", Toast.LENGTH_LONG).show(); return@start }
+        Pairing.start { s, why ->
+            if (s == null) { android.app.AlertDialog.Builder(this).setTitle("Could not sign in").setMessage(why ?: "Could not reach My Lists.").setPositiveButton("OK", null).show(); return@start }
             val dlg = android.app.AlertDialog.Builder(this).setTitle("Sign in with My Lists").setCancelable(false)
                 .setMessage("On your phone, open\n${Pairing.linkUrl(s)}\n\nSign in there and tap Link. This screen updates by itself.\n\nCode: ${s.userCode}")
                 .setNegativeButton("Cancel") { _, _ -> Pairing.cancel() }.show()
@@ -296,6 +296,9 @@ class SettingsActivity : Activity() {
 
     /** Rebuilds the group list and the rows of the selected group. [keep] is the row to put focus back on. */
     private fun refresh(keep: Int = -1, focusRail: Boolean = false) {
+        // Rebuilding the rows removes the focused row; put focus back where it was so it does not fall to the first group.
+        val focused = col.findFocus()?.let { f -> var v: View = f; while (v.parent != null && v.parent !== col) v = v.parent as View; col.indexOfChild(v) - 1 } ?: -1
+        val keepRow = if (keep >= 0) keep else focused
         val all = rows()
         groups = buildList { var name = ""; var cur = ArrayList<Row>(); for (r in all) if (r.kind == 'H') { if (name.isNotEmpty()) add(name to cur); name = r.label; cur = ArrayList() } else cur.add(r); if (name.isNotEmpty()) add(name to cur) }
         cat = cat.coerceIn(0, groups.size - 1)
@@ -305,7 +308,7 @@ class SettingsActivity : Activity() {
             groups.forEachIndexed { i, (name, _) -> rail.addView(railItem(name, i), Ui.matchWrap().apply { topMargin = Ui.dp(this@SettingsActivity, 4) }) }
         }
         for (i in groups.indices) rail.getChildAt(i + 1).isSelected = i == cat
-        buildPanel(keep)
+        buildPanel(keepRow)
         if (focusRail) rail.post { rail.getChildAt(cat + 1)?.requestFocus() }
     }
 

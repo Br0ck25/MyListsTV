@@ -81,7 +81,7 @@ object Http {
     fun send(method: String, url: String, body: String?): Pair<Int, String> {
         val c = URL(url).openConnection() as HttpURLConnection
         try {
-            c.requestMethod = method; c.connectTimeout = 10_000; c.readTimeout = 20_000
+            c.requestMethod = method; c.connectTimeout = 10_000; c.readTimeout = 20_000; c.instanceFollowRedirects = false   // an API answer that redirects is wrong; never follow it with a body or a secret
             c.setRequestProperty("User-Agent", "MyListsTV/0.1"); c.setRequestProperty("Accept", "application/json,*/*")
             if (body != null) { c.doOutput = true; c.setRequestProperty("Content-Type", "text/plain"); c.outputStream.use { it.write(body.toByteArray()) } }
             val code = c.responseCode
