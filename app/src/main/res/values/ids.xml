@@ -2,4 +2,5 @@
 <resources>
     <item name="tag_image" type="id" />
     <item name="tag_person" type="id" />
+    <item name="tag_row_pos" type="id" />
 </resources>

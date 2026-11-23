@@ -149,6 +149,7 @@ class CardAdapter(
         h.card.setOnClickListener { onClick(m) }
         h.card.setOnLongClickListener { onLong?.invoke(m); onLong != null }
         h.card.setOnFocusChangeListener { v, f ->
+            if (f) (v.parent as? RecyclerView)?.setTag(tv.myliststv.launcher.R.id.tag_row_pos, h.bindingAdapterPosition)
             if (!lite) v.animate().scaleX(if (f) 1.06f else 1f).scaleY(if (f) 1.06f else 1f).setDuration(110).start()
             if (f) onFocus(m)
         }
@@ -194,16 +195,24 @@ class RowsList(
 ) : RecyclerView(c) {
     init { layoutManager = LinearLayoutManager(c); itemAnimator = null; clipToPadding = false; setPadding(0, 0, 0, Ui.dp(c, 56)); setItemViewCacheSize(3); adapter = A() }
 
-    /** Up and down land on the card of the next row that sits closest to the one you left, so the focus goes straight up or down. */
+    /** Going to the first row shows it whole (its title included), not cut off at the top. */
+    override fun requestChildFocus(child: View?, focused: View?) {
+        super.requestChildFocus(child, focused)
+        // Only when it is not already at the top: scrolling re-requests focus, which would otherwise loop.
+        if (child != null && getChildAdapterPosition(child) == 0 && computeVerticalScrollOffset() != 0) post { (layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(0, 0) }
+    }
+
+    /** Up and down land on the card you last had focus on in the next row (its first card if you have not been there). */
     override fun focusSearch(focused: View, direction: Int): View? {
         if (direction == FOCUS_UP || direction == FOCUS_DOWN) {
             var row: View = focused
             while (row.parent != null && row.parent !== this) row = row.parent as View
             val next = getChildAt(indexOfChild(row) + if (direction == FOCUS_DOWN) 1 else -1) as? RowView
             if (next != null && next.visibility == VISIBLE) {
-                val at = IntArray(2); focused.getLocationOnScreen(at); val x = at[0] + focused.width / 2
-                val hit = (0 until next.strip.childCount).map { next.strip.getChildAt(it) }.filter { it.isFocusable }
-                    .minByOrNull { v -> v.getLocationOnScreen(at); Math.abs(at[0] + v.width / 2 - x) }
+                // The card you were last on in that row, or its first card if you have not been there.
+                val pos = (next.strip.getTag(tv.myliststv.launcher.R.id.tag_row_pos) as? Int) ?: 0
+                val hit = next.strip.layoutManager?.findViewByPosition(pos)?.takeIf { it.isFocusable } ?: (0 until next.strip.childCount).map { next.strip.getChildAt(it) }.firstOrNull { it.isFocusable }
+                if (pos > 0 && hit != null) next.strip.scrollToPosition(pos)
                 if (hit != null) return hit
             }
         }

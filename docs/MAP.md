@@ -18,38 +18,39 @@ Find a symbol with grep on this file, then read only that file around the line n
     33   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
     39   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (375 lines) - The home screen.
+## MainActivity.kt (401 lines) - The home screen.
     31 class MainActivity  - The home screen.
     57   fun updateBell()
     59   fun updateProfile()
     62   fun profileChip()  - Who is watching: the current profile at the top right; OK switches.
     74   fun pickProfile()
     82   fun showNotices()  - The bell: new-episode alerts for your Library first, then the TV's own notifications when access is given.
-   101   fun setBackdrop(url: String?)  - Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every p
-   107   fun showBackdrop(on: Boolean)
-   113   fun onCreate(savedInstanceState: Bundle?)
-   177   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
-   194   fun tabView(t: String)
-   201   fun select(i: Int, force: Boolean = false)
-   224   fun reloadAddons()
-   227   fun go(where: String)  - Where a mapped remote button sends the launcher.
-   237   fun openMeta(m: Meta)
-   241   fun resumeEntry(e: WatchStore.Entry)
-   246   fun launch(a: AppEntry)
-   255   fun appMenu(a: AppEntry)
-   275   fun onResume()
-   295   fun onNewIntent(intent: Intent)
-   309   fun onBackPressed()
-   317   fun dispatchKeyEvent(e: KeyEvent)  - Side bars: Left from the left edge of a page goes to the side bar (and opens it when hidden); Right, or Back, 
-   333   fun isIn(v: View, container: View)
-   334   fun isInContent(v: View)
-   337   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
-   343   fun openSide()
-   344   fun closeSide()
-   347   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
-   367   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   372   fun onDestroy()
-   374   fun onTrimMemory(level: Int)
+    97   fun fill(list: LinearLayout, bottom: LinearLayout, dlg: AlertDialog)
+   126   fun setBackdrop(url: String?)  - Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every p
+   132   fun showBackdrop(on: Boolean)
+   138   fun onCreate(savedInstanceState: Bundle?)
+   203   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
+   220   fun tabView(t: String)
+   227   fun select(i: Int, force: Boolean = false)
+   250   fun reloadAddons()
+   253   fun go(where: String)  - Where a mapped remote button sends the launcher.
+   263   fun openMeta(m: Meta)
+   267   fun resumeEntry(e: WatchStore.Entry)
+   272   fun launch(a: AppEntry)
+   281   fun appMenu(a: AppEntry)
+   301   fun onResume()
+   321   fun onNewIntent(intent: Intent)
+   335   fun onBackPressed()
+   343   fun dispatchKeyEvent(e: KeyEvent)  - Side bars: Left from the left edge of a page goes to the side bar (and opens it when hidden); Right, or Back, 
+   359   fun isIn(v: View, container: View)
+   360   fun isInContent(v: View)
+   363   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
+   369   fun openSide()
+   370   fun closeSide()
+   373   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
+   393   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   398   fun onDestroy()
+   400   fun onTrimMemory(level: Int)
 
 ## data/AddonStore.kt (127 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
@@ -259,7 +260,7 @@ Find a symbol with grep on this file, then read only that file around the line n
      7   fun describe(httpStatus: Int?, kind: Kind)
     19   fun worthTryingAnotherSource(httpStatus: Int?, kind: Kind)  - True when a different source is likely to help, so fallback should run.
 
-## data/Prefs.kt (165 lines) - All user settings in one place.
+## data/Prefs.kt (175 lines) - All user settings in one place.
      8 object Prefs  - All user settings in one place.
     16   fun init(c: Context)
     21   var liteMode
@@ -287,21 +288,23 @@ Find a symbol with grep on this file, then read only that file around the line n
     94   var buttonMap  - Remote button rules, see ButtonMap.
     99   fun recallTracks(metaId: String?)  - The audio and subtitle language the viewer last chose for a title, so the next episode starts the same way.
    102   fun rememberTrack(metaId: String?, audio: Boolean, lang: String)
-   108   var showContinue
-   113   var backupCode  - Recovery code for this box's online backup.
-   118   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
-   123   var accountName  - The My Lists account name of the profile in use, shown as "Signed in as ...".
-   128   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
-   130   var lastBackup
-   135   fun forget(id: String)  - Forgets what a removed profile kept here.
-   138   fun export()  - Settings as JSON for a backup.
-   140   fun import(o: org.json.JSONObject)
-   146   var setupDone
-   150   var advanced
-   154   fun isLowRamBox()
-   159   fun lite()
-   162   fun effectiveMaxResolution()  - The highest resolution to prefer.
-   164   fun memoryCacheBytes()
+   109   var showAiring  - The "Airing next" row on Home: the next episode of shows the account follows, soonest first.
+   114   var airingJson  - The last Airing Next answer for the profile in use (JSON), so Home shows it at once.
+   118   var showContinue
+   123   var backupCode  - Recovery code for this box's online backup.
+   128   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
+   133   var accountName  - The My Lists account name of the profile in use, shown as "Signed in as ...".
+   138   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
+   140   var lastBackup
+   145   fun forget(id: String)  - Forgets what a removed profile kept here.
+   148   fun export()  - Settings as JSON for a backup.
+   150   fun import(o: org.json.JSONObject)
+   156   var setupDone
+   160   var advanced
+   164   fun isLowRamBox()
+   169   fun lite()
+   172   fun effectiveMaxResolution()  - The highest resolution to prefer.
+   174   fun memoryCacheBytes()
 
 ## data/Profiles.kt (74 lines) - Viewer profiles.
      9 object Profiles  - Viewer profiles.
@@ -321,12 +324,14 @@ Find a symbol with grep on this file, then read only that file around the line n
     71   fun allows(m: Meta)
     73   fun safeForKids(m: Meta)
 
-## data/Progress.kt (65 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
-    10 object Progress  - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
-    15   fun request(link: String, e: WatchStore.Entry)  - The request for this play, or null when it should not be sent (no account, no IMDb id, a start, or live TV).
-    28   fun entryFrom(o: JSONObject)  - The account's Continue Watching as a launcher entry.
-    38   fun pull(changed: ()  - Brings the account's Continue Watching in (the website's and the other TVs'), keeping whichever entry for a ti
-    58   fun report(e: WatchStore.Entry, force: Boolean)  - Sends at most once a minute unless [force] (leaving the player, or the end of the title).
+## data/Progress.kt (80 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
+    11 object Progress  - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
+    16   fun request(link: String, e: WatchStore.Entry)  - The request for this play, or null when it should not be sent (no account, no IMDb id, a start, or live TV).
+    29   class Airing  - The account's Continue Watching as a launcher entry.
+    32   fun airing(today: String = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Lo  - The saved Airing Next answer, soonest first, without dates already past.
+    40   fun entryFrom(o: JSONObject, index: Int = 0)  - [index] is the place in the account's list: an entry with no date keeps the account's order by getting a date 
+    50   fun pull(changed: ()  - Brings the account's Continue Watching in (the website's and the other TVs'), keeping whichever entry for a ti
+    73   fun report(e: WatchStore.Entry, force: Boolean)  - Sends at most once a minute unless [force] (leaving the player, or the end of the title).
 
 ## data/Secure.kt (56 lines) - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
     18 object Secure  - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
@@ -512,11 +517,11 @@ Find a symbol with grep on this file, then read only that file around the line n
    650   fun onStop()
    657   fun onDestroy()
 
-## screens/SearchActivity.kt (56 lines) - Search across the catalog addons.
+## screens/SearchActivity.kt (65 lines) - Search across the catalog addons.
     20 class SearchActivity  - Search across the catalog addons.
     24   fun onCreate(savedInstanceState: Bundle?)
 
-## screens/SettingsActivity.kt (376 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
+## screens/SettingsActivity.kt (377 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     25 class SettingsActivity  - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     29   fun header(t: String)
     30   fun toggle(label: String, desc: String, get: ()
@@ -544,13 +549,13 @@ Find a symbol with grep on this file, then read only that file around the line n
    191   fun signIn()
    212   fun signOut()
    216   fun rows()
-   280   fun checkUpdate()
-   292   fun onCreate(savedInstanceState: Bundle?)
-   305   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
-   322   fun railItem(name: String, i: Int)
-   330   fun buildPanel(keep: Int)
-   347   fun view(r: Row, changed: ()
-   373   fun onBackPressed()
+   281   fun checkUpdate()
+   293   fun onCreate(savedInstanceState: Bundle?)
+   306   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
+   323   fun railItem(name: String, i: Int)
+   331   fun buildPanel(keep: Int)
+   348   fun view(r: Row, changed: ()
+   374   fun onBackPressed()
 
 ## screens/StreamsActivity.kt (97 lines) - The stream picker: every source from every stream addon, best first.
     15 class StreamsActivity  - The stream picker: every source from every stream addon, best first.
@@ -574,7 +579,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     32   fun onKeyEvent(e: KeyEvent)  - The button mapper: single, double and long presses of the buttons the owner mapped.
     49   fun onInterrupt()
 
-## services/NotificationsService.kt (51 lines) - The bell at the top right of Home.
+## services/NotificationsService.kt (53 lines) - The bell at the top right of Home.
     17 class NotificationsService  - The bell at the top right of Home.
     18   fun onListenerConnected()
     19   fun onListenerDisconnected()
@@ -585,9 +590,9 @@ Find a symbol with grep on this file, then read only that file around the line n
     28   class Item
     33   fun allowed(c: Context)
     36   fun list(c: Context)  - What is showing now, newest first: not ours, not ongoing (media, downloads), and not the group headers.
-    48   fun dismiss(key: String)
-    49   fun dismissAll()
-    50   fun component(c: Context)
+    50   fun dismiss(key: String)
+    51   fun dismissAll()
+    52   fun component(c: Context)
 
 ## ui/AddonsScreen.kt (117 lines) - Installed addons: what each provides, on or off, order, remove, and a way to add one.
     16 class AddonsScreen  - Installed addons: what each provides, on or off, order, remove, and a way to add one.
@@ -606,14 +611,15 @@ Find a symbol with grep on this file, then read only that file around the line n
     15 class AppsScreen  - Every installed app in a grid.
     27   fun start()
 
-## ui/BrowseScreen.kt (142 lines) - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
+## ui/BrowseScreen.kt (176 lines) - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
     17 class BrowseScreen  - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
     59   fun start()
    106   fun addContinue()
-   117   fun refreshContinue()  - Called when coming back from the player so the progress shows without reloading catalogs.
-   125   fun hero(m: CardModel)
+   117   fun addAiring()  - The next episode of each followed show, soonest first.
+   130   fun refreshContinue()  - Called when coming back from the player, or when the account's lists arrive, so they show without reloading ca
+   140   fun hero(m: CardModel)
 
-## ui/Cards.kt (231 lines)
+## ui/Cards.kt (240 lines)
     20 class CardKind
     22 class CardModel
     37 class RowModel
@@ -626,13 +632,14 @@ Find a symbol with grep on this file, then read only that file around the line n
    135   fun move(from: Int, to: Int)  - Moves one card to another place (the list is changed in place, so the row's own model stays in step).
    140   fun onCreateViewHolder(parent: ViewGroup, viewType: Int)
    146   fun onBindViewHolder(h: H, position: Int)
-   157   fun getItemCount()
-   161 class RowView  - A titled row: heading, optional source label, horizontal strip.
-   187 class RowsList  - A vertical list of [RowView]s over [rows].
-   198   fun focusSearch(focused: View, direction: Int)  - Up and down land on the card of the next row that sits closest to the one you left, so the focus goes straight
-   213   fun changed(i: Int)
-   214   fun changedAll()
-   215   fun inserted(i: Int)
+   158   fun getItemCount()
+   162 class RowView  - A titled row: heading, optional source label, horizontal strip.
+   188 class RowsList  - A vertical list of [RowView]s over [rows].
+   199   fun requestChildFocus(child: View?, focused: View?)  - Going to the first row shows it whole (its title included), not cut off at the top.
+   206   fun focusSearch(focused: View, direction: Int)  - Up and down land on the card you last had focus on in the next row (its first card if you have not been there)
+   222   fun changed(i: Int)
+   223   fun changedAll()
+   224   fun inserted(i: Int)
 
 ## ui/LibraryScreen.kt (55 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     12 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.

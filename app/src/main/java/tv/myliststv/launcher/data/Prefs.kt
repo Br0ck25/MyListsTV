@@ -83,7 +83,7 @@ object Prefs {
     var appOrder: List<String> get() = strings("appOrder"); set(v) = putStrings("appOrder", v)
     var appHidden: List<String> get() = strings("appHidden"); set(v) = putStrings("appHidden", v)
     /** Sort key for a home row: its place in [homeOrder], else Continue watching first, apps last, catalogs between. */
-    fun homeRank(title: String): Int = homeOrder.indexOf(title).let { if (it >= 0) it else when (title) { "Continue watching" -> -1; "Your apps" -> 10000; else -> 5000 } }
+    fun homeRank(title: String): Int = homeOrder.indexOf(title).let { if (it >= 0) it else when (title) { "Continue watching" -> -2; "Airing next" -> -1; "Your apps" -> 10000; else -> 5000 } }
 
     /** Where the pages (Home, Movies...) are listed: 0 across the top, 1 side bar, 2 side bar that stays hidden until Left is pressed. */
     var navStyle: Int
@@ -104,6 +104,16 @@ object Prefs {
         val (a, s) = recallTracks(metaId)
         sp.edit().putString("tr_$metaId", (if (audio) lang else a.orEmpty()) + "|" + (if (audio) s.orEmpty() else lang)).apply()
     }
+
+    /** The "Airing next" row on Home: the next episode of shows the account follows, soonest first. */
+    var showAiring: Boolean
+        get() = sp.getBoolean("showAiring", true)
+        set(v) { sp.edit().putBoolean("showAiring", v).apply(); epoch++ }
+
+    /** The last Airing Next answer for the profile in use (JSON), so Home shows it at once. */
+    var airingJson: String
+        get() = sp.getString(Profiles.key("airing"), "") ?: ""
+        set(v) = sp.edit().putString(Profiles.key("airing"), v).apply()
 
     var showContinue: Boolean
         get() = sp.getBoolean("showCw", true)
@@ -135,7 +145,7 @@ object Prefs {
     fun forget(id: String) { sp.edit().remove(Profiles.key("accountName", id)).remove(Profiles.key("accountLink", id)).remove(Profiles.key("backupCode", id)).remove(Profiles.key("lastBackup", id)).apply() }
 
     /** Settings as JSON for a backup. The recovery code, last-backup time and first-run flag stay on the box. */
-    fun export(): org.json.JSONObject = org.json.JSONObject(sp.all.filterKeys { !it.startsWith("tr_") && !it.startsWith("accountLink") && !it.startsWith("backupCode") && !it.startsWith("lastBackup") && it != "setupDone" })
+    fun export(): org.json.JSONObject = org.json.JSONObject(sp.all.filterKeys { !it.startsWith("tr_") && !it.startsWith("accountLink") && !it.startsWith("airing") && !it.startsWith("backupCode") && !it.startsWith("lastBackup") && it != "setupDone" })
 
     fun import(o: org.json.JSONObject) {
         val e = sp.edit()

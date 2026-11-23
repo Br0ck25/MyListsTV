@@ -78,23 +78,48 @@ class MainActivity : Activity() {
         }.show()
     }
 
-    /** The bell: new-episode alerts for your Library first, then the TV's own notifications when access is given. */
+    /** The bell: new-episode alerts for your Library first, then the TV's own notifications when access is given. Each one opens with OK and has its own Clear button. */
     private fun showNotices() {
-        val own = Alerts.all()
-        val allowed = Notices.allowed(this)
-        val sys = if (allowed) Notices.list(this) else emptyList()
-        val labels = own.map { "${it.title}\n${it.text}" } + sys.map { "${it.app}: ${it.title}\n${it.text}".trim() } + (if (allowed) emptyList() else listOf("Show the TV's own notifications here too\u2026"))
-        val b = AlertDialog.Builder(this).setTitle("Notifications")
-        if (own.isEmpty() && sys.isEmpty() && allowed) { b.setMessage("Nothing new. New episodes of series in your Library show up here.").setPositiveButton("OK", null).show(); return }
-        b.setItems(labels.toTypedArray()) { _, i ->
-            when {
-                i < own.size -> { Alerts.remove(own[i].id); openMeta(Library.all().firstOrNull { it.id == own[i].metaId } ?: Meta(own[i].metaId, own[i].type, own[i].title)) }
-                i < own.size + sys.size -> { val n = sys[i - own.size]; try { n.open?.send() } catch (_: Exception) {}; Notices.dismiss(n.key) }
-                else -> try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { android.widget.Toast.makeText(this, "This TV has no such setting. See Settings, Launcher setup, for the phone steps.", android.widget.Toast.LENGTH_LONG).show() }
-            }
-            updateBell()
-        }.setNeutralButton("Clear all") { _, _ -> Alerts.clear(); Notices.dismissAll(); updateBell() }.setPositiveButton("Close", null).show()
+        val c = this
+        val list = Ui.vbox(c)
+        val box = Ui.vbox(c).apply { setPadding(Ui.dp(c, 24), Ui.dp(c, 20), Ui.dp(c, 24), Ui.dp(c, 12)) }
+        box.addView(Ui.text(c, "Notifications", 24f, Ui.TEXT, true))
+        box.addView(android.widget.ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false }, LinearLayout.LayoutParams(-1, Ui.dp(c, 300)).apply { topMargin = Ui.dp(c, 12) })
+        val bottom = Ui.hbox(c, 8).apply { gravity = Gravity.END }
+        box.addView(bottom, Ui.matchWrap().apply { topMargin = Ui.dp(c, 12) })
+        val dlg = AlertDialog.Builder(c).setView(box).create()
+        bottom.addView(Ui.button(c, "Clear all") { Alerts.clear(); Notices.dismissAll(); updateBell(); fill(list, bottom, dlg) })
+        bottom.addView(Ui.button(c, "Close") { dlg.dismiss() })
+        fill(list, bottom, dlg)
+        dlg.show()
     }
+
+    private fun fill(list: LinearLayout, bottom: LinearLayout, dlg: AlertDialog) {
+        val c = this
+        list.removeAllViews()
+        val allowed = Notices.allowed(c)
+        val own = Alerts.all(); val sys = if (allowed) Notices.list(c) else emptyList()
+        fun card(app: String, title: String, text: String, open: () -> Unit, clear: () -> Unit) {
+            val row = Ui.hbox(c, 10).apply { gravity = Gravity.CENTER_VERTICAL }
+            val body = Ui.vbox(c).apply {
+                setPadding(Ui.dp(c, 16), Ui.dp(c, 10), Ui.dp(c, 16), Ui.dp(c, 10)); Ui.rowStyle(c, this); isFocusable = true; isClickable = true
+                setOnClickListener { open(); dlg.dismiss() }
+                addView(Ui.text(c, app, 12f, Ui.DIM, true, 1)); addView(Ui.text(c, title, 16f, Ui.TEXT, true, 1))
+                if (text.isNotEmpty()) addView(Ui.text(c, text, 14f, Ui.TEXT2, false, 2))
+            }
+            row.addView(body, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(Ui.button(c, "Clear") { clear(); updateBell(); fill(list, bottom, dlg) })
+            list.addView(row, Ui.matchWrap().apply { bottomMargin = Ui.dp(c, 8) })
+        }
+        own.forEach { a -> card("My Lists TV", a.title, a.text, { openMeta(Library.all().firstOrNull { it.id == a.metaId } ?: Meta(a.metaId, a.type, a.title)) }, { Alerts.remove(a.id) }) }
+        sys.forEach { n -> card(n.app, n.title, n.text, { try { n.open?.send() } catch (_: Exception) {}; Notices.dismiss(n.key) }, { Notices.dismiss(n.key) }) }
+        if (own.isEmpty() && sys.isEmpty()) list.addView(Ui.text(c, if (allowed) "Nothing new. New episodes of series in your Library show up here." else "Nothing new yet.", 14f, Ui.DIM, false, 3))
+        if (!allowed) list.addView(Ui.button(c, "Show the TV's own notifications too") {
+            try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Toast.makeText(c, "This TV has no such setting. See Settings, Launcher setup, for the phone steps.", Toast.LENGTH_LONG).show() }
+        }, Ui.wrap().apply { topMargin = Ui.dp(c, 8) })
+        list.post { (0 until list.childCount).map { list.getChildAt(it) }.firstNotNullOfOrNull { v -> (v as? LinearLayout)?.getChildAt(0)?.takeIf { it.isFocusable } ?: v.takeIf { it.isFocusable } }?.requestFocus() ?: bottom.getChildAt(1)?.requestFocus() }
+    }
+
     private var backdropJob: Runnable? = null
 
     /** Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every picture. A null leaves the current one. */
@@ -155,15 +180,16 @@ class MainActivity : Activity() {
         topBar.addView(profileChip(), LinearLayout.LayoutParams(-2, icon).apply { rightMargin = Ui.dp(this@MainActivity, 8) })
         topBar.addView(bellBtn, LinearLayout.LayoutParams(icon, icon)); topBar.addView(searchBtn, LinearLayout.LayoutParams(icon, icon)); topBar.addView(settingsBtn, LinearLayout.LayoutParams(icon, icon))
         updateProfile()
+        root.addView(topBar, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
         if (navStyle != 0) {
             root.addView(side, FrameLayout.LayoutParams(sideWidth, -1, Gravity.START).apply { setMargins(Ui.dp(this@MainActivity, 12), Ui.dp(this@MainActivity, 12), 0, Ui.dp(this@MainActivity, 12)) })
             if (navStyle == 1) content.setPadding(sideWidth + Ui.dp(this, 16), Ui.dp(this, 64), 0, 0)
         }
-        root.addView(topBar, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
         setContentView(root)
         // Moving along the tabs switches page; coming up from a page onto the tabs does not (OK does).
         root.viewTreeObserver.addOnGlobalFocusChangeListener { old, new ->
             val i = tabViews.indexOf(new)
+            if (navStyle != 0 && i >= 0) tabViews.forEachIndexed { k, v -> v.isSelected = k == i }   // the highlight follows the focus at once, no trail
             if (i >= 0 && old != null && old in tabViews) { pendingSelect?.let { handler.removeCallbacks(it) }; pendingSelect = Runnable { select(i) }.also { handler.postDelayed(it, 140) } }
         }
         content.addView(Ui.text(this, "Loading…", 16f, Ui.DIM).apply { gravity = Gravity.CENTER }, FrameLayout.LayoutParams(-1, -1))

@@ -58,7 +58,7 @@ class BrowseScreen(
 
     fun start() {
         rows.clear()
-        if (withContinue) addContinue()
+        if (withContinue) { addContinue(); addAiring() }
         val hidden = Prefs.homeHidden
         val defs = Catalogs.browseRows(type, 8).filter { (_, cat) -> Catalogs.rowTitle(type, cat) !in hidden }
         if (defs.isEmpty() && Catalogs.enabled().isEmpty()) {
@@ -113,14 +113,29 @@ class BrowseScreen(
         }))
     }
 
-    /** Called when coming back from the player so the progress shows without reloading catalogs. */
+    /** The next episode of each followed show, soonest first. Tapping one opens the show. */
+    private fun addAiring() {
+        if (!Prefs.showAiring || "Airing next" in Prefs.homeHidden) return
+        val a = Progress.airing()
+        if (a.isEmpty()) return
+        val day = java.text.SimpleDateFormat("EEE, MMM d", java.util.Locale.US); val parse = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        rows.add(RowModel("Airing next", "From your account", CardKind.WIDE, a.map { s ->
+            val date = try { day.format(parse.parse(s.airDate)!!) } catch (_: Exception) { s.airDate }
+            val tag = if (s.premiere) "Season premiere" else if (s.finale) "Season finale" else "S${s.season} \u00b7 E${s.episode}"
+            CardModel(s.name, s.still ?: s.poster, "$tag \u00b7 $date", 0f, Meta(s.id, "series", s.name, s.poster, s.still))
+        }))
+    }
+
+    /** Called when coming back from the player, or when the account's lists arrive, so they show without reloading catalogs. */
     fun refreshContinue() {
         if (!withContinue) return
-        rows.removeAll { it.title == "Continue watching" }
-        addContinue()
+        rows.removeAll { it.title == "Continue watching" || it.title == "Airing next" }
+        addContinue(); addAiring()
         rows.sortBy { Prefs.homeRank(it.title) }
         list.changedAll()
     }
+
+    private var heroId: String? = null
 
     private fun hero(m: CardModel) {
         when (val p = m.payload) {
@@ -129,12 +144,31 @@ class BrowseScreen(
                 heroTitle.text = p.name
                 heroMeta.text = listOfNotNull(p.year, p.rating?.let { "★ $it" }, p.genres.take(3).joinToString(", ").ifEmpty { null }).joinToString("   ")
                 heroDesc.text = p.description ?: ""
+                heroId = p.id
+                // A tile with no story yet (Airing next) asks for the title's details.
+                if (p.description == null && p.id.startsWith("tt")) Catalogs.meta(p.type, p.id, p) { full ->
+                    if (full != null && heroId == p.id) {
+                        full.background?.let(onBackdrop)
+                        heroMeta.text = listOfNotNull(full.year, full.rating?.let { "★ $it" }, full.genres.take(3).joinToString(", ").ifEmpty { null }).joinToString("   ")
+                        heroDesc.text = full.description ?: ""
+                    }
+                }
             }
             is WatchStore.Entry -> {
                 onBackdrop(p.background ?: p.poster)
                 heroTitle.text = p.name
-                heroMeta.text = if (p.type == "series" && p.season >= 0) "S${p.season} · E${p.episode}  ${p.episodeTitle ?: ""}".trim() else "Resume"
-                heroDesc.text = "${(p.fraction * 100).toInt()}% watched"
+                val where = if (p.type == "series" && p.season >= 0) "S${p.season} · E${p.episode}  ${p.episodeTitle ?: ""}".trim() else "Movie"
+                val progress = if (p.durationMs == 0L) "Next up" else "${(p.fraction * 100).toInt()}% watched"
+                heroMeta.text = "$where   $progress"; heroDesc.text = ""
+                heroId = p.metaId
+                // The title's own details (year, rating, genres, story), like any other tile.
+                Catalogs.meta(p.type, p.metaId, null) { full ->
+                    if (full != null && heroId == p.metaId) {
+                        full.background?.let(onBackdrop)
+                        heroMeta.text = listOfNotNull(where, progress, full.year, full.rating?.let { "★ $it" }, full.genres.take(3).joinToString(", ").ifEmpty { null }).joinToString("   ")
+                        heroDesc.text = full.description ?: ""
+                    }
+                }
             }
             is AppEntry -> { heroTitle.text = p.label; heroMeta.text = "Installed app"; heroDesc.text = "Press OK to open." }
         }

@@ -50,3 +50,5 @@ Not tested: anything on a real TV box (including the Keystore path and Watch Nex
 - Share addons: a profile can use another profile's addon list (Settings, Share addons). It keeps its own sign-in, history and Library; its Addons page is read-only while sharing, the other profile's sign-in link is not shared, and stopping keeps a copy. Dialogs and menus highlight the focused row in brand blue with white text.
 
 - Sign-in shows a QR code (`ui/Qr.kt`, own encoder, no library) and the account name; the account's Continue Watching (website and other TVs, `Progress.pull`) joins the Home row, with next-up episodes shown as "Next up". Moving an app: hold OK, Move, then Left/Right, OK to place. Left from the first card of a page goes to the side bar; Up/Down land on the nearest card of the next row.
+
+- Home rows: Continue watching (account order, with the title's details on focus) and Airing next (soonest first, toggle in Settings, Layout). Up/Down land on the card last used in the next row (first card if never visited). The bell is a card list with a Clear button on each notification.

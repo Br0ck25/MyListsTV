@@ -156,7 +156,7 @@ class SettingsActivity : Activity() {
     }
 
     private fun arrangeRows() {
-        val titles = listOf("Continue watching") + Catalogs.browseRows(null, 8).map { (_, c) -> Catalogs.rowTitle(null, c) } + "Your apps"
+        val titles = listOf("Continue watching", "Airing next") + Catalogs.browseRows(null, 8).map { (_, c) -> Catalogs.rowTitle(null, c) } + "Your apps"
         arrange("Home rows", titles.distinct().sortedBy { Prefs.homeRank(it) }.map { it to it }, Prefs.homeHidden) { o, h -> Prefs.homeOrder = o; Prefs.homeHidden = h }
     }
 
@@ -242,6 +242,7 @@ class SettingsActivity : Activity() {
         add(choice("Card size", "Posters, wide cards and app tiles grow or shrink together.", listOf(0, 1, 2), { Prefs.cardSize }, { Prefs.cardSize = it }, { listOf("Small", "Medium", "Large")[it] }))
         add(action("Arrange Home rows", "Move lists and the apps row up or down, or hide them from Home.") { arrangeRows() })
         add(action("Arrange apps row", "Reorder the apps on Home or hide some. The Apps tab still shows all of them.") { arrangeApps() })
+        add(toggle("Show Airing next", "The next episode of the shows you follow on My Lists, soonest first.", { Prefs.showAiring }, { Prefs.showAiring = it }))
         add(toggle("Show Continue watching", "", { Prefs.showContinue }, { Prefs.showContinue = it }))
         add(toggle("Show apps row", "", { Prefs.showAppsRow }, { Prefs.showAppsRow = it }))
         add(header("Backup"))

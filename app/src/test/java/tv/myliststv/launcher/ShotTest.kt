@@ -97,4 +97,9 @@ class ShotTest {
         for ((i, t) in listOf("https://mylistsaddon.com/link?code=ABCD-1234", "hi", "https://mylistsaddon.com/link?code=WXYZ-9876&x=1234567890").withIndex())
             File(dir, "qr$i.png").outputStream().use { tv.myliststv.launcher.ui.Qr.bitmap(t, 400).compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
+
+    @Test fun search() {
+        Assume.assumeTrue(dir != null)
+        val a = Robolectric.buildActivity(tv.myliststv.launcher.screens.SearchActivity::class.java).setup().get(); settle(500); shot(a, "search")
+    }
 }

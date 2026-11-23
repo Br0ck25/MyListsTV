@@ -39,7 +39,9 @@ object Notices {
             s.activeNotifications.filter { it.packageName != c.packageName && !it.isOngoing && it.notification.flags and Notification.FLAG_GROUP_SUMMARY == 0 }
                 .sortedByDescending { it.postTime }.map {
                     val e = it.notification.extras
-                    val app = try { c.packageManager.getApplicationLabel(c.packageManager.getApplicationInfo(it.packageName, 0)).toString() } catch (_: Exception) { it.packageName }
+                    // The notification usually carries its app's name; otherwise the app's label; otherwise the last part of the package name.
+                    val app = (e.getParcelable<android.content.pm.ApplicationInfo>("android.appInfo")?.let { ai -> try { ai.loadLabel(c.packageManager).toString() } catch (_: Exception) { null } })
+                        ?: try { c.packageManager.getApplicationLabel(c.packageManager.getApplicationInfo(it.packageName, 0)).toString() } catch (_: Exception) { it.packageName.substringAfterLast('.').replaceFirstChar { ch -> ch.uppercase() } }
                     Item(it.key, app, e.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: "", e.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: "", it.notification.contentIntent)
                 }
         } catch (_: Exception) { emptyList() }
