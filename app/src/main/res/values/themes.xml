@@ -5,13 +5,13 @@
         <item name="android:windowAnimationStyle">@null</item>
         <item name="android:alertDialogTheme">@style/Theme.MyListsTV.Dialog</item>
     </style>
-    <!-- Every system dialog and menu: dark rounded card, white text, a white focus pill on the row under the focus. -->
+    <!-- Every system dialog and menu: dark rounded card, white text, a brand-blue pill (white text stays readable) on the row under the focus. -->
     <style name="Theme.MyListsTV.Dialog" parent="@android:style/Theme.Material.Dialog.Alert">
         <item name="android:windowBackground">@drawable/dialog_bg</item>
         <item name="android:textColorPrimary">@color/text</item>
         <item name="android:textColorSecondary">@color/text2</item>
-        <item name="android:textColorAlertDialogListItem">@color/dialog_item_text</item>
-        <item name="android:colorAccent">@color/brand</item>
+        <item name="android:textColorAlertDialogListItem">@color/text</item>
+        <item name="android:colorAccent">@color/text</item>
         <item name="android:listChoiceBackgroundIndicator">@drawable/dialog_item</item>
         <item name="android:selectableItemBackground">@drawable/dialog_item</item>
         <item name="android:windowMinWidthMajor">40%</item>

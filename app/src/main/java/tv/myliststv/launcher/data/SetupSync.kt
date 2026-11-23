@@ -5,9 +5,9 @@ import org.json.JSONObject
 import tv.myliststv.launcher.App
 
 /**
- * Keeps a signed-in profile's stream addons and IPTV playlists on its account, so a new TV only needs the sign-in. The account's
+ * Keeps a signed-in profile's stream addons on its account, so a new TV only needs the sign-in. The account's
  * own addon link (it holds this TV's pairing secret) and the default addon are not sent: each TV has its own. The server stores
- * the lists encrypted at rest. Changes are pushed at once; the account is read when the launcher opens and after signing in.
+ * the list encrypted at rest. Changes are pushed at once; the account is read when the launcher opens and after signing in.
  */
 object SetupSync {
     private const val ORIGIN = "https://mylistsaddon.com"
@@ -19,13 +19,12 @@ object SetupSync {
     private fun post(o: JSONObject): Pair<Int, String> = Http.send("POST", "$ORIGIN/api/nuvio-tv/setup", o.put("targetId", Pairing.targetOf(Prefs.accountLink)).toString())
     private fun isShared(url: String) = url != AddonStore.DEFAULT_URL && url != Prefs.accountLink
 
-    /** Called when the addon list or the playlists change by the viewer's own doing. */
+    /** Called when the addon list changes by the viewer's own doing. */
     fun changed() { if (!applying) push() }
 
-    /** What is sent: the profile's own addons (not the account link or the default) and its playlists. */
+    /** What is sent: the profile's own addons (not the account link or the default). */
     internal fun payload(): JSONObject = JSONObject().put("action", "set")
-        .put("addons", JSONArray().also { a -> AddonStore.saved().filter { isShared(it.url) }.forEach { a.put(JSONObject().put("url", it.url).put("on", it.enabled)) } })
-        .put("playlists", JSONArray(LiveStore.playlists()))
+        .put("addons", JSONArray().also { a -> AddonStore.ownSaved().filter { isShared(it.url) }.forEach { a.put(JSONObject().put("url", it.url).put("on", it.enabled)) } })
 
     fun push() {
         if (!on()) return
@@ -51,16 +50,14 @@ object SetupSync {
                 val o = JSONObject(text); val at = o.optLong("updatedAt")
                 val theirs = o.optJSONArray("addons") ?: JSONArray()
                 val remoteAddons = (0 until theirs.length()).mapNotNull { theirs.optJSONObject(it) }.map { AddonStore.Saved(it.optString("url"), it.optBoolean("on", true)) }.filter { it.url.isNotEmpty() }
-                val remoteLists = o.optJSONArray("playlists")?.let { a -> (0 until a.length()).map { a.getString(it) } } ?: emptyList()
                 val first = sp().getLong(Profiles.key("syncedAt"), 0L) == 0L
                 if (!first && at <= sp().getLong(Profiles.key("syncedAt"), 0L)) return@background
-                val mineAddons = AddonStore.saved(); val mineLists = LiveStore.playlists()
+                val mineAddons = AddonStore.ownSaved()
                 val base = mineAddons.filter { !isShared(it.url) }
                 val addons = base + if (first) remoteAddons + mineAddons.filter { m -> isShared(m.url) && remoteAddons.none { it.url == m.url } } else remoteAddons
-                val lists = if (first) (remoteLists + mineLists).distinct() else remoteLists
                 applying = true
-                try { AddonStore.restore(addons); LiveStore.restore(lists) } finally { applying = false }
-                if (first && (addons.size - base.size != remoteAddons.size || lists.size != remoteLists.size || at == 0L)) push() else sp().edit().putLong(Profiles.key("syncedAt"), at).apply()
+                try { AddonStore.restore(addons) } finally { applying = false }
+                if (first && (addons.size - base.size != remoteAddons.size || at == 0L)) push() else sp().edit().putLong(Profiles.key("syncedAt"), at).apply()
                 Http.post(changed)
             } catch (_: Exception) {}
         }

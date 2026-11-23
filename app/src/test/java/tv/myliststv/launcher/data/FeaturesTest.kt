@@ -231,20 +231,20 @@ class AlertsAndWatchedTest {
 class ProfileAccountsTest {
     private val ctx get() = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
 
-    @Test fun eachProfileKeepsItsOwnAccountAddonsPlaylistsLibraryAndBackupCode() {
+    @Test fun eachProfileKeepsItsOwnAccountAddonsLibraryAndBackupCode() {
         val main = Profiles.activeId
-        Prefs.accountLink = "https://mylistsaddon.com/i/MAINTOKEN/tv/manifest.json"; AddonStore.add("https://a.example/manifest.json"); LiveStore.add("http://iptv.example/a.m3u"); Prefs.backupCode = "AAAA-AAAA-AAAA-AAAA"
+        Prefs.accountLink = "https://mylistsaddon.com/i/MAINTOKEN/tv/manifest.json"; AddonStore.add("https://a.example/manifest.json"); Prefs.backupCode = "AAAA-AAAA-AAAA-AAAA"
         Library.toggle(Meta("tt1", "movie", "Main film"))
         Profiles.add("Sam", false); val sam = Profiles.all().last().id
         Profiles.switchTo(ctx, sam)
         assertEquals("a new profile is signed out", "", Prefs.accountLink)
         assertEquals("and starts with the default addon only", listOf(AddonStore.DEFAULT_URL), AddonStore.saved().map { it.url })
-        assertTrue(LiveStore.playlists().isEmpty()); assertEquals("", Prefs.backupCode); assertTrue(Library.all().isEmpty())
+        assertEquals("", Prefs.backupCode); assertTrue(Library.all().isEmpty())
         Prefs.accountLink = "https://mylistsaddon.com/i/SAMTOKEN/tv/manifest.json"; AddonStore.add("https://b.example/manifest.json")
         assertEquals("SAMTOKEN", Pairing.targetOf(Prefs.accountLink))
         Profiles.switchTo(ctx, main)
         assertEquals("MAINTOKEN", Pairing.targetOf(Prefs.accountLink)); assertTrue(AddonStore.saved().any { it.url == "https://a.example/manifest.json" }); assertFalse(AddonStore.saved().any { it.url == "https://b.example/manifest.json" })
-        assertEquals(listOf("http://iptv.example/a.m3u"), LiveStore.playlists()); assertEquals("AAAA-AAAA-AAAA-AAAA", Prefs.backupCode); assertTrue(Library.has("tt1"))
+        assertEquals("AAAA-AAAA-AAAA-AAAA", Prefs.backupCode); assertTrue(Library.has("tt1"))
         // The main profile's backup carries the profile list and settings; another profile's does not.
         assertTrue(org.json.JSONObject(Backup.snapshot()).has("profiles"))
         Profiles.switchTo(ctx, sam)
@@ -252,22 +252,60 @@ class ProfileAccountsTest {
         // Removing a profile removes what it kept.
         Profiles.remove(sam); Profiles.switchTo(ctx, Profiles.activeId)
         assertEquals(main, Profiles.activeId)
-        Profiles.switchTo(ctx, main); Prefs.accountLink = ""; AddonStore.reset(); LiveStore.restore(emptyList()); Prefs.backupCode = ""; Library.remove("tt1")
+        Profiles.switchTo(ctx, main); Prefs.accountLink = ""; AddonStore.reset(); Prefs.backupCode = ""; Library.remove("tt1")
     }
 }
 
 @org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
 @org.robolectric.annotation.Config(sdk = [34], application = tv.myliststv.launcher.App::class)
 class SetupSyncTest {
-    @Test fun sendsOnlyTheProfilesOwnAddonsAndPlaylists() {
+    @Test fun sendsOnlyTheProfilesOwnAddons() {
         Prefs.accountLink = "https://mylistsaddon.com/i/TOKEN/tv/manifest.json"
         AddonStore.reset(); AddonStore.remove(AddonStore.DEFAULT_URL)
-        AddonStore.add(Prefs.accountLink); AddonStore.add("https://torrentio.example/key/manifest.json"); LiveStore.restore(listOf("http://iptv.example/a.m3u"))
+        AddonStore.add(Prefs.accountLink); AddonStore.add("https://torrentio.example/key/manifest.json")
         val p = SetupSync.payload()
         val urls = (0 until p.getJSONArray("addons").length()).map { p.getJSONArray("addons").getJSONObject(it).getString("url") }
         assertEquals("not this TV's pairing link, not the default", listOf("https://torrentio.example/key/manifest.json"), urls)
-        assertEquals("http://iptv.example/a.m3u", p.getJSONArray("playlists").getString(0))
         assertFalse("the pairing secret never goes in the list", p.toString().contains("TOKEN"))
-        Prefs.accountLink = ""; AddonStore.reset(); LiveStore.restore(emptyList())
+        Prefs.accountLink = ""; AddonStore.reset()
+    }
+}
+
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34], application = tv.myliststv.launcher.App::class)
+class AddonSharingTest {
+    private val ctx get() = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+
+    @Test fun aProfileCanUseAnotherProfilesAddonsAndStopWithACopy() {
+        val main = Profiles.activeId
+        Prefs.accountLink = "https://mylistsaddon.com/i/MAIN/tv/manifest.json"
+        AddonStore.add(Prefs.accountLink); AddonStore.add("https://a.example/manifest.json")
+        Profiles.add("Kid", true); val kid = Profiles.all().last().id
+        Profiles.switchTo(ctx, kid)
+        assertEquals("own list first", listOf(AddonStore.DEFAULT_URL), AddonStore.saved().map { it.url })
+        Profiles.shareAddons(kid, main)
+        assertEquals("the default plus Main's addons, not Main's sign-in link", listOf(AddonStore.DEFAULT_URL, "https://a.example/manifest.json"), AddonStore.saved().map { it.url })
+        AddonStore.add("https://kid.example/manifest.json")
+        assertFalse("a profile that shares cannot change the shared list", AddonStore.saved().any { it.url.contains("kid.example") })
+        Profiles.switchTo(ctx, main); AddonStore.add("https://b.example/manifest.json")
+        Profiles.switchTo(ctx, kid)
+        assertTrue("a change on Main shows on the kid profile", AddonStore.saved().any { it.url.contains("b.example") })
+        AddonStore.stopSharing(kid)
+        assertEquals(null, Profiles.addonSource(kid))
+        assertTrue("the kid keeps a copy", AddonStore.ownSaved(kid).any { it.url.contains("b.example") })
+        Profiles.switchTo(ctx, main); Profiles.remove(kid); Prefs.accountLink = ""; AddonStore.reset()
+    }
+
+    @Test fun removingTheSharedFromProfileLeavesTheOtherWithItsOwnList() {
+        val main = Profiles.activeId
+        Profiles.add("A", false); Profiles.add("B", false)
+        val a = Profiles.all()[1].id; val b = Profiles.all()[2].id
+        Profiles.shareAddons(b, a)
+        assertEquals(a, Profiles.addonSource(b))
+        Profiles.remove(a)
+        assertNull(Profiles.addonSource(b))
+        Profiles.shareAddons(b, main); Profiles.shareAddons(main, b)
+        assertNull("no chains: Main shares from B, so B cannot be shared from", Profiles.addonSource(b))
+        Profiles.shareAddons(main, null); Profiles.remove(b)
     }
 }

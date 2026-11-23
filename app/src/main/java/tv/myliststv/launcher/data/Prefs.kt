@@ -119,6 +119,9 @@ object Prefs {
         get() = Secure.unwrap(sp.getString(Profiles.key("accountLink"), "") ?: "").orEmpty()
         set(v) = sp.edit().putString(Profiles.key("accountLink"), Secure.wrap(v)).apply()
 
+    /** Another profile's account link (for the addons a profile shares from it). */
+    fun accountLinkOf(id: String): String = Secure.unwrap(sp.getString(Profiles.key("accountLink", id), "") ?: "").orEmpty()
+
     var lastBackup: Long
         get() = sp.getLong(Profiles.key("lastBackup"), 0L)
         set(v) = sp.edit().putLong(Profiles.key("lastBackup"), v).apply()

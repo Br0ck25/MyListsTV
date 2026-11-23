@@ -9,7 +9,7 @@ import tv.myliststv.launcher.data.AddonStore
 import tv.myliststv.launcher.ui.AddonsScreen
 import tv.myliststv.launcher.ui.Ui
 
-/** Settings, Addons: the list of addons and playlists, in a page of its own. Home reloads when you come back. */
+/** Settings, Addons: the list of addons, in a page of its own. Home reloads when you come back. */
 class AddonsActivity : Activity() {
     private lateinit var screen: AddonsScreen
 

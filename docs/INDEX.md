@@ -8,19 +8,19 @@ Start here, then `grep -n <name> docs/MAP.md` for the exact file and line. Rules
 | Poster / wide / app / episode card | `ui/Cards.kt` (`Card`, `CardAdapter`, `RowsList`) |
 | Home, Movies, Series rows, hero text, backdrop | `ui/BrowseScreen.kt`, `MainActivity.kt` (`select`, `setBackdrop`) |
 | Top bar, side bar, tabs, profile chip, bell | `MainActivity.kt` (`onCreate`, `profileChip`, `dispatchKeyEvent`) |
-| Live TV guide | `ui/LiveScreen.kt`, `data/Live.kt` (M3U, XMLTV `Epg`) |
 | Apps tab and the apps row | `ui/AppsScreen.kt`, `AppRepository.kt`, `ui/BrowseScreen.kt` |
 | Title details (buttons, cast, episodes, air dates) | `screens/DetailsActivity.kt`, `data/Json.kt` (parse), `data/Models.kt` |
 | Source list, choosing and ranking sources | `screens/StreamsActivity.kt`, `data/StreamRank.kt`, `data/StreamResolver.kt` |
 | Player, controls, fallback, up next, skip intro | `screens/PlayerActivity.kt`, `ui/PlaySession.kt`, `data/Segments.kt` |
 | Search | `screens/SearchActivity.kt`, `data/Catalogs.kt` (`search`) |
 | A setting (add, rename, group) | `screens/SettingsActivity.kt` (`rows`), store it in `data/Prefs.kt` |
-| Addons list and adding links, IPTV playlists | `screens/AddonsActivity.kt`, `ui/AddonsScreen.kt`, `data/AddonStore.kt`, `data/Live.kt` (`Links`) |
+| Addons list and adding links | `screens/AddonsActivity.kt`, `ui/AddonsScreen.kt`, `data/AddonStore.kt`, `data/Links.kt` |
 | Catalogs, metadata, Cinemeta details | `data/Catalogs.kt`, `data/Json.kt`, `data/Urls.kt` |
 | All network and caching | `data/Http.kt`, `data/ImageLoader.kt` |
 | Sign in, backup, progress, Library and addon sync | `data/Pairing.kt`, `data/Backup.kt`, `data/Progress.kt`, `data/SetupSync.kt`, `data/Library.kt`, `data/Secure.kt` |
 | Library (+ button, Library page) | `data/Library.kt`, `ui/LibraryScreen.kt`, `screens/DetailsActivity.kt` |
 | Watched ticks, new-episode alerts | `data/Watched.kt`, `data/Alerts.kt`, `screens/DetailsActivity.kt`, `MainActivity.kt` (`showNotices`) |
+| Share addons between profiles | `data/Profiles.kt` (`addonSource`), `data/AddonStore.kt` (`saved`), `screens/SettingsActivity.kt` (`shareMenu`) |
 | Profiles, kids filter, watch history | `data/Profiles.kt`, `data/WatchStore.kt` |
 | Remote button mapper, Home button | `data/ButtonMap.kt`, `services/HomeButtonService.kt`, `data/HomeSetup.kt` |
 | Notifications bell | `services/NotificationsService.kt` (`Notices`), `MainActivity.kt` (`showNotices`) |

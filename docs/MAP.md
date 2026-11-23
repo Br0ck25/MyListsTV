@@ -3,10 +3,10 @@
 Find a symbol with grep on this file, then read only that file around the line number. Task-to-file hints are in docs/INDEX.md.
 
 
-## App.kt (27 lines)
+## App.kt (26 lines)
      7 class App
     10   fun onCreate()
-    23   fun onTrimMemory(level: Int)
+    22   fun onTrimMemory(level: Int)
 
 ## AppEntry.kt (11 lines) - One launchable app.
      6 class AppEntry  - One launchable app.
@@ -18,7 +18,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     33   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
     39   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (341 lines) - The home screen.
+## MainActivity.kt (340 lines) - The home screen.
     31 class MainActivity  - The home screen.
     54   fun updateBell()
     56   fun updateProfile()
@@ -31,40 +31,45 @@ Find a symbol with grep on this file, then read only that file around the line n
    174   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
    191   fun tabView(t: String)
    197   fun select(i: Int, force: Boolean = false)
-   221   fun reloadAddons()
-   224   fun go(where: String)  - Where a mapped remote button sends the launcher.
-   234   fun openMeta(m: Meta)
-   238   fun resumeEntry(e: WatchStore.Entry)
-   243   fun launch(a: AppEntry)
-   252   fun appMenu(a: AppEntry)
-   277   fun onResume()
-   296   fun onNewIntent(intent: Intent)
-   310   fun onBackPressed()
-   318   fun dispatchKeyEvent(e: KeyEvent)  - Hidden side bar: Left from the left edge of a page opens it; Right, OK on a page or Back closes it.
-   329   fun isInContent(v: View)
-   330   fun openSide()
-   331   fun closeSide()
-   333   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   338   fun onDestroy()
-   340   fun onTrimMemory(level: Int)
+   220   fun reloadAddons()
+   223   fun go(where: String)  - Where a mapped remote button sends the launcher.
+   233   fun openMeta(m: Meta)
+   237   fun resumeEntry(e: WatchStore.Entry)
+   242   fun launch(a: AppEntry)
+   251   fun appMenu(a: AppEntry)
+   276   fun onResume()
+   295   fun onNewIntent(intent: Intent)
+   309   fun onBackPressed()
+   317   fun dispatchKeyEvent(e: KeyEvent)  - Hidden side bar: Left from the left edge of a page opens it; Right, OK on a page or Back closes it.
+   328   fun isInContent(v: View)
+   329   fun openSide()
+   330   fun closeSide()
+   332   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   337   fun onDestroy()
+   339   fun onTrimMemory(level: Int)
 
-## data/AddonStore.kt (105 lines) - The user's installed addons, kept as a list of manifest URLs.
+## data/AddonStore.kt (127 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
     13   class Saved
     21   fun init(c: Context)
     27   fun listKey()  - Each profile has its own addon list; a new profile starts with just the default.
     28   fun forget(id: String)
-    30   fun saved()
-    40   fun write(list: List<Saved>)
-    48   fun normalize(input: String)  - Accepts stremio:// links and bare folders.
-    57   fun restore(list: List<Saved>)
-    60   fun reset()  - Back to just the default My Lists addon.
-    61   fun add(url: String)
-    62   fun remove(url: String)
-    63   fun setEnabled(url: String, on: Boolean)
-    64   fun move(url: String, delta: Int)
-    72   fun load(cb: (List<Addon>)  - Fetches every saved manifest (from cache first), then calls [cb] once on the main thread with those that loade
-    94   fun probe(url: String, cb: (Manifest?, String?)  - Fetches a manifest to check it before installing.
+    31   fun ownSaved(id: String = Profiles.activeId)  - This profile's own stored list (a new profile starts with just the default).
+    42   fun isBase(url: String)  - The default and the profile's own sign-in link are its own even when it shares; everything else comes from the
+    45   fun saved()  - The addons in use.
+    51   fun sharing()
+    54   fun stopSharing(id: String)  - Stops sharing: the profile keeps a copy of what it was using.
+    56   fun write(list: List<Saved>, force: Boolean = false)
+    62   fun storeOwn(list: List<Saved>)
+    70   fun normalize(input: String)  - Accepts stremio:// links and bare folders.
+    79   fun restore(list: List<Saved>)
+    82   fun reset()  - Back to just the default My Lists addon.
+    83   fun add(url: String)
+    84   fun remove(url: String)
+    85   fun setEnabled(url: String, on: Boolean)
+    86   fun move(url: String, delta: Int)
+    94   fun load(cb: (List<Addon>)  - Fetches every saved manifest (from cache first), then calls [cb] once on the main thread with those that loade
+   116   fun probe(url: String, cb: (Manifest?, String?)  - Fetches a manifest to check it before installing.
 
 ## data/Alerts.kt (52 lines) - New-episode alerts for series in the Library, shown in the bell.
     12 object Alerts  - New-episode alerts for series in the Library, shown in the bell.
@@ -78,7 +83,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     35   fun compare(meta: Meta, seen: Int, newest: Int)  - Compares one show with what was seen last; returns a new alert or null.
     39   fun check(force: Boolean = false, done: ()  - Looks at the Library's series now and then.
 
-## data/Backup.kt (110 lines) - Encrypted backup of the whole setup.
+## data/Backup.kt (108 lines) - Encrypted backup of the whole setup.
     19 object Backup  - Encrypted backup of the whole setup.
     24   fun isCode(s: String)
     25   fun clean(s: String)
@@ -87,12 +92,12 @@ Find a symbol with grep on this file, then read only that file around the line n
     36   fun key(code: String, salt: ByteArray, sha256: Boolean)
     43   fun encrypt(plain: String, code: String)  - Blob = base64( format byte, 16-byte salt, 12-byte iv, AES-256-GCM ciphertext ).
     52   fun decrypt(blob: String, code: String)  - Null when the code is wrong or the blob was changed: GCM checks both.
-    60   fun snapshot()  - What a backup holds for the profile in use: its addons (with their keys), IPTV playlists, Library and account.
-    73   fun apply(c: Context, json: String)  - Returns a short summary of what was restored, or null if the data is not a backup.
-    88   fun codeForThisBox()  - The code for this box, made on first use.
-    90   fun upload(code: String, reply: (String)
-    98   fun restore(c: Context, code: String, reply: (String)
-   109   fun auto()  - After a change, refresh the online backup if this box already has a code.
+    60   fun snapshot()  - What a backup holds for the profile in use: its addons (with their keys), Library and account.
+    72   fun apply(c: Context, json: String)  - Returns a short summary of what was restored, or null if the data is not a backup.
+    86   fun codeForThisBox()  - The code for this box, made on first use.
+    88   fun upload(code: String, reply: (String)
+    96   fun restore(c: Context, code: String, reply: (String)
+   107   fun auto()  - After a change, refresh the online backup if this box already has a code.
 
 ## data/ButtonMap.kt (43 lines) - Remote buttons the owner has given a job: a button (the colour keys, a streaming-app key...) plus how it is pr
     15 object ButtonMap  - Remote buttons the owner has given a job: a button (the colour keys, a streaming-app key...) plus how it is pr
@@ -196,30 +201,10 @@ Find a symbol with grep on this file, then read only that file around the line n
     76   fun export()  - This profile's list, for a backup.
     79   fun import(o: Any?)  - Restores this profile's list from a backup (an array; the first version of backups held an object with every p
 
-## data/Live.kt (150 lines)
-     9 class Channel
-    12 object M3u  - M3U playlist parsing.
-    16   fun epgUrls(text: String)  - Guide (XMLTV) links named in the playlist's first line, if any.
-    20   fun parse(text: String, max: Int = 6000)
-    42 object LiveStore  - Saved IPTV playlist links.
-    45   fun init(c: Context)  - Playlist links can carry a login, so the list is kept wrapped by the Keystore (see Secure).
-    47   fun playlists()  - Each profile has its own playlists.
-    48   fun forget(id: String)
-    49   fun add(url: String)
-    50   fun remove(url: String)
-    51   fun restore(list: List<String>)
-    54   fun load(cb: (List<Channel>, List<String>)  - Loads every playlist (cached first) and returns the channels once, grouped.
-    73 object Links  - One place that decides what a pasted link is: a Stremio addon or an IPTV playlist.
-    74   fun isAddon(link: String)
-    76   fun add(link: String, reply: (String)
-    88 class Prog
-    91 object Epg  - Programme guide from XMLTV.
-    94   fun nowNext(tvgId: String?, t: Long = System.currentTimeMillis()
-   100   fun setGuide(g: Map<String, List<Prog>>)
-   102   fun schedule(tvgId: String?)
-   104   fun time(s: String)
-   112   fun parse(input: java.io.InputStream, ids: Set<String>, from: Long, until: Long)
-   135   fun load(urls: List<String>, ids: Set<String>, cb: ()  - Downloads each guide (gzip is detected), parses it off the main thread, then calls [cb] on the main thread.
+## data/Links.kt (16 lines) - One place that decides what a pasted link is: a Stremio addon, or a recovery code from the phone page.
+     6 object Links  - One place that decides what a pasted link is: a Stremio addon, or a recovery code from the phone page.
+     7   fun isAddon(link: String)
+     9   fun add(link: String, reply: (String)
 
 ## data/Models.kt (99 lines) - A catalog or search item, also the detail record (meta).
      4 class Meta  - A catalog or search item, also the detail record (meta).
@@ -268,7 +253,7 @@ Find a symbol with grep on this file, then read only that file around the line n
      7   fun describe(httpStatus: Int?, kind: Kind)
     19   fun worthTryingAnotherSource(httpStatus: Int?, kind: Kind)  - True when a different source is likely to help, so fallback should run.
 
-## data/Prefs.kt (157 lines) - All user settings in one place.
+## data/Prefs.kt (160 lines) - All user settings in one place.
      8 object Prefs  - All user settings in one place.
     16   fun init(c: Context)
     21   var liteMode
@@ -299,40 +284,43 @@ Find a symbol with grep on this file, then read only that file around the line n
    108   var showContinue
    113   var backupCode  - Recovery code for this box's online backup.
    118   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
-   122   var lastBackup
-   127   fun forget(id: String)  - Forgets what a removed profile kept here.
-   130   fun export()  - Settings as JSON for a backup.
-   132   fun import(o: org.json.JSONObject)
-   138   var setupDone
-   142   var advanced
-   146   fun isLowRamBox()
-   151   fun lite()
-   154   fun effectiveMaxResolution()  - The highest resolution to prefer.
-   156   fun memoryCacheBytes()
+   123   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
+   125   var lastBackup
+   130   fun forget(id: String)  - Forgets what a removed profile kept here.
+   133   fun export()  - Settings as JSON for a backup.
+   135   fun import(o: org.json.JSONObject)
+   141   var setupDone
+   145   var advanced
+   149   fun isLowRamBox()
+   154   fun lite()
+   157   fun effectiveMaxResolution()  - The highest resolution to prefer.
+   159   fun memoryCacheBytes()
 
-## data/Profiles.kt (68 lines) - Viewer profiles.
+## data/Profiles.kt (74 lines) - Viewer profiles.
      9 object Profiles  - Viewer profiles.
     10   class P
     16   fun init(c: Context)
     21   fun all()
     26   fun write(l: List<P>)
-    36   fun key(base: String, id: String = activeId)  - The storage key for something each profile keeps for itself (its account, addons, playlists, backup code).
-    39   fun switchTo(c: Context, id: String)  - Makes [id] the profile in use.
-    41   fun active()
-    43   fun add(name: String, kids: Boolean)
-    46   fun remove(id: String)  - The last profile cannot be removed.
-    53   fun forget(id: String)  - Deletes what a removed profile kept: history, Library, watched ticks, alerts, addons, playlists, account and b
-    60   fun restore(l: List<P>, active: String)  - Replaces the whole list (used when restoring a backup).
-    65   fun allows(m: Meta)
-    67   fun safeForKids(m: Meta)
+    36   fun key(base: String, id: String = activeId)  - The storage key for something each profile keeps for itself (its account, addons, backup code).
+    39   fun addonSource(id: String = activeId)  - The profile whose addons [id] uses, or null.
+    42   fun shareAddons(id: String, with: String?)
+    45   fun switchTo(c: Context, id: String)  - Makes [id] the profile in use.
+    47   fun active()
+    49   fun add(name: String, kids: Boolean)
+    52   fun remove(id: String)  - The last profile cannot be removed.
+    59   fun forget(id: String)  - Deletes what a removed profile kept: history, Library, watched ticks, alerts, addons, account and backup code.
+    66   fun restore(l: List<P>, active: String)  - Replaces the whole list (used when restoring a backup).
+    71   fun allows(m: Meta)
+    73   fun safeForKids(m: Meta)
 
 ## data/Progress.kt (35 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
     10 object Progress  - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
     15   fun request(link: String, e: WatchStore.Entry)  - The request for this play, or null when it should not be sent (no account, no IMDb id, a start, or live TV).
     28   fun report(e: WatchStore.Entry, force: Boolean)  - Sends at most once a minute unless [force] (leaving the player, or the end of the title).
 
-## data/Secure.kt (56 lines) - Wraps secrets (addon links that carry debrid keys, IPTV logins, the backup recovery code) with a key that live
-    18 object Secure  - Wraps secrets (addon links that carry debrid keys, IPTV logins, the backup recovery code) with a key that live
+## data/Secure.kt (56 lines) - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
+    18 object Secure  - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
     25   fun keystoreKey()
     34   fun wrap(plain: String)  - Encrypts [plain].
     45   fun needsWrap(stored: String?)  - True for a stored value that should be wrapped but is not yet.
@@ -347,16 +335,16 @@ Find a symbol with grep on this file, then read only that file around the line n
     30   fun at(segs: List<Seg>, posMs: Long)  - The segment [posMs] is inside, if any.
     33   fun load(videoId: String, cb: (List<Seg>)  - Cached for a week: these times almost never change.
 
-## data/SetupSync.kt (68 lines) - Keeps a signed-in profile's stream addons and IPTV playlists on its account, so a new TV only needs the sign-i
-    12 object SetupSync  - Keeps a signed-in profile's stream addons and IPTV playlists on its account, so a new TV only needs the sign-i
+## data/SetupSync.kt (65 lines) - Keeps a signed-in profile's stream addons on its account, so a new TV only needs the sign-in.
+    12 object SetupSync  - Keeps a signed-in profile's stream addons on its account, so a new TV only needs the sign-in.
     17   fun sp()
     18   fun on()
     19   fun post(o: JSONObject)
     20   fun isShared(url: String)
-    23   fun changed()  - Called when the addon list or the playlists change by the viewer's own doing.
-    26   fun payload()  - What is sent: the profile's own addons (not the account link or the default) and its playlists.
-    30   fun push()
-    44   fun pull(changed: ()  - Brings the account's lists in.
+    23   fun changed()  - Called when the addon list changes by the viewer's own doing.
+    26   fun payload()  - What is sent: the profile's own addons (not the account link or the default).
+    29   fun push()
+    43   fun pull(changed: ()  - Brings the account's lists in.
 
 ## data/StreamRank.kt (86 lines) - Reading quality out of addon stream text, ranking, and the next-source choice for fallback.
      6 object StreamRank  - Reading quality out of addon stream text, ranking, and the next-source choice for fallback.
@@ -425,12 +413,12 @@ Find a symbol with grep on this file, then read only that file around the line n
     15   fun has(metaId: String, videoId: String)
     17   fun set(metaId: String, videoId: String, watched: Boolean)
 
-## screens/AddonsActivity.kt (24 lines) - Settings, Addons: the list of addons and playlists, in a page of its own.
-    13 class AddonsActivity  - Settings, Addons: the list of addons and playlists, in a page of its own.
+## screens/AddonsActivity.kt (24 lines) - Settings, Addons: the list of addons, in a page of its own.
+    13 class AddonsActivity  - Settings, Addons: the list of addons, in a page of its own.
     16   fun onCreate(savedInstanceState: Bundle?)
     23   fun onDestroy()
 
-## screens/DetailsActivity.kt (344 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
+## screens/DetailsActivity.kt (343 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     26 class DetailsActivity  - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     49   fun onCreate(savedInstanceState: Bundle?)
     88   fun render()
@@ -455,72 +443,71 @@ Find a symbol with grep on this file, then read only that file around the line n
    250   fun playVideo(videoId: String)  - Finds streams, picks the best, and starts the player.
    280   fun openSources(videoId: String)
    284   fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: Stre
-   296   fun noStreams(statuses: List<StreamResolver.AddonStatus>)
-   303   fun showBusy(msg: String)
-   308   fun dismissBusy()
-   311   fun onResume()  - Coming back from the player: the tick and the Next button move on.
-   313   fun onDestroy()
+   295   fun noStreams(statuses: List<StreamResolver.AddonStatus>)
+   302   fun showBusy(msg: String)
+   307   fun dismissBusy()
+   310   fun onResume()  - Coming back from the player: the tick and the Next button move on.
+   312   fun onDestroy()
 
-## screens/PlayerActivity.kt (686 lines) - Full-screen player.
+## screens/PlayerActivity.kt (664 lines) - Full-screen player.
     35 class PlayerActivity  - Full-screen player.
-    83   fun onCreate(savedInstanceState: Bundle?)
-    98   fun buildUi()
-   183   fun refreshTitle()
-   202   fun buildPlayer()
-   236   fun playerHasVideo()
-   239   fun begin(s: StreamItem, pos: Long, msg: String)  - Starts a stream for a new video: asks subtitle addons first (3 s at most), then plays.
-   246   fun subMime(url: String)
-   252   fun startStream(s: StreamItem, positionMs: Long, message: String)
-   274   fun onFirstFrame()
-   285   fun onStartupTimeout()
-   290   fun onError(e: PlaybackException)
-   305   fun failed(reason: String, http: Int?, kind: PlayErrors.Kind)  - One place for every failure: refresh an expired link, else try the next source, else show the error screen.
-   323   fun refreshLink(positionMs: Long)  - Fetches the same source again from its addon (it may hand out a fresh link) and resumes where it stopped.
-   344   fun zap(dir: Int)  - Live TV: switch to the next or previous channel in the playlist.
-   354   fun onEnded()
-   363   fun upNext()  - When an episode ends: "Next episode in 5" with OK to start now and Back to stop.
-   377   fun cancelCountdown(playNow: Boolean)
-   382   fun playNextEpisode(manual: Boolean)
-   408   fun panelOpen()
-   409   fun errorOpen()
-   411   fun openPanel(title: String)
-   419   fun closePanel()
-   425   fun item(label: String, sub: String?, tag: String?, tagColor: Int = Ui.GOOD, onC
-   440   fun openSources()
-   447   fun renderSources()
-   468   fun chip(label: String, onClick: ()
-   470   fun reloadSources()
-   485   fun switchTo(s: StreamItem)  - Manual switch: keeps the viewer's place, and the app stops choosing for them.
-   495   fun openTrackPanel(type: Int)
-   523   fun openSpeed()
-   532   fun openInfo()
-   543   fun openExternal()
-   552   fun showSlate(msg: String)  - The loading screen shows the title's own backdrop behind a dark fade.
-   558   fun hideSlate()
-   559   fun showError(msg: String)
-   560   fun hideError()
-   562   fun bannerShow(text: String)
-   568   fun showControls()
-   569   fun scheduleHide()
-   571   fun fmt(ms: Long)
-   573   fun togglePlay()
-   576   fun skipTarget()  - The segment under the playhead, or null; also what the skip button says and does.
-   578   fun updateSkip()
-   584   fun doSkip(s: Segments.Seg)
-   588   fun updateProgress()
-   600   fun saveProgress(force: Boolean, ended: Boolean = false)
-   618   fun dispatchKeyEvent(e: KeyEvent)
-   651   fun seekStep(e: KeyEvent, dir: Int)  - Holding the key seeks faster: 10 s, then 20 s, then 40 s per step.
-   656   fun seekBy(deltaMs: Long)
-   663   fun onBackPressed()
-   672   fun onStop()
-   679   fun onDestroy()
+    82   fun onCreate(savedInstanceState: Bundle?)
+    97   fun buildUi()
+   182   fun refreshTitle()
+   195   fun buildPlayer()
+   229   fun playerHasVideo()
+   232   fun begin(s: StreamItem, pos: Long, msg: String)  - Starts a stream for a new video: asks subtitle addons first (3 s at most), then plays.
+   239   fun subMime(url: String)
+   245   fun startStream(s: StreamItem, positionMs: Long, message: String)
+   267   fun onFirstFrame()
+   278   fun onStartupTimeout()
+   283   fun onError(e: PlaybackException)
+   298   fun failed(reason: String, http: Int?, kind: PlayErrors.Kind)  - One place for every failure: refresh an expired link, else try the next source, else show the error screen.
+   316   fun refreshLink(positionMs: Long)  - Fetches the same source again from its addon (it may hand out a fresh link) and resumes where it stopped.
+   336   fun onEnded()
+   344   fun upNext()  - When an episode ends: "Next episode in 5" with OK to start now and Back to stop.
+   358   fun cancelCountdown(playNow: Boolean)
+   363   fun playNextEpisode(manual: Boolean)
+   389   fun panelOpen()
+   390   fun errorOpen()
+   392   fun openPanel(title: String)
+   400   fun closePanel()
+   406   fun item(label: String, sub: String?, tag: String?, tagColor: Int = Ui.GOOD, onC
+   421   fun openSources()
+   428   fun renderSources()
+   449   fun chip(label: String, onClick: ()
+   451   fun reloadSources()
+   466   fun switchTo(s: StreamItem)  - Manual switch: keeps the viewer's place, and the app stops choosing for them.
+   476   fun openTrackPanel(type: Int)
+   504   fun openSpeed()
+   513   fun openInfo()
+   524   fun openExternal()
+   533   fun showSlate(msg: String)  - The loading screen shows the title's own backdrop behind a dark fade.
+   539   fun hideSlate()
+   540   fun showError(msg: String)
+   541   fun hideError()
+   543   fun bannerShow(text: String)
+   549   fun showControls()
+   550   fun scheduleHide()
+   552   fun fmt(ms: Long)
+   554   fun togglePlay()
+   557   fun skipTarget()  - The segment under the playhead, or null; also what the skip button says and does.
+   559   fun updateSkip()
+   565   fun doSkip(s: Segments.Seg)
+   569   fun updateProgress()
+   581   fun saveProgress(force: Boolean, ended: Boolean = false)
+   599   fun dispatchKeyEvent(e: KeyEvent)
+   629   fun seekStep(e: KeyEvent, dir: Int)  - Holding the key seeks faster: 10 s, then 20 s, then 40 s per step.
+   634   fun seekBy(deltaMs: Long)
+   641   fun onBackPressed()
+   650   fun onStop()
+   657   fun onDestroy()
 
 ## screens/SearchActivity.kt (56 lines) - Search across the catalog addons.
     20 class SearchActivity  - Search across the catalog addons.
     24   fun onCreate(savedInstanceState: Bundle?)
 
-## screens/SettingsActivity.kt (352 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
+## screens/SettingsActivity.kt (365 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     25 class SettingsActivity  - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     29   fun header(t: String)
     30   fun toggle(label: String, desc: String, get: ()
@@ -536,33 +523,34 @@ Find a symbol with grep on this file, then read only that file around the line n
     89   fun requestHome()
     98   fun setupPage()
    106   fun profileMenu()
-   119   fun askName(kids: Boolean)
-   125   fun arrange(title: String, keys: List<Pair<String, String>>, hidden: List<String  - One dialog for ordering and hiding anything in a list (Home rows, apps).
-   144   fun arrangeRows()
-   149   fun arrangeApps()
-   155   fun backupNow()
-   165   fun showCode(code: String, extra: String = "")
-   169   fun restoreDialog()
-   175   fun lastBackupText()
-   177   fun signIn()
-   193   fun signOut()
-   197   fun rows()
-   260   fun checkUpdate()
-   272   fun onCreate(savedInstanceState: Bundle?)
-   285   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
-   299   fun railItem(name: String, i: Int)
-   307   fun buildPanel(keep: Int)
-   323   fun view(r: Row, changed: ()
-   349   fun onBackPressed()
+   120   fun shareMenu()  - Choose another profile whose addons this one uses, or stop sharing.
+   131   fun askName(kids: Boolean)
+   137   fun arrange(title: String, keys: List<Pair<String, String>>, hidden: List<String  - One dialog for ordering and hiding anything in a list (Home rows, apps).
+   156   fun arrangeRows()
+   161   fun arrangeApps()
+   167   fun backupNow()
+   177   fun showCode(code: String, extra: String = "")
+   181   fun restoreDialog()
+   187   fun lastBackupText()
+   189   fun signIn()
+   205   fun signOut()
+   209   fun rows()
+   273   fun checkUpdate()
+   285   fun onCreate(savedInstanceState: Bundle?)
+   298   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
+   312   fun railItem(name: String, i: Int)
+   320   fun buildPanel(keep: Int)
+   336   fun view(r: Row, changed: ()
+   362   fun onBackPressed()
 
-## screens/StreamsActivity.kt (98 lines) - The stream picker: every source from every stream addon, best first.
+## screens/StreamsActivity.kt (97 lines) - The stream picker: every source from every stream addon, best first.
     15 class StreamsActivity  - The stream picker: every source from every stream addon, best first.
     23   fun onCreate(savedInstanceState: Bundle?)
     45   fun show(streams: List<StreamItem>, st: List<StreamResolver.AddonStatus>, done: 
     63   fun row(s: StreamItem, best: Boolean, tooHigh: Boolean)
     81   fun size(b: Long)
     83   fun choose(ranked: List<StreamItem>, s: StreamItem)
-    97   fun onDestroy()
+    96   fun onDestroy()
 
 ## services/BackdropDream.kt (49 lines) - Screensaver: the backdrops of what is on Home, one every 12 seconds, with the title.
     15 class BackdropDream  - Screensaver: the backdrops of what is on Home, one every 12 seconds, with the title.
@@ -592,18 +580,18 @@ Find a symbol with grep on this file, then read only that file around the line n
     49   fun dismissAll()
     50   fun component(c: Context)
 
-## ui/AddonsScreen.kt (114 lines) - Installed addons: what each provides, on or off, order, remove, and a way to add one.
-    15 class AddonsScreen  - Installed addons: what each provides, on or off, order, remove, and a way to add one.
-    21   fun stop()
-    29   fun start()
-    31   fun rebuild()
-    61   fun provides(a: Addon)
-    71   fun row(title: String, sub: String, trailing: String, onClick: ()
-    88   fun menu(url: String, name: String)
-   100   fun confirmRemove(url: String, name: String)
-   106   fun askUrl()
-   108   fun install(raw: String)
-   113   fun reload()
+## ui/AddonsScreen.kt (117 lines) - Installed addons: what each provides, on or off, order, remove, and a way to add one.
+    16 class AddonsScreen  - Installed addons: what each provides, on or off, order, remove, and a way to add one.
+    22   fun stop()
+    30   fun start()
+    32   fun rebuild()
+    64   fun provides(a: Addon)
+    74   fun row(title: String, sub: String, trailing: String, onClick: ()
+    91   fun menu(url: String, name: String)
+   103   fun confirmRemove(url: String, name: String)
+   109   fun askUrl()
+   111   fun install(raw: String)
+   116   fun reload()
 
 ## ui/AppsScreen.kt (38 lines) - Every installed app in a grid.
     15 class AppsScreen  - Every installed app in a grid.
@@ -639,17 +627,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     34   fun start()
     44   fun show()
 
-## ui/LiveScreen.kt (131 lines) - Live TV as a programme guide: groups across the top, a time axis, and one row per channel with what is on now 
-    24 class LiveScreen  - Live TV as a programme guide: groups across the top, a time axis, and one row per channel with what is on now 
-    48   fun start()
-    56   fun show(channels: List<Channel>)
-    62   fun buildAxis()
-    69   fun buildGroups()
-    79   fun filter()
-    81   fun play(c: Channel)
-    90   fun cell(text: String, sub: String, w: Int, now: Boolean, c: Channel)
-
-## ui/PlaySession.kt (22 lines) - What the player needs, handed over in memory because a stream list is too big and too short-lived for an inten
+## ui/PlaySession.kt (19 lines) - What the player needs, handed over in memory because a stream list is too big and too short-lived for an inten
      7 object PlaySession  - What the player needs, handed over in memory because a stream list is too big and too short-lived for an inten
 
 ## ui/Toggle.kt (21 lines) - An on/off switch: a pill with a white knob, brand blue when on.
@@ -683,7 +661,6 @@ Find a symbol with grep on this file, then read only that file around the line n
    152   fun focusScale(v: View, lite: Boolean, amount: Float = 1.06f)  - Scale-up on focus unless the box is in lite mode.
 
 ## Resources and manifest
-  res/color/dialog_item_text.xml
   res/drawable/banner.xml
   res/drawable/dialog_bg.xml
   res/drawable/dialog_item.xml

@@ -175,7 +175,7 @@ class RowView(c: Context) : LinearLayout(c) {
     }
 }
 
-/** A vertical list of [RowView]s over [rows]. Used by Home, Movies, Series and Live so the row code exists once. */
+/** A vertical list of [RowView]s over [rows]. Used by Home, Movies and Series so the row code exists once. */
 class RowsList(
     c: Context,
     private val rows: List<RowModel>,

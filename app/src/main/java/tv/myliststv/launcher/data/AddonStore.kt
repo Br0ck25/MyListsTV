@@ -27,9 +27,10 @@ object AddonStore {
     private fun listKey() = Profiles.key("list")
     fun forget(id: String) { sp.edit().remove(Profiles.key("list", id)).apply() }
 
-    fun saved(): List<Saved> {
+    /** This profile's own stored list (a new profile starts with just the default). */
+    fun ownSaved(id: String = Profiles.activeId): List<Saved> {
         // If a wrapped list cannot be opened (its key is gone), fall back to the default rather than show nothing.
-        val raw = sp.getString(listKey(), null)?.let { Secure.unwrap(it) } ?: return listOf(Saved(DEFAULT_URL, true))
+        val raw = sp.getString(Profiles.key("list", id), null)?.let { Secure.unwrap(it) } ?: return listOf(Saved(DEFAULT_URL, true))
         return try {
             val a = JSONArray(raw)
             (0 until a.length()).mapNotNull { i -> a.optJSONObject(i)?.let { Saved(it.optString("url"), it.optBoolean("on", true)) } }
@@ -37,7 +38,28 @@ object AddonStore {
         } catch (_: Exception) { emptyList() }
     }
 
-    private fun write(list: List<Saved>) {
+    /** The default and the profile's own sign-in link are its own even when it shares; everything else comes from the shared profile. */
+    private fun isBase(url: String) = url == DEFAULT_URL || url == Prefs.accountLink
+
+    /** The addons in use. A profile that shares another's addons gets its own base entries plus the other profile's list (without that one's sign-in link). */
+    fun saved(): List<Saved> {
+        val src = Profiles.addonSource() ?: return ownSaved()
+        val srcLink = Prefs.accountLinkOf(src)
+        return ownSaved().filter { isBase(it.url) }.ifEmpty { listOf(Saved(DEFAULT_URL, true)) } + ownSaved(src).filter { it.url != DEFAULT_URL && it.url != srcLink }
+    }
+
+    fun sharing(): Boolean = Profiles.addonSource() != null
+
+    /** Stops sharing: the profile keeps a copy of what it was using. */
+    fun stopSharing(id: String) { if (id == Profiles.activeId) write(saved(), force = true) ; Profiles.shareAddons(id, null) }
+
+    private fun write(list: List<Saved>, force: Boolean = false) {
+        // A profile that shares addons cannot change the shared list; only its own base entries are stored.
+        if (!force && sharing()) { storeOwn(list.filter { isBase(it.url) }); return }
+        storeOwn(list)
+    }
+
+    private fun storeOwn(list: List<Saved>) {
         val a = JSONArray()
         list.forEach { a.put(JSONObject().put("url", it.url).put("on", it.enabled)) }
         sp.edit().putString(listKey(), Secure.wrap(a.toString())).apply()

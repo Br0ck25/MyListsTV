@@ -10,6 +10,7 @@ import android.widget.TextView
 import android.widget.Toast
 import tv.myliststv.launcher.data.Addon
 import tv.myliststv.launcher.data.AddonStore
+import tv.myliststv.launcher.data.Profiles
 
 /** Installed addons: what each provides, on or off, order, remove, and a way to add one. */
 class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit) {
@@ -34,8 +35,10 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
         col.addView(Ui.text(c, "Addons", 24f, Ui.TEXT, true))
         col.addView(Ui.text(c, "Catalog addons fill your rows. Stream addons provide the video. Order matters: earlier stream addons win ties.", 13f, Ui.DIM, false, 2),
             Ui.matchWrap().apply { topMargin = Ui.dp(c, 4); bottomMargin = Ui.dp(c, 12) })
-        val add = row("Add an addon or playlist", phone.address()?.let { "From your phone, open $it and paste a link or a recovery code. Or press OK to type it here." } ?: "Press OK to type a link.", "OK") { askUrl() }
-        col.addView(add, Ui.matchWrap().apply { bottomMargin = Ui.dp(c, 8) })
+        val shared = AddonStore.sharing()
+        if (shared) col.addView(Ui.text(c, "These addons are shared with ${Profiles.all().firstOrNull { it.id == Profiles.addonSource() }?.name ?: "another profile"}. Change them on that profile, or stop sharing in Settings.", 13f, Ui.TEXT2, false, 3), Ui.matchWrap().apply { bottomMargin = Ui.dp(c, 12) })
+        val add = row("Add an addon", phone.address()?.let { "From your phone, open $it and paste a link or a recovery code. Or press OK to type it here." } ?: "Press OK to type a link.", "OK") { askUrl() }
+        if (!shared) col.addView(add, Ui.matchWrap().apply { bottomMargin = Ui.dp(c, 8) })
         val saved = AddonStore.saved()
         val loaded = AddonStore.loaded.associateBy { it.manifestUrl }
         saved.forEachIndexed { i, s ->
@@ -44,13 +47,13 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
             val provides = a?.let { provides(it) } ?: "Could not read this addon right now"
             val host = s.url.removePrefix("https://").removePrefix("http://").substringBefore('/')
             val r = row(title + if (a != null && a.manifest.version.isNotEmpty()) "  v${a.manifest.version}" else "", "$host · $provides", if (s.enabled) "On" else "Off") {
-                focusIndex = i + 1; AddonStore.setEnabled(s.url, !s.enabled); reload()
+                if (!shared) { focusIndex = i + 1; AddonStore.setEnabled(s.url, !s.enabled); reload() }
             }
             r.alpha = if (s.enabled) 1f else 0.6f
-            r.setOnLongClickListener { focusIndex = i + 1; menu(s.url, a?.name ?: host); true }
+            if (!shared) r.setOnLongClickListener { focusIndex = i + 1; menu(s.url, a?.name ?: host); true }
             col.addView(r, Ui.matchWrap().apply { bottomMargin = Ui.dp(c, 8) })
         }
-        col.addView(Ui.text(c, "Hold OK on an addon for move up, move down and remove.", 12f, Ui.DIM), Ui.matchWrap().apply { topMargin = Ui.dp(c, 8) })
+        if (!shared) col.addView(Ui.text(c, "Hold OK on an addon for move up, move down and remove.", 12f, Ui.DIM), Ui.matchWrap().apply { topMargin = Ui.dp(c, 8) })
         col.post {
             val idx = focusIndex.coerceIn(0, (0 until col.childCount).count { col.getChildAt(it).isFocusable } - 1)
             val focusables = (0 until col.childCount).map { col.getChildAt(it) }.filter { it.isFocusable }
@@ -103,7 +106,7 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
             .setNegativeButton("Keep", null).show()
     }
 
-    private fun askUrl() = Ui.askText(act, "Add an addon or playlist", "Addon link, IPTV playlist link or recovery code", "Install") { install(it) }
+    private fun askUrl() = Ui.askText(act, "Add an addon", "Addon link or recovery code", "Install") { install(it) }
 
     private fun install(raw: String) {
         Toast.makeText(act, "Checking\u2026", Toast.LENGTH_SHORT).show()

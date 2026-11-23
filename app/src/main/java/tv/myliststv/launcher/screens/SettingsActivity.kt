@@ -116,6 +116,18 @@ class SettingsActivity : Activity() {
         }.show()
     }
 
+    /** Choose another profile whose addons this one uses, or stop sharing. */
+    private fun shareMenu() {
+        val me = Profiles.activeId
+        val others = Profiles.all().filter { it.id != me && Profiles.addonSource(it.id) == null }
+        val items = others.map { "Use ${it.name}'s addons" } + if (Profiles.addonSource() != null) listOf("Stop sharing (keep a copy)") else emptyList()
+        if (items.isEmpty()) { Toast.makeText(this, "No other profile can be shared from.", Toast.LENGTH_SHORT).show(); return }
+        android.app.AlertDialog.Builder(this).setTitle("Share addons").setItems(items.toTypedArray()) { _, i ->
+            if (i < others.size) Profiles.shareAddons(me, others[i].id) else AddonStore.stopSharing(me)
+            AddonStore.needsRefresh = true; refresh()
+        }.show()
+    }
+
     private fun askName(kids: Boolean) = Ui.askText(this, if (kids) "New kids profile" else "New profile", "Name", "Add") { Profiles.add(it, kids); refresh() }
 
     /**
@@ -166,7 +178,7 @@ class SettingsActivity : Activity() {
         .setMessage("$code\n\nWrite this down. It is the only way to restore your setup on another box, and My Lists cannot recover it for you.${if (extra.isNotEmpty()) "\n\n$extra" else ""}")
         .setPositiveButton("I wrote it down", null).show()
 
-    private fun restoreDialog() = Ui.askText(this, "Restore a backup", "XXXX-XXXX-XXXX-XXXX", "Restore", "Enter the recovery code from your backup. This replaces the addons, playlists and Library of the profile in use.", caps = true) { raw ->
+    private fun restoreDialog() = Ui.askText(this, "Restore a backup", "XXXX-XXXX-XXXX-XXXX", "Restore", "Enter the recovery code from your backup. This replaces the addons and Library of the profile in use.", caps = true) { raw ->
         val code = Backup.clean(raw)
         if (!Backup.isCode(code)) Toast.makeText(this, "That does not look like a recovery code.", Toast.LENGTH_LONG).show()
         else { Toast.makeText(this, "Restoring\u2026", Toast.LENGTH_SHORT).show(); Backup.restore(this, code) { msg -> Toast.makeText(this, msg, Toast.LENGTH_LONG).show(); refresh() } }
@@ -196,13 +208,14 @@ class SettingsActivity : Activity() {
 
     private fun rows(): List<Row> = buildList {
         add(header("Addons"))
-        add(action("Manage addons and playlists", "Catalog and stream addons, IPTV playlists, order, on and off. You can paste links from your phone.") { startActivity(Intent(this@SettingsActivity, AddonsActivity::class.java)) })
+        add(action("Manage addons", "Catalog and stream addons, order, on and off. You can paste links from your phone.") { startActivity(Intent(this@SettingsActivity, AddonsActivity::class.java)) })
         add(action("Test my sources", "Asks every stream addon for a well-known movie and says which answered, how fast, and why not if one did not.") { testSources() })
         add(header("General"))
         if (Prefs.accountLink.isEmpty()) add(action("Sign in with My Lists", "For ${Profiles.active().name}: replaces the default catalogs with your own lists, and syncs the Library. Takes 30 seconds with your phone.") { signIn() })
         else { add(info("Signed in", Pairing.userOf(Prefs.accountLink))); add(action("Sign out", "Goes back to the default catalogs. Your other addons stay.") { signOut() }) }
-        add(action("Switch profile", "Now: ${Profiles.active().name}${if (Profiles.active().kids) " (kids)" else ""}. Each profile keeps its own account, addons, playlists, Library and history.") { profileMenu() })
+        add(action("Switch profile", "Now: ${Profiles.active().name}${if (Profiles.active().kids) " (kids)" else ""}. Each profile keeps its own account, addons, Library and history.") { profileMenu() })
         add(action("Android settings", "Wi-Fi, display, sound, Bluetooth, apps and the rest of the TV's own settings.") { androidSettings() })
+        if (Profiles.all().size > 1) add(action("Share addons", "Now: ${Profiles.addonSource()?.let { s -> "using ${Profiles.all().first { it.id == s }.name}'s addons" } ?: "not shared"}. A profile can use another profile's addons, so a kids profile needs no account of its own. History and Library stay separate.") { shareMenu() })
         add(toggle("Advanced settings", "Shows more options in each group.", { Prefs.advanced }, { Prefs.advanced = it }))
         add(header("Playback"))
         add(toggle("Auto-pick the best source", "Play starts at once. Off shows the source list first.", { Prefs.autoPick }, { Prefs.autoPick = it }))
@@ -225,7 +238,7 @@ class SettingsActivity : Activity() {
         add(toggle("Show Continue watching", "", { Prefs.showContinue }, { Prefs.showContinue = it }))
         add(toggle("Show apps row", "", { Prefs.showAppsRow }, { Prefs.showAppsRow = it }))
         add(header("Backup"))
-        add(action("Back up my setup", "An offline copy of ${Profiles.active().name}'s addons, playlists and Library, encrypted with a recovery code (the first profile also saves the profile list and settings). Signed in, these also follow the account. Last backup: ${lastBackupText()}.") { backupNow() })
+        add(action("Back up my setup", "An offline copy of ${Profiles.active().name}'s addons and Library, encrypted with a recovery code (the first profile also saves the profile list and settings). Signed in, these also follow the account. Last backup: ${lastBackupText()}.") { backupNow() })
         add(action("Restore a backup", "Use your recovery code. You can also paste it on the phone page in Settings, then Addons.") { restoreDialog() })
         if (Prefs.backupCode.isNotEmpty()) add(action("Show recovery code", "The code that opens your backup.") { showCode(Prefs.backupCode) })
         add(header("Performance"))

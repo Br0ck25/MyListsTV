@@ -36,21 +36,19 @@ class BackupTest {
         assertFalse(Backup.idOf(code).contains("abcd", ignoreCase = true))
     }
 
-    @Test fun backupRestoresAddonsPlaylistsProfilesAndSettings() {
+    @Test fun backupRestoresAddonsProfilesAndSettings() {
         val ctx = ApplicationProvider.getApplicationContext<App>()
         AddonStore.add("https://stream.example/manifest.json")
-        LiveStore.add("https://iptv.example/list.m3u")
         Profiles.add("Kids room", true)
         Prefs.maxResolution = 720
         val json = Backup.snapshot()
         assertTrue(json.contains("stream.example"))
         assertFalse("the recovery code never goes into the backup", json.contains("backupCode"))
         // Wipe, then restore.
-        AddonStore.reset(); LiveStore.restore(emptyList()); Prefs.maxResolution = 0
+        AddonStore.reset(); Prefs.maxResolution = 0
         val summary = Backup.apply(ctx, json)
         assertNotNull(summary)
         assertTrue(AddonStore.saved().any { it.url == "https://stream.example/manifest.json" })
-        assertEquals(listOf("https://iptv.example/list.m3u"), LiveStore.playlists())
         assertTrue(Profiles.all().any { it.name == "Kids room" && it.kids })
         assertEquals(720, Prefs.maxResolution)
     }

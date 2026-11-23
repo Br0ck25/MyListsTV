@@ -4,5 +4,6 @@
     <color name="text">#FFFFFFFF</color>
     <color name="text2">#FFEBEBF5</color>
     <color name="brand">#FF0A84FF</color>
+    <color name="brand_fill">#FF0A64D8</color>
     <color name="focus_fill">#22FFFFFF</color>
 </resources>

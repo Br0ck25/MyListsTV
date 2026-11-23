@@ -10,7 +10,7 @@ The full plan lives in the "My Lists TV: Build Plan" doc the owner shares; `docs
 3. ExoPlayer (Media3) only for playback. No libmpv, no torrent engine, no on-device P2P.
 4. Ship `armeabi-v7a` and `arm64-v8a`. Never assume 64-bit.
 5. No analytics, no tracking, no network call that isn't for catalogs, streams, subtitles, updates or sync.
-6. Debrid keys and IPTV logins are secrets: kept wrapped by the Android Keystore (`data/Secure.kt`: addon list, IPTV playlists, backup recovery code), never logged, never sent unencrypted. Backups are encrypted before leaving the device. Any new place that stores a link or key must use `Secure.wrap`/`unwrap`. Owner-approved exception: a signed-in profile sends its addon list and playlists to its own My Lists account over HTTPS (`data/SetupSync.kt`); the server stores them encrypted at rest and refuses to store without its key. Never log them.
+6. Debrid keys are secrets: kept wrapped by the Android Keystore (`data/Secure.kt`: addon list, backup recovery code), never logged, never sent unencrypted. Backups are encrypted before leaving the device. Any new place that stores a link or key must use `Secure.wrap`/`unwrap`. Owner-approved exception: a signed-in profile sends its addon list to its own My Lists account over HTTPS (`data/SetupSync.kt`); the server stores them encrypted at rest and refuses to store without its key. Never log them.
 7. Images decode at card size. Caches are byte-bounded. Never block the main thread with I/O.
 8. Every phase ends in a gate measured on the reference 1 GB box (see docs/PLAN.md).
 9. **Ask only about product decisions.** Decide technical choices yourself and say what you chose.

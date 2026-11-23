@@ -10,7 +10,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * Wraps secrets (addon links that carry debrid keys, IPTV logins, the backup recovery code) with a key that lives in the
+ * Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the
  * Android Keystore and never leaves it, so a copy of the app's files cannot be read elsewhere.
  * A stored value starts with "enc1:" when wrapped. A plain value (from before this existed, or on a box whose Keystore
  * does not work) still reads fine and is wrapped the next time it is saved.

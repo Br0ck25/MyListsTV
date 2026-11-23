@@ -284,7 +284,6 @@ class DetailsActivity : Activity() {
     private fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: StreamItem, auto: Boolean) {
         val resume = WatchStore.forMeta(meta.id)
         PlaySession.apply {
-            live = null
             this.meta = this@DetailsActivity.meta; this.videoId = videoId
             season = v?.season ?: -1; episode = v?.episode ?: -1; episodeTitle = v?.title
             this.ranked = ranked; current = pick; autoSelected = auto

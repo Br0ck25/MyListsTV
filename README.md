@@ -4,7 +4,7 @@ A fast, private Android TV launcher built for low-end boxes (1 GB RAM). It works
 account, uses Stremio-style addons, and uses [My Lists Addon](https://github.com/Br0ck25/My-Lists-Addon)
 for default catalogs, search metadata, channels and optional encrypted backup.
 
-**Status:** first working build. Home, Movies, Series, Live (M3U), Apps, Addons, Search, Settings, details, stream picker, and a player with automatic and manual source switching.
+**Status:** first working build. Home, Movies, Series, Apps, Addons, Search, Settings, details, stream picker, and a player with automatic and manual source switching.
 
 ## Install (sideload)
 1. Download `MyListsTV.apk` from the [latest release](https://github.com/Br0ck25/MyListsTV/releases) (a new one is published on every push to `main`).
@@ -12,7 +12,7 @@ for default catalogs, search metadata, channels and optional encrypted backup.
 3. Open **My Lists TV** from your apps. Later updates: Settings, Check for updates.
 
 ## First run
-The guest home shows default My Lists catalogs. To play video you need a **stream addon** (for example one set up with your debrid service): open the Addons tab and paste its link, or open the address shown there on your phone and paste it. IPTV: paste an M3U playlist link the same way, then use the Live tab.
+The guest home shows default My Lists catalogs. To play video you need a **stream addon** (for example one set up with your debrid service): open Settings, then Addons, and paste its link, or open the address shown there on your phone and paste it. IPTV: paste an M3U playlist link the same way, then use the Live tab.
 
 ## Make it the home screen
 See `docs/PLAN.md`, "Home role". The command that works on many boxes:

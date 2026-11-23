@@ -46,16 +46,14 @@ class SecurityTest {
     @Test fun storesWrapTheirSecretsOnDisk() {
         Secure.keyProvider = { soft }
         val ctx = ApplicationProvider.getApplicationContext<App>()
-        AddonStore.init(ctx); LiveStore.init(ctx)
+        AddonStore.init(ctx)
         AddonStore.add("https://addon.example/key=ABC123SECRET/manifest.json")
-        LiveStore.add("http://iptv.example/get.php?username=bob&password=hunter2")
         Prefs.backupCode = "ABCD-EFGH-JKLM-NPQR"
         fun raw(file: String, key: String) = ctx.getSharedPreferences(file, 0).getString(key, "")!!
-        for ((f, k, secret) in listOf(Triple("addons", "list", "ABC123SECRET"), Triple("live", "list", "hunter2"), Triple("settings", "backupCode", "ABCD-EFGH"))) {
+        for ((f, k, secret) in listOf(Triple("addons", "list", "ABC123SECRET"), Triple("settings", "backupCode", "ABCD-EFGH"))) {
             assertTrue("$f is wrapped", raw(f, k).startsWith("enc1:")); assertFalse("$f hides the secret", raw(f, k).contains(secret))
         }
         assertTrue(AddonStore.saved().any { it.url.contains("ABC123SECRET") })
-        assertEquals(listOf("http://iptv.example/get.php?username=bob&password=hunter2"), LiveStore.playlists())
         assertEquals("ABCD-EFGH-JKLM-NPQR", Prefs.backupCode)
     }
 

@@ -32,10 +32,16 @@ object Profiles {
         get() = if (::sp.isInitialized) sp.getString("active", "p1") ?: "p1" else "p1"
         set(v) = sp.edit().putString("active", v).apply()
 
-    /** The storage key for something each profile keeps for itself (its account, addons, playlists, backup code). The first profile keeps the plain key. */
+    /** The storage key for something each profile keeps for itself (its account, addons, backup code). The first profile keeps the plain key. */
     fun key(base: String, id: String = activeId) = if (id == "p1") base else "${base}_$id"
 
-    /** Makes [id] the profile in use. Its history, Library, addons, playlists and account come with it, so Home reloads. */
+    /** The profile whose addons [id] uses, or null. Only one level: a profile that itself shares cannot be shared from. */
+    fun addonSource(id: String = activeId): String? =
+        if (!::sp.isInitialized) null else sp.getString("share_$id", null)?.takeIf { s -> s != id && all().any { it.id == s } && sp.getString("share_$s", null) == null }
+
+    fun shareAddons(id: String, with: String?) { sp.edit().apply { if (with == null) remove("share_$id") else putString("share_$id", with) }.apply() }
+
+    /** Makes [id] the profile in use. Its history, Library, addons and account come with it, so Home reloads. */
     fun switchTo(c: Context, id: String) { activeId = id; WatchStore.init(c); AddonStore.needsRefresh = true }
 
     fun active(): P = all().firstOrNull { it.id == activeId } ?: all().first()
@@ -45,15 +51,15 @@ object Profiles {
     /** The last profile cannot be removed. */
     fun remove(id: String) {
         val l = all(); if (l.size <= 1) return
-        write(l.filter { it.id != id }); forget(id)
+        write(l.filter { it.id != id }); forget(id); sp.edit().remove("share_$id").apply()
         if (activeId == id) activeId = all().first().id
     }
 
-    /** Deletes what a removed profile kept: history, Library, watched ticks, alerts, addons, playlists, account and backup code. */
+    /** Deletes what a removed profile kept: history, Library, watched ticks, alerts, addons, account and backup code. */
     private fun forget(id: String) {
         val app = tv.myliststv.launcher.App.instance
         listOf("watch_$id", "library_$id", "watched_$id", "alerts_$id").forEach { app.getSharedPreferences(it, Context.MODE_PRIVATE).edit().clear().apply() }
-        AddonStore.forget(id); LiveStore.forget(id); Prefs.forget(id)
+        AddonStore.forget(id); Prefs.forget(id)
     }
 
     /** Replaces the whole list (used when restoring a backup). */

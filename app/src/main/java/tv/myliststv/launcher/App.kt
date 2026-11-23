@@ -17,7 +17,6 @@ class App : Application() {
         AddonStore.init(this)
         Profiles.init(this)
         WatchStore.init(this)
-        LiveStore.init(this)
     }
 
     override fun onTrimMemory(level: Int) {

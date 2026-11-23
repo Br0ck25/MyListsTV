@@ -30,7 +30,7 @@ import tv.myliststv.launcher.ui.*
  */
 class MainActivity : Activity() {
 
-    private val tabs = listOf("Home", "Movies", "Series", "Library", "Live", "Apps")
+    private val tabs = listOf("Home", "Movies", "Series", "Library", "Apps")
     private val tabViews = ArrayList<TextView>()
     private lateinit var content: FrameLayout
     private lateinit var searchBtn: View
@@ -210,8 +210,7 @@ class MainActivity : Activity() {
                 screen = s; content.addView(s.view); s.start()
             }
             3 -> { val s = LibraryScreen(this, ::openMeta); screen = s; content.addView(s.view); s.start() }
-            4 -> { val s = LiveScreen(this); screen = s; content.addView(s.view); s.start() }
-            5 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
+            4 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
         }
     }
 
@@ -222,7 +221,7 @@ class MainActivity : Activity() {
 
     /** Where a mapped remote button sends the launcher. */
     private fun go(where: String) {
-        val tab = listOf("home", "movies", "series", "library", "live", "apps").indexOf(where)
+        val tab = listOf("home", "movies", "series", "library", "apps").indexOf(where)
         when {
             tab >= 0 -> { select(tab, force = true); tabViews[tab].requestFocus() }
             where == "search" -> startActivity(Intent(this, SearchActivity::class.java))
