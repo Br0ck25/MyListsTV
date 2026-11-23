@@ -47,7 +47,7 @@ object SetupSync {
             try {
                 val (code, text) = post(JSONObject().put("action", "get"))
                 if (code !in 200..299) return@background
-                val o = JSONObject(text); val at = o.optLong("updatedAt")
+                val o = JSONObject(text); o.optString("username").takeIf { it.isNotEmpty() }?.let { Prefs.accountName = it }; val at = o.optLong("updatedAt")
                 val theirs = o.optJSONArray("addons") ?: JSONArray()
                 val remoteAddons = (0 until theirs.length()).mapNotNull { theirs.optJSONObject(it) }.map { AddonStore.Saved(it.optString("url"), it.optBoolean("on", true)) }.filter { it.url.isNotEmpty() }
                 val first = sp().getLong(Profiles.key("syncedAt"), 0L) == 0L

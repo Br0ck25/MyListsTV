@@ -36,6 +36,8 @@ class SettingsActivity : Activity() {
     private lateinit var rail: LinearLayout
     private lateinit var col: LinearLayout
     private var cat = 0
+    /** True while the rows are rebuilt: the focus that Android moves to the first group meanwhile must not switch the page. */
+    private var rebuilding = false
     private var groups: List<Pair<String, List<Row>>> = emptyList()
 
     override fun onResume() { super.onResume(); if (::rail.isInitialized) refresh() }
@@ -190,13 +192,18 @@ class SettingsActivity : Activity() {
         Toast.makeText(this, "Getting a code\u2026", Toast.LENGTH_SHORT).show()
         Pairing.start { s, why ->
             if (s == null) { android.app.AlertDialog.Builder(this).setTitle("Could not sign in").setMessage(why ?: "Could not reach My Lists.").setPositiveButton("OK", null).show(); return@start }
-            val dlg = android.app.AlertDialog.Builder(this).setTitle("Sign in with My Lists").setCancelable(false)
-                .setMessage("On your phone, open\n${Pairing.linkUrl(s)}\n\nSign in there and tap Link. This screen updates by itself.\n\nCode: ${s.userCode}")
+            // Scan the code with a phone camera, or type the link by hand.
+            val box = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(Ui.dp(this@SettingsActivity, 24), Ui.dp(this@SettingsActivity, 8), Ui.dp(this@SettingsActivity, 24), Ui.dp(this@SettingsActivity, 8))
+                addView(android.widget.ImageView(this@SettingsActivity).apply { setImageBitmap(Qr.bitmap(Pairing.linkFull(s), Ui.dp(this@SettingsActivity, 200))) }, LinearLayout.LayoutParams(Ui.dp(this@SettingsActivity, 200), Ui.dp(this@SettingsActivity, 200)))
+                addView(Ui.text(this@SettingsActivity, "Scan this with your phone's camera, sign in and tap Link.\nOr open ${Pairing.linkUrl(s)}\nCode: ${s.userCode}", 14f, Ui.TEXT, false).apply { gravity = Gravity.CENTER }, Ui.matchWrap().apply { topMargin = Ui.dp(this@SettingsActivity, 10) })
+            }
+            val dlg = android.app.AlertDialog.Builder(this).setTitle("Sign in with My Lists").setCancelable(false).setView(box)
                 .setNegativeButton("Cancel") { _, _ -> Pairing.cancel() }.show()
-            Pairing.poll(s) { link ->
+            Pairing.poll(s) { link, name ->
                 dlg.dismiss()
                 if (link == null) Toast.makeText(this, "The code expired. Try again.", Toast.LENGTH_LONG).show()
-                else { Pairing.signIn(link); Toast.makeText(this, "Signed in as ${Pairing.userOf(link)}. Your lists replace the defaults.", Toast.LENGTH_LONG).show() }
+                else { Pairing.signIn(link, name); Toast.makeText(this, "Signed in as ${name.ifEmpty { "your account" }}. Your lists replace the defaults.", Toast.LENGTH_LONG).show() }
                 refresh()
             }
         }
@@ -212,7 +219,7 @@ class SettingsActivity : Activity() {
         add(action("Test my sources", "Asks every stream addon for a well-known movie and says which answered, how fast, and why not if one did not.") { testSources() })
         add(header("General"))
         if (Prefs.accountLink.isEmpty()) add(action("Sign in with My Lists", "For ${Profiles.active().name}: replaces the default catalogs with your own lists, and syncs the Library. Takes 30 seconds with your phone.") { signIn() })
-        else { add(info("Signed in", Pairing.userOf(Prefs.accountLink))); add(action("Sign out", "Goes back to the default catalogs. Your other addons stay.") { signOut() }) }
+        else { add(info("Signed in as", Prefs.accountName.ifEmpty { "your account" })); add(action("Sign out", "Goes back to the default catalogs. Your other addons stay.") { signOut() }) }
         add(action("Switch profile", "Now: ${Profiles.active().name}${if (Profiles.active().kids) " (kids)" else ""}. Each profile keeps its own account, addons, Library and history.") { profileMenu() })
         add(action("Android settings", "Wi-Fi, display, sound, Bluetooth, apps and the rest of the TV's own settings.") { androidSettings() })
         if (Profiles.all().size > 1) add(action("Share addons", "Now: ${Profiles.addonSource()?.let { s -> "using ${Profiles.all().first { it.id == s }.name}'s addons" } ?: "not shared"}. A profile can use another profile's addons, so a kids profile needs no account of its own. History and Library stay separate.") { shareMenu() })
@@ -316,11 +323,12 @@ class SettingsActivity : Activity() {
         id = View.generateViewId()
         setPadding(Ui.dp(this@SettingsActivity, 18), Ui.dp(this@SettingsActivity, 11), Ui.dp(this@SettingsActivity, 18), Ui.dp(this@SettingsActivity, 11))
         background = Ui.pillBg(this@SettingsActivity, Ui.CLEAR); isFocusable = true; isClickable = true
-        setOnFocusChangeListener { v, f -> (v as TextView).setTextColor(if (f) Ui.ON_FOCUS else Ui.TEXT); if (f && cat != i) { cat = i; for (k in groups.indices) rail.getChildAt(k + 1).isSelected = k == i; buildPanel(-1) } }
+        setOnFocusChangeListener { v, f -> (v as TextView).setTextColor(if (f) Ui.ON_FOCUS else Ui.TEXT); if (f && cat != i && !rebuilding) { cat = i; for (k in groups.indices) rail.getChildAt(k + 1).isSelected = k == i; buildPanel(-1) } }
         setOnClickListener { cat = i; buildPanel(-1); col.getChildAt(1)?.requestFocus() }
     }
 
     private fun buildPanel(keep: Int) {
+        rebuilding = true; col.postDelayed({ rebuilding = false }, 300)
         col.removeAllViews()
         val (name, rs) = groups[cat]
         col.addView(Ui.text(this, name, 24f, Ui.TEXT, true))

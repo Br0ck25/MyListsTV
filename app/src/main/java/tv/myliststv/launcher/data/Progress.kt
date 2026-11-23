@@ -24,6 +24,36 @@ object Progress {
         return "$ORIGIN/api/nuvio-tv/progress" to o.toString()
     }
 
+    /** The account's Continue Watching as a launcher entry. A next-up episode has no length (durationMs 0). */
+    fun entryFrom(o: JSONObject): WatchStore.Entry? {
+        val id = o.optString("id").takeIf { it.startsWith("tt") } ?: return null
+        val series = o.optString("type") == "series"; val s = o.optInt("season"); val e = o.optInt("episode")
+        val poster = o.optString("poster").ifEmpty { null }
+        return WatchStore.Entry(id, if (series) "series" else "movie", o.optString("name").ifEmpty { id }, poster, o.optString("thumbnail").ifEmpty { poster },
+            if (series && e > 0) "$id:$s:$e" else id, if (series && e > 0) s else -1, if (series && e > 0) e else -1, o.optString("episodeName").ifEmpty { null },
+            o.optLong("positionMs"), o.optLong("durationMs"), o.optLong("watchedAt"))
+    }
+
+    /** Brings the account's Continue Watching in (the website's and the other TVs'), keeping whichever entry for a title is newer. [changed] runs on the main thread. */
+    fun pull(changed: () -> Unit) {
+        if (Prefs.accountLink.isEmpty()) return
+        Http.background {
+            try {
+                val (code, text) = Http.send("POST", "$ORIGIN/api/nuvio-tv/progress", JSONObject().put("targetId", Pairing.targetOf(Prefs.accountLink)).put("action", "get").toString())
+                if (code !in 200..299) return@background
+                val o = JSONObject(text); o.optString("username").takeIf { it.isNotEmpty() }?.let { Prefs.accountName = it }
+                val a = o.optJSONArray("items") ?: return@background
+                var any = false
+                for (i in 0 until a.length()) {
+                    val e = entryFrom(a.getJSONObject(i)) ?: continue
+                    val mine = WatchStore.forMeta(e.metaId)
+                    if (mine == null || e.updated > mine.updated) { WatchStore.save(e); any = true }
+                }
+                if (any) Http.post(changed)
+            } catch (_: Exception) {}
+        }
+    }
+
     /** Sends at most once a minute unless [force] (leaving the player, or the end of the title). */
     fun report(e: WatchStore.Entry, force: Boolean) {
         val now = System.currentTimeMillis()

@@ -91,4 +91,10 @@ class ShotTest {
         a.setContentView(android.widget.FrameLayout(a).apply { setBackgroundColor(tv.myliststv.launcher.ui.Ui.BG); addView(rv, android.widget.FrameLayout.LayoutParams(-1, 420)) })
         settle(3000); shot(a, "episodes")
     }
+
+    @Test fun qr() {
+        Assume.assumeTrue(dir != null)
+        for ((i, t) in listOf("https://mylistsaddon.com/link?code=ABCD-1234", "hi", "https://mylistsaddon.com/link?code=WXYZ-9876&x=1234567890").withIndex())
+            File(dir, "qr$i.png").outputStream().use { tv.myliststv.launcher.ui.Qr.bitmap(t, 400).compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
 }

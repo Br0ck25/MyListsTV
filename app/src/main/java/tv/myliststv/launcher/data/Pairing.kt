@@ -22,8 +22,12 @@ object Pairing {
         JSONObject(text).takeIf { it.optString("status") == "authenticated" }?.optString("manifestUrl")?.ifEmpty { null }
     } catch (_: Exception) { null }
 
-    /** The page to open on the phone. */
+    /** The account name in the poll answer, or empty. */
+    fun parseUser(text: String): String = try { JSONObject(text).optString("username") } catch (_: Exception) { "" }
+
+    /** The page to open on the phone, and the same as a full link (for the QR code). */
     fun linkUrl(s: Start) = "mylistsaddon.com/link?code=${s.userCode}"
+    fun linkFull(s: Start) = "https://" + linkUrl(s)
 
     @Volatile private var cancelled = false
 
@@ -43,20 +47,20 @@ object Pairing {
 
     fun cancel() { cancelled = true }
 
-    /** Checks every 3 seconds for up to 10 minutes. [done] gets the addon link, or null if the code expired or was cancelled. */
-    fun poll(s: Start, done: (String?) -> Unit) = Http.background {
+    /** Checks every 3 seconds for up to 10 minutes. [done] gets the addon link and the account name, or a null link if the code expired or was cancelled. */
+    fun poll(s: Start, done: (String?, String) -> Unit) = Http.background {
         val end = System.currentTimeMillis() + 10 * 60_000
-        var link: String? = null
+        var link: String? = null; var user = ""
         while (!cancelled && link == null && System.currentTimeMillis() < end) {
             try {
                 val (status, body) = Http.send("GET", "$ORIGIN/api/nuvio-tv/device/poll?deviceCode=${s.deviceCode}", null)
                 if (status == 404) break
-                link = parsePoll(body)
+                link = parsePoll(body); if (link != null) user = parseUser(body)
             } catch (_: Exception) {}
             if (link == null) Thread.sleep(3000)
         }
         val result = link
-        Http.post { if (!cancelled || result != null) done(result) }
+        Http.post { if (!cancelled || result != null) done(result, user) }
     }
 
     private fun parts(manifestUrl: String) = manifestUrl.removePrefix("https://").removePrefix("http://").split('/')
@@ -67,10 +71,10 @@ object Pairing {
     /** What My Lists wants as the TV's id: the secret in /i/<secret>/tv/... (a username is refused for history and progress). */
     fun targetOf(manifestUrl: String): String = parts(manifestUrl).let { p -> if (p.getOrNull(1) == "i") p.getOrNull(2) ?: "" else p.getOrNull(1) ?: "" }
 
-    fun signIn(manifestUrl: String) {
+    fun signIn(manifestUrl: String, name: String = "") {
         AddonStore.remove(AddonStore.DEFAULT_URL)
         AddonStore.add(manifestUrl)
-        Prefs.accountLink = manifestUrl
+        Prefs.accountLink = manifestUrl; Prefs.accountName = name
         Library.pull { }
         SetupSync.pull { AddonStore.needsRefresh = true }
         AddonStore.needsRefresh = true
@@ -81,7 +85,7 @@ object Pairing {
     fun signOut() {
         AddonStore.remove(Prefs.accountLink)
         AddonStore.add(AddonStore.DEFAULT_URL)
-        Prefs.accountLink = ""
+        Prefs.accountLink = ""; Prefs.accountName = ""
         AddonStore.needsRefresh = true
         Backup.auto()
     }

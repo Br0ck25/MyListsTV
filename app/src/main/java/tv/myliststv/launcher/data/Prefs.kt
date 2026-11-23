@@ -119,6 +119,11 @@ object Prefs {
         get() = Secure.unwrap(sp.getString(Profiles.key("accountLink"), "") ?: "").orEmpty()
         set(v) = sp.edit().putString(Profiles.key("accountLink"), Secure.wrap(v)).apply()
 
+    /** The My Lists account name of the profile in use, shown as "Signed in as ...". Empty until the account tells us. */
+    var accountName: String
+        get() = sp.getString(Profiles.key("accountName"), "") ?: ""
+        set(v) = sp.edit().putString(Profiles.key("accountName"), v).apply()
+
     /** Another profile's account link (for the addons a profile shares from it). */
     fun accountLinkOf(id: String): String = Secure.unwrap(sp.getString(Profiles.key("accountLink", id), "") ?: "").orEmpty()
 
@@ -127,7 +132,7 @@ object Prefs {
         set(v) = sp.edit().putLong(Profiles.key("lastBackup"), v).apply()
 
     /** Forgets what a removed profile kept here. */
-    fun forget(id: String) { sp.edit().remove(Profiles.key("accountLink", id)).remove(Profiles.key("backupCode", id)).remove(Profiles.key("lastBackup", id)).apply() }
+    fun forget(id: String) { sp.edit().remove(Profiles.key("accountName", id)).remove(Profiles.key("accountLink", id)).remove(Profiles.key("backupCode", id)).remove(Profiles.key("lastBackup", id)).apply() }
 
     /** Settings as JSON for a backup. The recovery code, last-backup time and first-run flag stay on the box. */
     fun export(): org.json.JSONObject = org.json.JSONObject(sp.all.filterKeys { !it.startsWith("tr_") && !it.startsWith("accountLink") && !it.startsWith("backupCode") && !it.startsWith("lastBackup") && it != "setupDone" })

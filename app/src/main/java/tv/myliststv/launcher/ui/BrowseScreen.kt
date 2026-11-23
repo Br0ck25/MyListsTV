@@ -109,7 +109,7 @@ class BrowseScreen(
         if (cw.isEmpty()) return
         rows.add(RowModel("Continue watching", "This device", CardKind.WIDE, cw.map { e ->
             val sub = if (e.type == "series" && e.season >= 0) "S${e.season} · E${e.episode}" else "Movie"
-            CardModel(e.name, e.background ?: e.poster, "$sub · ${(e.fraction * 100).toInt()}% watched", e.fraction, e)
+            CardModel(e.name, e.background ?: e.poster, if (e.durationMs == 0L) "Next up · $sub" else "$sub · ${(e.fraction * 100).toInt()}% watched", e.fraction, e)
         }))
     }
 

@@ -318,3 +318,27 @@ class SignInReasonTest {
         assertNull(Pairing.parseStart("<html>301 Moved Permanently</html>")); assertNull(Pairing.parseStart("""{"ok":false}"""))
     }
 }
+
+class AccountContinueTest {
+    @Test fun anAccountEntryBecomesALauncherEntry() {
+        val ep = Progress.entryFrom(org.json.JSONObject("""{"id":"tt1","type":"series","name":"Show","episodeName":"Pilot","poster":"p","season":2,"episode":3,"positionMs":1000,"durationMs":4000,"watchedAt":9}"""))!!
+        assertEquals("tt1:2:3", ep.videoId); assertEquals(2, ep.season); assertEquals(3, ep.episode); assertEquals("Pilot", ep.episodeTitle); assertEquals(0.25f, ep.fraction, 0.001f)
+        val nextUp = Progress.entryFrom(org.json.JSONObject("""{"id":"tt1","type":"series","name":"Show","season":2,"episode":4,"positionMs":0,"durationMs":0,"watchedAt":9}"""))!!
+        assertEquals("a next-up episode has no length", 0L, nextUp.durationMs)
+        assertEquals("movies play from their own id", "tt2", Progress.entryFrom(org.json.JSONObject("""{"id":"tt2","type":"movie","name":"Film"}"""))!!.videoId)
+        assertNull("only imdb titles", Progress.entryFrom(org.json.JSONObject("""{"id":"x1","type":"movie","name":"Film"}""")))
+        assertEquals("Sam", Pairing.parseUser("""{"ok":true,"status":"authenticated","username":"Sam"}""")); assertEquals("", Pairing.parseUser("not json"))
+    }
+}
+
+class QrTest {
+    @Test fun aQrCodeHasFindersFormatBitsAndTheRightSize() {
+        val m = tv.myliststv.launcher.ui.Qr.matrix("https://mylistsaddon.com/link?code=ABCD-1234")
+        assertEquals("version 3", 29, m.size)
+        for ((x, y) in listOf(0 to 0, m.size - 7 to 0, 0 to m.size - 7)) assertTrue("finder corner at $x,$y", m[y][x] && m[y][x + 6] && m[y + 6][x] && m[y + 6][x + 6] && !m[y + 1][x + 1])
+        assertTrue("timing pattern", m[6][8] && !m[6][9])
+        assertTrue("the dark module", m[m.size - 8][8])
+        assertEquals(21, tv.myliststv.launcher.ui.Qr.matrix("hi").size)
+        assertTrue(try { tv.myliststv.launcher.ui.Qr.matrix("x".repeat(200)); false } catch (_: IllegalArgumentException) { true })
+    }
+}

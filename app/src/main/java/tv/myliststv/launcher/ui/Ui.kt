@@ -40,6 +40,8 @@ object Ui {
     const val TRACK = 0x33FFFFFF               // empty part of a progress bar
     const val TOGGLE_OFF = 0xFF39393D.toInt()
     const val SCRIM_SLATE = 0xB3000000.toInt()  // a loading screen over the title's backdrop
+    const val QR_DARK = 0xFF000000.toInt()      // a QR code must be black on white to scan, whatever the theme
+    const val QR_LIGHT = 0xFFFFFFFF.toInt()
     const val OVERLAY = 0xE6000000.toInt()     // dims everything behind a slate or an error
     const val BRAND_LINE = 0x800A84FF.toInt()  // brand outline on a banner
     const val R_PILL = 999

@@ -45,7 +45,7 @@ object Library {
             try {
                 val (code, body) = post(JSONObject().put("action", "get"))
                 if (code !in 200..299) return@background
-                val o = JSONObject(body); val at = o.optLong("updatedAt"); val remote = o.optJSONArray("items") ?: JSONArray()
+                val o = JSONObject(body); o.optString("username").takeIf { it.isNotEmpty() }?.let { Prefs.accountName = it }; val at = o.optLong("updatedAt"); val remote = o.optJSONArray("items") ?: JSONArray()
                 val theirs = (0 until remote.length()).mapNotNull { remote.optJSONObject(it) }.mapNotNull { r ->
                     r.optString("id").takeIf { it.startsWith("tt") }?.let { id -> Meta(id, if (r.optString("type") == "series") "series" else "movie", r.optString("name").ifEmpty { r.optString("title") }.ifEmpty { id }, r.optString("poster").ifEmpty { null }) }
                 }

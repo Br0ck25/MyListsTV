@@ -39,7 +39,8 @@ object WatchStore {
     }
 
     /** Entries worth showing: started, not finished. */
-    fun continueWatching(): List<Entry> = all().filter { it.fraction in 0.02f..0.93f }
+    /** Entries worth showing: started and not finished, or next-up episodes from the account (no length yet). */
+    fun continueWatching(): List<Entry> = all().filter { it.fraction in 0.02f..0.93f || it.durationMs == 0L }
 
     fun forMeta(metaId: String): Entry? = all().firstOrNull { it.metaId == metaId }
 

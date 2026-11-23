@@ -46,6 +46,9 @@ class MainActivity : Activity() {
     private lateinit var scrims: List<View>
     private lateinit var bellBtn: View
     private lateinit var side: LinearLayout
+    private lateinit var topBar: LinearLayout
+    /** True while an app is being moved with the D-pad (hold OK on an app, Move). */
+    private var moving = false
     private val navStyle = Prefs.navStyle
     private val sideWidth get() = Ui.dp(this, 200)
     private lateinit var bellBadge: TextView
@@ -71,7 +74,7 @@ class MainActivity : Activity() {
     private fun pickProfile() {
         val l = Profiles.all()
         AlertDialog.Builder(this).setTitle("Who is watching?").setItems(l.map { it.name + if (it.kids) " (kids)" else "" }.toTypedArray()) { _, i ->
-            Profiles.switchTo(this, l[i].id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }
+            Profiles.switchTo(this, l[i].id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }; Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
         }.show()
     }
 
@@ -122,7 +125,7 @@ class MainActivity : Activity() {
         root.addView(scrims[1], FrameLayout.LayoutParams(-1, Ui.dp(this, 420), Gravity.BOTTOM))
         content = FrameLayout(this).apply { setPadding(0, Ui.dp(this@MainActivity, 64), 0, 0) }
         root.addView(content, FrameLayout.LayoutParams(-1, -1))
-        val bar = Ui.hbox(this, 8).apply {
+        topBar = Ui.hbox(this, 8).apply {
             setPadding(Ui.dp(this@MainActivity, 40), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 40), Ui.dp(this@MainActivity, 8))
             background = Ui.scrimTop()
         }
@@ -138,9 +141,9 @@ class MainActivity : Activity() {
             }
             v.setOnClickListener { select(i, force = true); if (navStyle == 2) closeSide() }
             tabViews += v
-            if (navStyle == 0) bar.addView(v) else side.addView(v, LinearLayout.LayoutParams(-1, -2))
+            if (navStyle == 0) topBar.addView(v) else side.addView(v, LinearLayout.LayoutParams(-1, -2))
         }
-        bar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        topBar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
         val icon = Ui.dp(this, 40)
         bellBadge = Ui.text(this, "", 11f, Ui.TEXT, true).apply { gravity = Gravity.CENTER; background = Ui.rounded(this@MainActivity, Ui.BRAND_FILL, Ui.R_PILL); visibility = View.GONE; setPadding(Ui.dp(this@MainActivity, 5), 0, Ui.dp(this@MainActivity, 5), 0) }
         bellBtn = FrameLayout(this).apply {
@@ -149,14 +152,14 @@ class MainActivity : Activity() {
         }
         searchBtn = Ui.iconButton(this, R.drawable.ic_search, "Search") { startActivity(Intent(this, SearchActivity::class.java)) }
         settingsBtn = Ui.iconButton(this, R.drawable.ic_settings, "Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }
-        bar.addView(profileChip(), LinearLayout.LayoutParams(-2, icon).apply { rightMargin = Ui.dp(this@MainActivity, 8) })
-        bar.addView(bellBtn, LinearLayout.LayoutParams(icon, icon)); bar.addView(searchBtn, LinearLayout.LayoutParams(icon, icon)); bar.addView(settingsBtn, LinearLayout.LayoutParams(icon, icon))
+        topBar.addView(profileChip(), LinearLayout.LayoutParams(-2, icon).apply { rightMargin = Ui.dp(this@MainActivity, 8) })
+        topBar.addView(bellBtn, LinearLayout.LayoutParams(icon, icon)); topBar.addView(searchBtn, LinearLayout.LayoutParams(icon, icon)); topBar.addView(settingsBtn, LinearLayout.LayoutParams(icon, icon))
         updateProfile()
         if (navStyle != 0) {
             root.addView(side, FrameLayout.LayoutParams(sideWidth, -1, Gravity.START).apply { setMargins(Ui.dp(this@MainActivity, 12), Ui.dp(this@MainActivity, 12), 0, Ui.dp(this@MainActivity, 12)) })
             if (navStyle == 1) content.setPadding(sideWidth + Ui.dp(this, 16), Ui.dp(this, 64), 0, 0)
         }
-        root.addView(bar, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
+        root.addView(topBar, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
         setContentView(root)
         // Moving along the tabs switches page; coming up from a page onto the tabs does not (OK does).
         root.viewTreeObserver.addOnGlobalFocusChangeListener { old, new ->
@@ -189,8 +192,9 @@ class MainActivity : Activity() {
     }
 
     private fun tabView(t: String) = TextView(this).apply {
-        text = t; Ui.size(this, 15f); setTextColor(Ui.DIM); typeface = android.graphics.Typeface.DEFAULT_BOLD
-        setPadding(Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 8), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 8))
+        text = t; Ui.size(this, if (navStyle != 0) 20f else 15f); setTextColor(Ui.DIM); typeface = android.graphics.Typeface.DEFAULT_BOLD
+        val v = if (navStyle != 0) 12 else 8
+        setPadding(Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, v), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, v))
         background = Ui.pillBg(this@MainActivity, Ui.CLEAR); isFocusable = true; isClickable = true
     }
 
@@ -251,17 +255,12 @@ class MainActivity : Activity() {
     private fun appMenu(a: AppEntry) {
         val pkg = a.component.packageName
         val onHome = current == 0
-        val items = if (onHome) arrayOf("Move earlier", "Move later", "Hide from Home", "App info", "Uninstall") else arrayOf("App info", "Uninstall")
+        val items = if (onHome) arrayOf("Move", "Hide from Home", "App info", "Uninstall") else arrayOf("App info", "Uninstall")
         AlertDialog.Builder(this).setTitle(a.label).setItems(items) { _, i ->
-            val which = i - if (onHome) 3 else 0
+            val which = i - if (onHome) 2 else 0
             if (which < 0) {
-                Http.background {
-                    val order = AppRepository.forHome(this).map { it.component.packageName }.toMutableList()
-                    val at = order.indexOf(pkg)
-                    if (i == 2) Prefs.appHidden = Prefs.appHidden + pkg
-                    else if (at >= 0) { val to = (at + if (i == 0) -1 else 1).coerceIn(0, order.size - 1); order.add(to, order.removeAt(at)); Prefs.appOrder = order }
-                    Http.post { select(current, force = true) }
-                }
+                if (i == 0) { moving = true; Toast.makeText(this, "Move it with Left and Right, then press OK", Toast.LENGTH_LONG).show() }
+                else { Prefs.appHidden = Prefs.appHidden + pkg; select(current, force = true) }
                 return@setItems
             }
             try {
@@ -283,6 +282,7 @@ class MainActivity : Activity() {
                 lastSync = t
                 Library.pull { if (current == 3) select(3, force = true) }
                 SetupSync.pull { reloadAddons() }
+                Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
             }
         }
         if (::bellBadge.isInitialized) updateBell()
@@ -313,21 +313,56 @@ class MainActivity : Activity() {
         // On the tab bar, Back does nothing: this is the home screen.
     }
 
-    /** Hidden side bar: Left from the left edge of a page opens it; Right, OK on a page or Back closes it. */
+    /** Side bars: Left from the left edge of a page goes to the side bar (and opens it when hidden); Right, or Back, closes a hidden one. While moving an app, Left and Right move it. */
     override fun dispatchKeyEvent(e: KeyEvent): Boolean {
-        if (navStyle == 2 && e.action == KeyEvent.ACTION_DOWN) {
+        if (e.action == KeyEvent.ACTION_DOWN) {
             val f = currentFocus
-            val open = side.visibility == View.VISIBLE
-            if (!open && e.keyCode == KeyEvent.KEYCODE_DPAD_LEFT && f != null && f !in tabViews && f.focusSearch(View.FOCUS_LEFT).let { it == null || !isInContent(it) }) { openSide(); return true }
-            if (open && e.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) { closeSide(); return true }
-            if (open && e.keyCode == KeyEvent.KEYCODE_BACK) { closeSide(); return true }
+            if (moving && f != null && moveApp(e, f)) return true
+            if (navStyle != 0 && f != null) {
+                if (e.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                    if (isInContent(f) && atLeftEdge(f)) { openSide(); return true }
+                    // In the top bar, Left stops at its first button instead of dropping into a row or opening the side bar.
+                    if (isIn(f, topBar) && f.focusSearch(View.FOCUS_LEFT).let { it == null || !isIn(it, topBar) }) return true
+                }
+                if (navStyle == 2 && side.visibility == View.VISIBLE && (e.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT || e.keyCode == KeyEvent.KEYCODE_BACK)) { closeSide(); return true }
+            }
         }
         return super.dispatchKeyEvent(e)
     }
 
-    private fun isInContent(v: View): Boolean { var p: android.view.ViewParent? = v.parent; while (p != null) { if (p === content) return true; p = p.parent }; return false }
+    private fun isIn(v: View, container: View): Boolean { var p: android.view.ViewParent? = v.parent; while (p != null) { if (p === container) return true; p = p.parent }; return false }
+    private fun isInContent(v: View) = isIn(v, content)
+
+    /** Is this card the first one in its strip, or in the first column of its grid? */
+    private fun atLeftEdge(f: View): Boolean {
+        val rv = f.parent as? androidx.recyclerview.widget.RecyclerView ?: return false
+        val pos = rv.getChildAdapterPosition(f)
+        return when (val lm = rv.layoutManager) { is androidx.recyclerview.widget.GridLayoutManager -> pos % lm.spanCount == 0; else -> pos == 0 }
+    }
+
     private fun openSide() { side.visibility = View.VISIBLE; tabViews[current.coerceIn(0, tabViews.size - 1)].requestFocus() }
     private fun closeSide() { side.visibility = View.GONE; content.requestFocus() }
+
+    /** Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down. Returns true when the key was used. */
+    private fun moveApp(e: KeyEvent, f: View): Boolean {
+        val rv = f.parent as? androidx.recyclerview.widget.RecyclerView
+        val adapter = rv?.adapter as? CardAdapter
+        if (rv == null || adapter == null) { moving = false; return false }
+        val pos = rv.getChildAdapterPosition(f)
+        return when (e.keyCode) {
+            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                val to = pos + if (e.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) -1 else 1
+                if (to in 0 until (rv.adapter?.itemCount ?: 0)) {
+                    adapter.move(pos, to)
+                    Prefs.appOrder = adapter.payloads().mapNotNull { (it as? AppEntry)?.component?.packageName }
+                    rv.post { rv.findViewHolderForAdapterPosition(to)?.itemView?.requestFocus() }
+                }
+                true
+            }
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_BACK -> { moving = false; Toast.makeText(this, "Placed", Toast.LENGTH_SHORT).show(); true }
+            else -> { moving = false; false }
+        }
+    }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_SEARCH) { startActivity(Intent(this, SearchActivity::class.java)); return true }

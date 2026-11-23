@@ -48,3 +48,5 @@ Not tested: anything on a real TV box (including the Keystore path and Watch Nex
 - Live TV (IPTV playlists, programme guide, channel zapping) was removed at the owner's request. Pages: Home, Movies, Series, Library, Apps.
 
 - Share addons: a profile can use another profile's addon list (Settings, Share addons). It keeps its own sign-in, history and Library; its Addons page is read-only while sharing, the other profile's sign-in link is not shared, and stopping keeps a copy. Dialogs and menus highlight the focused row in brand blue with white text.
+
+- Sign-in shows a QR code (`ui/Qr.kt`, own encoder, no library) and the account name; the account's Continue Watching (website and other TVs, `Progress.pull`) joins the Home row, with next-up episodes shown as "Next up". Moving an app: hold OK, Move, then Left/Right, OK to place. Left from the first card of a page goes to the side bar; Up/Down land on the nearest card of the next row.
