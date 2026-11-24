@@ -26,6 +26,8 @@ object CardGrid {
         val side = Ui.dp(c, EDGE)   // left-aligned like a row on Home; what is left over stays at the right
         rv.layoutManager = GridLayoutManager(c, cols)
         rv.clipToPadding = false; rv.itemAnimator = null
-        rv.setPadding(side, Ui.dp(c, top), side, Ui.dp(c, bottom))
+        // The grid shares its width equally between the columns, so the leftover goes in the right padding: then each column is exactly one card wide.
+        val right = (c.resources.displayMetrics.widthPixels - side - cols * cell(c, bw)).toInt().coerceAtLeast(0)
+        rv.setPadding(side, Ui.dp(c, top), right, Ui.dp(c, bottom))
     }
 }
