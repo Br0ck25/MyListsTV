@@ -18,7 +18,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     33   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
     39   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (584 lines) - The home screen.
+## MainActivity.kt (582 lines) - The home screen.
     31 class MainActivity  - The home screen.
     58   fun updateBell()
     60   fun updateProfile()
@@ -26,46 +26,46 @@ Find a symbol with grep on this file, then read only that file around the line n
     77   fun pickProfile()
     87   fun showNotices()  - The bell: a panel down the right edge.
     98   fun fill(list: LinearLayout, panel: SidePanel)
-   128   fun showSettingsPanel()  - The gear: Apps, Launcher settings (the full settings) and Android settings, in the same right-hand panel.
-   144   fun appsPage(panel: SidePanel)  - Every app as a banner with its name under it, two across; OK opens it, hold OK for its menu.
-   162   fun setBackdrop(url: String?)  - Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every p
-   168   fun showBackdrop(on: Boolean)
-   174   fun onCreate(savedInstanceState: Bundle?)
-   243   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
-   256   fun welcome()  - First run: the setup screens (Home app, Home button, notifications, addons), each one skippable.
-   262   fun setSideOpen(open: Boolean)  - Side bar (always there): a slim strip of icons that opens into the labelled panel while the focus is on it.
-   283   fun refreshRailTint()  - While the strip is slim only the icons show: the open page's is blue, the others dim.
-   288   fun sideItems()
-   292   fun tabView(t: String)
-   311   fun dropPages()  - What the pages show changed (addons, profile, settings): none of the built pages is right any more.
-   313   fun select(i: Int, force: Boolean = false)
-   350   fun reloadAddons()
-   353   fun go(where: String)  - Where a mapped remote button sends the launcher.
-   362   fun openMeta(m: Meta)
-   366   fun resumeEntry(e: WatchStore.Entry)
-   371   fun launch(a: AppEntry)
-   380   fun appMenu(a: AppEntry)
-   395   fun onPause()
-   398   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
-   408   fun onResume()
-   429   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
-   437   fun onNewIntent(intent: Intent)
-   457   fun onBackPressed()
-   480   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
-   487   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
-   498   fun dispatchKeyEvent(e: KeyEvent)
-   528   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
-   534   fun isIn(v: View, container: View)
-   535   fun isInContent(v: View)
-   538   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
-   544   fun openSide()
-   545   fun closeSide()
-   548   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
-   568   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   573   fun onDestroy()
-   575   fun onTrimMemory(level: Int)
-   582   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
-   583   fun setTextColor(color: Int)
+   128   fun showSettingsPanel()  - The gear: Apps, Inputs, Launcher settings (the full settings) and Android settings, in the same right-hand pan
+   142   fun appsPage(panel: SidePanel)  - Every app as a banner with its name under it, two across; OK opens it, hold OK for its menu.
+   160   fun setBackdrop(url: String?)  - Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every p
+   166   fun showBackdrop(on: Boolean)
+   172   fun onCreate(savedInstanceState: Bundle?)
+   241   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
+   254   fun welcome()  - First run: the setup screens (Home app, Home button, notifications, addons), each one skippable.
+   260   fun setSideOpen(open: Boolean)  - Side bar (always there): a slim strip of icons that opens into the labelled panel while the focus is on it.
+   281   fun refreshRailTint()  - While the strip is slim only the icons show: the open page's is blue, the others dim.
+   286   fun sideItems()
+   290   fun tabView(t: String)
+   309   fun dropPages()  - What the pages show changed (addons, profile, settings): none of the built pages is right any more.
+   311   fun select(i: Int, force: Boolean = false)
+   348   fun reloadAddons()
+   351   fun go(where: String)  - Where a mapped remote button sends the launcher.
+   360   fun openMeta(m: Meta)
+   364   fun resumeEntry(e: WatchStore.Entry)
+   369   fun launch(a: AppEntry)
+   378   fun appMenu(a: AppEntry)
+   393   fun onPause()
+   396   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
+   406   fun onResume()
+   427   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
+   435   fun onNewIntent(intent: Intent)
+   455   fun onBackPressed()
+   478   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
+   485   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
+   496   fun dispatchKeyEvent(e: KeyEvent)
+   526   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
+   532   fun isIn(v: View, container: View)
+   533   fun isInContent(v: View)
+   536   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
+   542   fun openSide()
+   543   fun closeSide()
+   546   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
+   566   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   571   fun onDestroy()
+   573   fun onTrimMemory(level: Int)
+   580   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
+   581   fun setTextColor(color: Int)
 
 ## data/AccountWatched.kt (131 lines) - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
     12 object AccountWatched  - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
@@ -472,6 +472,13 @@ Find a symbol with grep on this file, then read only that file around the line n
     23   fun providers(type: String, videoId: String)
     30   fun fetch(type: String, videoId: String, lang: String, cb: (List<Sub>)  - Asks every subtitle addon (3 s each, in parallel).
 
+## data/SystemLinks.kt (37 lines) - The TV's own settings pages (one list for Settings and for the gear) and its video inputs (HDMI and the like).
+    12 object SystemLinks  - The TV's own settings pages (one list for Settings and for the gear) and its video inputs (HDMI and the like).
+    20   fun open(act: Activity, action: String)  - Opens one of [pages]; a TV that lacks that page gets its main settings, and one with none says so.
+    26   class Input
+    29   fun inputs(c: Context)  - The inputs a cable box, console or stick can be plugged into, named as the TV names them (Sony's "HDMI 1 (Play
+    34   fun openInput(act: Activity, id: String)
+
 ## data/Updater.kt (64 lines) - Sideload updates: finds the newest GitHub release, downloads its APK, and hands it to the system installer.
     11 object Updater  - Sideload updates: finds the newest GitHub release, downloads its APK, and hands it to the system installer.
     15   class Release  - [beta]: published as a pre-release (a build from main that has not been promoted to production).
@@ -623,7 +630,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    708   fun onStop()
    715   fun onDestroy()
 
-## screens/SettingsActivity.kt (532 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
+## screens/SettingsActivity.kt (521 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     27 class SettingsActivity  - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     32   fun card(title: String)  - A card inside a group (kind S): its title, then the rows that follow it up to the next card.
     35   fun header(t: String, subtitle: String = "", icon: Int = 0, divider: Boolean = f  - A group of the left list: its name, the line under the page title, its icon, and whether a divider line comes 
@@ -636,36 +643,36 @@ Find a symbol with grep on this file, then read only that file around the line n
     61   fun focusFirst()
     63   fun onResume()
     65   fun androidSettings()
-    78   fun testSources()
-    88   fun turnOnFallback()  - Turns the Home button fallback on, or opens the system accessibility page when this app may not do it itself.
-    93   fun askName(kids: Boolean)
-    95   fun arrange(what: String)
-    97   fun backupNow()
-   107   fun showCode(code: String, extra: String = "")
-   111   fun restoreDialog()
-   117   fun lastBackupText()
-   119   fun signIn()
-   137   fun signOut()
-   139   fun rows()
-   242   fun subPage()
-   252   fun showPhonePopup(addr: String)  - Manage from phone: a code to scan, with its address, and a way to close.
-   259   fun addonName(url: String)
-   261   fun provides(a: Addon)
-   272   fun addonsChanged()  - Reloads the addons, tells Home to reload, and redraws this page.
-   274   fun installAddon(link: String)
-   280   fun addonsRows()
-   307   fun addonRows(url: String)
-   322   fun profileRows()
-   347   fun checkUpdate()
-   358   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
-   360   fun onCreate(savedInstanceState: Bundle?)
-   376   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
-   402   fun railItem(g: Group, i: Int)
-   414   fun closeSubs()
-   416   fun buildPanel(keep: Int)
-   461   fun view(r: Row, changed: ()
-   522   fun onBackPressed()
-   531   fun onDestroy()
+    67   fun testSources()
+    77   fun turnOnFallback()  - Turns the Home button fallback on, or opens the system accessibility page when this app may not do it itself.
+    82   fun askName(kids: Boolean)
+    84   fun arrange(what: String)
+    86   fun backupNow()
+    96   fun showCode(code: String, extra: String = "")
+   100   fun restoreDialog()
+   106   fun lastBackupText()
+   108   fun signIn()
+   126   fun signOut()
+   128   fun rows()
+   231   fun subPage()
+   241   fun showPhonePopup(addr: String)  - Manage from phone: a code to scan, with its address, and a way to close.
+   248   fun addonName(url: String)
+   250   fun provides(a: Addon)
+   261   fun addonsChanged()  - Reloads the addons, tells Home to reload, and redraws this page.
+   263   fun installAddon(link: String)
+   269   fun addonsRows()
+   296   fun addonRows(url: String)
+   311   fun profileRows()
+   336   fun checkUpdate()
+   347   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
+   349   fun onCreate(savedInstanceState: Bundle?)
+   365   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
+   391   fun railItem(g: Group, i: Int)
+   403   fun closeSubs()
+   405   fun buildPanel(keep: Int)
+   450   fun view(r: Row, changed: ()
+   511   fun onBackPressed()
+   520   fun onDestroy()
 
 ## screens/SetupActivity.kt (129 lines) - First run: one full screen per step (Home app, Home button, notifications, addons).
     25 class SetupActivity  - First run: one full screen per step (Home app, Home button, notifications, addons).
@@ -864,6 +871,11 @@ Find a symbol with grep on this file, then read only that file around the line n
     64   fun focusables(v: View, out: ArrayList<View> = ArrayList()
     69   fun focusIndex(page: View)
     70   fun focusFirst(page: View, at: Int = 0)
+
+## ui/SystemPanel.kt (31 lines) - The gear's TV pages: Inputs (HDMI and the like) and the shortcuts into Android's own settings.
+    11 object SystemPanel  - The gear's TV pages: Inputs (HDMI and the like) and the shortcuts into Android's own settings.
+    12   fun inputs(c: Activity, panel: SidePanel)
+    23   fun androidSettings(c: Activity, panel: SidePanel)
 
 ## ui/TitleMenu.kt (32 lines) - Hold OK on a poster or tile: Go to details, add to or remove from the Library, mark as watched or not.
      8 object TitleMenu  - Hold OK on a poster or tile: Go to details, add to or remove from the Library, mark as watched or not.

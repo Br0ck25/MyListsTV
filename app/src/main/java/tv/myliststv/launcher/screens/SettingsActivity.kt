@@ -62,18 +62,7 @@ class SettingsActivity : Activity() {
 
     override fun onResume() { super.onResume(); if (::rail.isInitialized) refresh() }
 
-    private fun androidSettings() {
-        val pages = listOf("All settings" to Settings.ACTION_SETTINGS, "Wi-Fi and network" to Settings.ACTION_WIFI_SETTINGS, "Display" to Settings.ACTION_DISPLAY_SETTINGS,
-            "Sound" to Settings.ACTION_SOUND_SETTINGS, "Bluetooth and remotes" to Settings.ACTION_BLUETOOTH_SETTINGS, "Apps" to Settings.ACTION_APPLICATION_SETTINGS,
-            "Date and time" to Settings.ACTION_DATE_SETTINGS, "Storage" to Settings.ACTION_INTERNAL_STORAGE_SETTINGS)
-        Sheet.menu(this, "Android settings", "Opens the TV's own settings", pages.map { (name, action) ->
-            name to {
-                try { startActivity(Intent(action)) } catch (_: Exception) {
-                    try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) { Pop.toast(this, "This TV does not open its settings from apps.", true) }
-                }
-            }
-        })
-    }
+    private fun androidSettings() = Sheet.menu(this, "Android settings", "Opens the TV's own settings", SystemLinks.pages.map { (name, action) -> name to { SystemLinks.open(this, action) } })
 
     private fun testSources() {
         if (StreamResolver.providers("movie", "tt0816692").isEmpty()) { Sheet.message(this, "Test my sources", "No stream addon is installed. Add one under Content & Discovery, Addons.", Sheet.Act("OK", true)); return }

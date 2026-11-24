@@ -23,6 +23,7 @@ Start here, then `grep -n <name> docs/MAP.md` for the exact file and line. Rules
 | Share addons between profiles | `data/Profiles.kt` (`addonSource`), `data/AddonStore.kt` (`saved`), `screens/SettingsActivity.kt` (`shareMenu`) |
 | Profiles, kids filter, watch history | `data/Profiles.kt`, `data/WatchStore.kt` |
 | Remote button mapper, Home button | `data/ButtonMap.kt`, `services/HomeButtonService.kt`, `data/HomeSetup.kt` |
+| Gear panel: Inputs (HDMI), Android settings shortcuts | `ui/SystemPanel.kt`, `data/SystemLinks.kt`, `MainActivity.kt` (`showSettingsPanel`) |
 | Notifications bell | `services/NotificationsService.kt` (`Notices`), `MainActivity.kt` (`showNotices`) |
 | Screensaver | `services/BackdropDream.kt` |
 | Watch Next row on the system home | `data/WatchNext.kt` |

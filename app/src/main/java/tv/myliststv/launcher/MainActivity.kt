@@ -124,7 +124,7 @@ class MainActivity : Activity() {
         }, Ui.wrap().apply { topMargin = Ui.dp(c, 8) })
     }
 
-    /** The gear: Apps, Launcher settings (the full settings) and Android settings, in the same right-hand panel. */
+    /** The gear: Apps, Inputs, Launcher settings (the full settings) and Android settings, in the same right-hand panel. */
     private fun showSettingsPanel() {
         val c = this
         val panel = SidePanel(c)
@@ -132,11 +132,9 @@ class MainActivity : Activity() {
         page.addView(SidePanel.header(c, "Settings"))
         fun item(icon: Int, label: String, go: () -> Unit) = page.addView(SidePanel.item(c, icon, label, go), Ui.matchWrap().apply { topMargin = Ui.dp(c, 12) })
         item(R.drawable.ic_apps, "Apps") { panel.push(appsPage(panel)) }
+        item(R.drawable.ic_tv, "Inputs") { panel.push(SystemPanel.inputs(c, panel)) }
         item(R.drawable.ic_home, "Launcher settings") { panel.dismiss(); startActivity(Intent(c, SettingsActivity::class.java)) }
-        item(R.drawable.ic_settings, "Android settings") {
-            panel.dismiss()
-            try { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) } catch (_: Exception) { Pop.toast(c, "This TV does not open its settings from apps.", true) }
-        }
+        item(R.drawable.ic_settings, "Android settings") { panel.push(SystemPanel.androidSettings(c, panel)) }
         panel.show(page)
     }
 
