@@ -4,7 +4,6 @@ import tv.myliststv.launcher.screens.*
 import tv.myliststv.launcher.services.*
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
@@ -77,9 +76,11 @@ class MainActivity : Activity() {
 
     private fun pickProfile() {
         val l = Profiles.all()
-        AlertDialog.Builder(this).setTitle("Who is watching?").setItems(l.map { it.name + if (it.kids) " (kids)" else "" }.toTypedArray()) { _, i ->
-            Profiles.switchTo(this, l[i].id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }; Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
-        }.show()
+        Sheet.menu(this, "Who is watching?", null, l.map { p ->
+            (p.name + if (p.kids) " (kids)" else "") to {
+                Profiles.switchTo(this, p.id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }; Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
+            }
+        })
     }
 
     /** The bell: a panel down the right edge. New-episode alerts for your Library first, then the TV's own notifications when access is given. */
@@ -119,7 +120,7 @@ class MainActivity : Activity() {
         sys.forEach { n -> card(n.pkg, n.app, n.time, n.title, n.text, { try { n.open?.send() } catch (_: Exception) {}; Notices.dismiss(n.key) }, { Notices.dismiss(n.key) }) }
         if (own.isEmpty() && sys.isEmpty()) list.addView(Ui.text(c, if (allowed) "Nothing new. New episodes of series in your Library show up here." else "Nothing new yet.", 14f, Ui.DIM, false, 3))
         if (!allowed) list.addView(Ui.button(c, "Show the TV's own notifications too") {
-            try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(c, "This TV has no such setting. See Settings, Launcher setup, for the phone steps.", true) }
+            try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Pop.toast(c, "This TV has no such setting. See Settings, Launcher setup, for the phone steps.", true) }
         }, Ui.wrap().apply { topMargin = Ui.dp(c, 8) })
     }
 
@@ -134,7 +135,7 @@ class MainActivity : Activity() {
         item(R.drawable.ic_home, "Launcher settings") { panel.dismiss(); startActivity(Intent(c, SettingsActivity::class.java)) }
         item(R.drawable.ic_settings, "Android settings") {
             panel.dismiss()
-            try { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(c, "This TV does not open its settings from apps.", true) }
+            try { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) } catch (_: Exception) { Pop.toast(c, "This TV does not open its settings from apps.", true) }
         }
         panel.show(page)
     }
@@ -240,10 +241,9 @@ class MainActivity : Activity() {
 
     /** Safe mode, first-run welcome, or the "who is watching" question, whichever applies. */
     private fun afterStart(safe: Boolean) {
-        if (safe) AlertDialog.Builder(this).setTitle("Safe mode").setCancelable(false)
-            .setMessage("My Lists TV stopped several times in a row, so addons are off for this start.")
-            .setPositiveButton("Start normally") { _, _ -> CrashGuard.clear(this); recreate() }
-            .setNegativeButton("Reset addons and caches") { _, _ -> AddonStore.reset(); Http.clear(); ImageLoader.clearDisk(); CrashGuard.clear(this); recreate() }.show()
+        if (safe) Sheet.message(this, "Safe mode", "My Lists TV stopped several times in a row, so addons are off for this start.",
+            Sheet.Act("Start normally", true) { CrashGuard.clear(this); recreate() },
+            Sheet.Act("Reset addons and caches") { AddonStore.reset(); Http.clear(); ImageLoader.clearDisk(); CrashGuard.clear(this); recreate() }, cancelable = false)
         else if (!Prefs.setupDone) welcome()
         else if (Profiles.all().size > 1 && !Profiles.askedThisRun) {
             Profiles.askedThisRun = true
@@ -354,25 +354,20 @@ class MainActivity : Activity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
             addCategory(if (a.sideloaded) Intent.CATEGORY_LAUNCHER else Intent.CATEGORY_LEANBACK_LAUNCHER)
         }
-        try { startActivity(intent) } catch (e: Exception) { tv.myliststv.launcher.ui.Pop.toast(this, "Could not open ${a.label}") }
+        try { startActivity(intent) } catch (e: Exception) { Pop.toast(this, "Could not open ${a.label}") }
     }
 
     private fun appMenu(a: AppEntry) {
         val pkg = a.component.packageName
-        val onHome = current == 0
-        val items = if (onHome) arrayOf("Move", "Hide from Home", "App info", "Uninstall") else arrayOf("App info", "Uninstall")
-        AlertDialog.Builder(this).setTitle(a.label).setItems(items) { _, i ->
-            val which = i - if (onHome) 2 else 0
-            if (which < 0) {
-                if (i == 0) { moving = true; tv.myliststv.launcher.ui.Pop.toast(this, "Move it with Left and Right, then press OK", true) }
-                else { Prefs.appHidden = Prefs.appHidden + pkg; select(current, force = true) }
-                return@setItems
-            }
-            try {
-                if (which == 0) startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg")))
-                else startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg")))
-            } catch (e: Exception) { tv.myliststv.launcher.ui.Pop.toast(this, "Not available on this device") }
-        }.show()
+        val system = { intent: Intent -> try { startActivity(intent) } catch (e: Exception) { Pop.toast(this, "Not available on this device") } }
+        val items = ArrayList<Pair<String, () -> Unit>>()
+        if (current == 0) {
+            items += "Move" to { moving = true; Pop.toast(this, "Move it with Left and Right, then press OK", true) }
+            items += "Hide from Home" to { Prefs.appHidden = Prefs.appHidden + pkg; select(current, force = true) }
+        }
+        items += "App info" to { system(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg"))) }
+        items += "Uninstall" to { system(Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg"))) }
+        Sheet.menu(this, a.label, "Installed app", items)
     }
 
     private var seenEpoch = Prefs.epoch
@@ -540,7 +535,7 @@ class MainActivity : Activity() {
                 }
                 true
             }
-            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_BACK -> { moving = false; tv.myliststv.launcher.ui.Pop.toast(this, "Placed"); true }
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_BACK -> { moving = false; Pop.toast(this, "Placed"); true }
             else -> { moving = false; false }
         }
     }

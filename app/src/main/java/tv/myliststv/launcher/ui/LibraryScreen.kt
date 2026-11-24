@@ -1,7 +1,6 @@
 package tv.myliststv.launcher.ui
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.view.View
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.GridLayoutManager

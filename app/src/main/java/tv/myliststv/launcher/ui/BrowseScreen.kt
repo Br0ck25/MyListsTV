@@ -41,11 +41,10 @@ class BrowseScreen(
     }, { model ->
         when (val p = model.payload) {
             is AppEntry -> onAppMenu(p)
-            is WatchStore.Entry -> android.app.AlertDialog.Builder(c).setTitle(p.name)
-                .setItems(arrayOf("Mark as watched", "Remove from Continue watching")) { _, i ->
-                    if (i == 0) markWatched(p) else WatchStore.remove(p.metaId)
-                    refreshContinue()
-                }.show()
+            is WatchStore.Entry -> Sheet.menu(c, p.name, if (p.type == "series" && p.season >= 0) "S${p.season} \u00b7 E${p.episode}" else null, listOf(
+                "Go to details" to { onMeta(Meta(p.metaId, p.type, p.name, p.poster, p.background)) },
+                "Mark as watched" to { markWatched(p); refreshContinue() },
+                "Remove from Continue watching" to { WatchStore.remove(p.metaId); refreshContinue() }))
         }
     })
     val view: View

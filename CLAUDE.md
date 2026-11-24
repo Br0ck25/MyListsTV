@@ -17,6 +17,7 @@ The full plan lives in the "My Lists TV: Build Plan" doc the owner shares; `docs
 10. Small, root-cause changes. Don't refactor unrelated code. Never skip or loosen a test to get green.
 11. Don't commit secrets, keystores or `local.properties`.
 12. **No source file over 2,000 lines** (Kotlin, XML, Gradle, workflow). Split by job before it gets there. `SizeGuardTest` fails the build if one does.
+13. **One look for every pop-up and menu.** Use `ui/Sheet.kt` (and `Pop.toast` for short messages); never `AlertDialog`, `Dialog`, `PopupMenu` or `Toast`. A new colour, size or radius goes in `Ui.kt` first. `DesignGuardTest` enforces both. See `docs/DESIGN.md`.
 
 ## Working rules (added at the owner's request, from the Karpathy-style guidelines)
 These bias toward care over speed. For trivial work, use judgment. Where they meet the owner's rules above, ask only about product decisions and decide technical choices yourself.

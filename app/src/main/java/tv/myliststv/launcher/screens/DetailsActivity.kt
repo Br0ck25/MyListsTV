@@ -4,7 +4,6 @@ import tv.myliststv.launcher.*
 import tv.myliststv.launcher.services.*
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
@@ -41,7 +40,7 @@ class DetailsActivity : Activity() {
     private var buttonsSig = ""
     private var tabsSig = ""
     private var focusedOnce = false
-    private var busy: AlertDialog? = null
+    private var busy: Sheet? = null
     private var session: StreamResolver.Session? = null
     private val lite get() = Prefs.lite()
 
@@ -230,10 +229,12 @@ class DetailsActivity : Activity() {
     /** Hold OK on an episode: choose a source, or mark it watched or not. */
     private fun episodeMenu(v: Video) {
         val done = Watched.has(meta.id, v.id)
-        AlertDialog.Builder(this).setTitle("S${v.season} \u00b7 E${v.episode}  ${v.title}")
-            .setItems(arrayOf("Choose a source", if (done) "Mark not watched" else "Mark watched")) { _, i ->
-                if (i == 0) openSources(v.id) else { Watched.set(meta.id, v.id, !done); Progress.markWatched(meta.id, "series", v.season, v.episode, !done); refreshEpisodes(meta.videos.filter { it.season == season }.indexOfFirst { it.id == v.id }) }
-            }.show()
+        Sheet.menu(this, "S${v.season} \u00b7 E${v.episode}", v.title, listOf(
+            "Choose a source" to { openSources(v.id) },
+            (if (done) "Mark as unwatched" else "Mark as watched") to {
+                Watched.set(meta.id, v.id, !done); Progress.markWatched(meta.id, "series", v.season, v.episode, !done)
+                refreshEpisodes(meta.videos.filter { it.season == season }.indexOfFirst { it.id == v.id })
+            }))
     }
 
     /** Cast & Crew, labelled, under the episodes (or on its own for a movie). */
@@ -294,7 +295,7 @@ class DetailsActivity : Activity() {
             onUpdate = { list, st ->
                 latest = list; statuses = st
                 if (!started && list.isNotEmpty()) {
-                    busy?.setMessage("Found ${list.size} sources\u2026")
+                    busy?.setTitle("Found ${list.size} sources\u2026")
                     if (!timerSet) { timerSet = true; Http.postDelayed(2500) { pick() } }
                 }
             },
@@ -321,16 +322,16 @@ class DetailsActivity : Activity() {
 
     /** Says why nothing played and offers the next step: add an addon when there is none, or try again when they answered with nothing. */
     private fun noStreams(videoId: String, statuses: List<StreamResolver.AddonStatus>) {
-        if (statuses.isEmpty()) Ui.dialog(this, "Add a stream addon",
+        if (statuses.isEmpty()) Sheet.message(this, "Add a stream addon",
             "My Lists TV found your lists, but it needs a stream addon to find something to play. Add one in Settings, then Addons. You can paste its link from your phone.",
-            Ui.Act("Open Addons", true) { startActivity(Intent(this, SettingsActivity::class.java).putExtra("open", "addons")) }, Ui.Act("Close"))
-        else Ui.dialog(this, "No sources found", statuses.joinToString("\n\n") { "✗ ${it.name} ${it.note ?: "gave nothing."}" },
-            Ui.Act("Try again", true) { playVideo(videoId) }, Ui.Act("See all sources") { openSources(videoId) }, Ui.Act("Close"))
+            Sheet.Act("Open Addons", true) { startActivity(Intent(this, SettingsActivity::class.java).putExtra("open", "addons")) }, Sheet.Act("Close"))
+        else Sheet.message(this, "No sources found", statuses.joinToString("\n\n") { "✗ ${it.name} ${it.note ?: "gave nothing."}" },
+            Sheet.Act("Try again", true) { playVideo(videoId) }, Sheet.Act("See all sources") { openSources(videoId) }, Sheet.Act("Close"))
     }
 
     private fun showBusy(msg: String) {
         dismissBusy()
-        busy = AlertDialog.Builder(this).setMessage(msg).setCancelable(true).setOnCancelListener { session?.cancelled = true }.show()
+        busy = Sheet.busy(this, msg) { session?.cancelled = true }
     }
 
     private fun dismissBusy() { busy?.dismiss(); busy = null }

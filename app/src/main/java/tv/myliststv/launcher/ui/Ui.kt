@@ -124,42 +124,6 @@ object Ui {
             setOnClickListener { onClick() }
         }
 
-    /** One button of [dialog]. */
-    class Act(val label: String, val primary: Boolean = false, val run: () -> Unit = {})
-
-    /** A message dialog in the app's own look: title, a sentence or two, and a row of buttons (the first one has the focus). An [image] such as a QR code sits to the left of the words. */
-    fun dialog(a: android.app.Activity, title: String, message: CharSequence, vararg acts: Act, image: android.graphics.Bitmap? = null): android.app.AlertDialog {
-        val d = android.app.AlertDialog.Builder(a).create()
-        val body = vbox(a).apply { minimumWidth = dp(a, 520); setPadding(dp(a, 24), dp(a, 22), dp(a, 24), dp(a, 20)) }
-        val words = vbox(a)
-        words.addView(text(a, title, 24f, TEXT, true))
-        words.addView(text(a, message, 15f, DIM).apply { setLineSpacing(0f, 1.15f); maxWidth = dp(a, 440) }, matchWrap().apply { topMargin = dp(a, 12) })
-        val top = hbox(a, 24).apply { gravity = Gravity.TOP }
-        if (image != null) top.addView(android.widget.ImageView(a).apply { setImageBitmap(image) }, LinearLayout.LayoutParams(dp(a, 190), dp(a, 190)))
-        top.addView(words, LinearLayout.LayoutParams(0, -2, 1f))
-        body.addView(top, matchWrap())
-        val row = hbox(a, 12)
-        acts.forEach { act -> row.addView(button(a, act.label, act.primary) { d.dismiss(); act.run() }) }
-        body.addView(row, matchWrap().apply { topMargin = dp(a, 22) })
-        d.setView(body); d.show(); row.getChildAt(0)?.requestFocus()
-        return d
-    }
-
-    /** Asks for one line of text. The keyboard is closed again when the dialog goes away, and Done on the keyboard confirms. */
-    fun askText(a: android.app.Activity, title: String, hint: String, ok: String, message: String? = null, caps: Boolean = false, initial: String = "", onOk: (String) -> Unit) {
-        val e = android.widget.EditText(a).apply {
-            this.hint = hint; setHintTextColor(DIM); setTextColor(TEXT); setSingleLine(true); setText(initial); setSelection(initial.length)
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or (if (caps) android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS else android.text.InputType.TYPE_TEXT_VARIATION_URI)
-            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_DONE
-        }
-        val d = android.app.AlertDialog.Builder(a).setTitle(title).apply { if (message != null) setMessage(message) }.setView(e)
-            .setPositiveButton(ok) { _, _ -> onOk(e.text.toString()) }.setNegativeButton("Cancel", null).create()
-        val closeKeyboard = { (a.getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).hideSoftInputFromWindow(e.windowToken, 0) }
-        e.setOnEditorActionListener { _, id, _ -> if (id == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) { closeKeyboard(); d.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick(); true } else false }
-        d.setOnDismissListener { closeKeyboard(); a.window.decorView.requestFocus() }
-        d.show()
-    }
-
     fun hbox(c: Context, gapDp: Int = 0): LinearLayout = LinearLayout(c).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
         if (gapDp > 0) { showDividers = LinearLayout.SHOW_DIVIDER_MIDDLE; dividerDrawable = GradientDrawable().apply { setSize(dp(c, gapDp), 1); setColor(Color.TRANSPARENT) } }
