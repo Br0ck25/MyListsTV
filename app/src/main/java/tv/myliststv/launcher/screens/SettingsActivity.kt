@@ -63,23 +63,6 @@ class SettingsActivity : Activity() {
         }))
     }
 
-    private fun requestHome() {
-        try {
-            if (android.os.Build.VERSION.SDK_INT >= 29) startActivityForResult(getSystemService(android.app.role.RoleManager::class.java).createRequestRoleIntent(android.app.role.RoleManager.ROLE_HOME), 1)
-            else startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
-        } catch (_: Exception) {
-            try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) { Toast.makeText(this, "This TV has no Home setting. Use the phone or computer steps.", Toast.LENGTH_LONG).show() }
-        }
-    }
-
-    private fun setupPage() {
-        val server = PhoneServer { _, done -> done("Nothing to add here.") }
-        server.start()
-        val a = server.address()?.let { "$it/setup" } ?: "Connect the TV to Wi-Fi first."
-        android.app.AlertDialog.Builder(this).setTitle("Open this on your phone").setMessage(a)
-            .setPositiveButton("Done", null).setOnDismissListener { server.stop() }.show()
-    }
-
     private fun profileMenu() {
         val l = Profiles.all()
         val items = l.map { it.name + if (it.kids) " (kids)" else "" } + listOf("Add profile", "Add kids profile", "Remove ${Profiles.active().name}")
@@ -197,7 +180,7 @@ class SettingsActivity : Activity() {
         add(action("Clear caches", "Frees stored images and catalog data (${Http.cacheBytes() / 1_048_576} MB now).") { Http.clear(); ImageLoader.clearDisk(); Toast.makeText(this@SettingsActivity, "Caches cleared", Toast.LENGTH_SHORT).show() })
         add(header("Default launcher"))
         add(info("Home app", if (HomeSetup.isHome(this@SettingsActivity)) "This launcher" else "Another launcher"))
-        add(action("Make this my Home app", "Opens the system choice. Pick My Lists TV and choose Always.") { if (HomeSetup.isHome(this@SettingsActivity)) Toast.makeText(this@SettingsActivity, "My Lists TV is already your Home app.", Toast.LENGTH_SHORT).show() else requestHome() })
+        add(action("Make this my Home app", "Opens the system choice. Pick My Lists TV and choose Always.") { if (HomeSetup.isHome(this@SettingsActivity)) Toast.makeText(this@SettingsActivity, "My Lists TV is already your Home app.", Toast.LENGTH_SHORT).show() else HomeSetup.requestHome(this@SettingsActivity) })
         add(info("Home button fallback", if (HomeSetup.fallbackOn(this@SettingsActivity)) "On" else "Off"))
         add(action("Turn on the Home button fallback", "For TVs that keep their own launcher as Home. Opens the system accessibility page if needed. It only sees which app came forward.") {
             if (HomeSetup.fallbackOn(this@SettingsActivity)) Toast.makeText(this@SettingsActivity, "The Home button fallback is already on.", Toast.LENGTH_SHORT).show()
@@ -211,7 +194,7 @@ class SettingsActivity : Activity() {
         })
         add(action("Screensaver", "Pick My Lists TV backdrops as the screensaver in Android's settings.") {
             try { startActivity(Intent(Settings.ACTION_DREAM_SETTINGS)) } catch (_: Exception) { try { startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS)) } catch (_: Exception) { Toast.makeText(this@SettingsActivity, "This TV keeps its screensaver setting somewhere else.", Toast.LENGTH_LONG).show() } } })
-        add(action("Set up from a phone or computer", "Shows an address with the exact steps and commands for TVs that block the buttons above.") { setupPage() })
+        add(action("Set up from a phone or computer", "Shows an address with the exact steps and commands for TVs that block the buttons above.") { HomeSetup.phoneSteps(this@SettingsActivity) })
         add(header("Remote & Buttons"))
         add(toggle("Enable Button Mapper", "Intercept and run custom actions for configured remote buttons.", { Prefs.mapperOn }, { Prefs.mapperOn = it }))
         add(toggle("Customize Home Button", "When off, Home uses its factory jobs (single click: Home, double click: profile switcher).", { Prefs.homeCustom }, { Prefs.homeCustom = it }))

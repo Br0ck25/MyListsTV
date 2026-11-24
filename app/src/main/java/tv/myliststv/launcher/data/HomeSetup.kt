@@ -34,6 +34,25 @@ object HomeSetup {
             Settings.Secure.putString(c.contentResolver, "accessibility_enabled", "1")
     } catch (_: SecurityException) { false }
 
+    /** The system's own choice of Home app (Android 10 and up), or its Home settings page on older versions. */
+    fun requestHome(a: android.app.Activity) {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 29) a.startActivityForResult(a.getSystemService(android.app.role.RoleManager::class.java).createRequestRoleIntent(android.app.role.RoleManager.ROLE_HOME), 1)
+            else a.startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
+        } catch (_: Exception) {
+            try { a.startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) { android.widget.Toast.makeText(a, "This TV has no Home setting. Use the phone or computer steps.", android.widget.Toast.LENGTH_LONG).show() }
+        }
+    }
+
+    /** Shows the address of the phone page with the exact steps and commands, for TVs that block the switches on the TV itself. */
+    fun phoneSteps(a: android.app.Activity) {
+        val server = PhoneServer { _, done -> done("Nothing to add here.") }
+        server.start()
+        val address = server.address()?.let { "$it/setup" } ?: "Connect the TV to Wi-Fi first."
+        android.app.AlertDialog.Builder(a).setTitle("Open this on your phone").setMessage(address)
+            .setPositiveButton("Done", null).setOnDismissListener { server.stop() }.show()
+    }
+
     /** The commands to run from a computer, with this box's address filled in. */
     fun commands(ip: String): List<String> = listOf(
         "adb connect $ip:5555",
