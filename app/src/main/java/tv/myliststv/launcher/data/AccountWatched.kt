@@ -25,6 +25,30 @@ object AccountWatched {
         parse(sp().getString("data", "") ?: "")
     }
 
+    // Things taken off by hand. The account may not have applied the removal yet (or never does), and without this the check mark would come
+    // straight back with the next fetch. A mark is kept for two days, and dropped as soon as the account no longer lists the thing.
+    private const val KEEP_MS = 2 * 24 * 3600_000L
+    private fun removals(): JSONObject = try { JSONObject(sp().getString("removed", "{}") ?: "{}") } catch (_: Exception) { JSONObject() }
+    private fun setRemoval(key: String, on: Boolean) {
+        val r = removals(); if (on) r.put(key, System.currentTimeMillis()) else r.remove(key)
+        sp().edit().putString("removed", r.toString()).apply()
+    }
+
+    private fun applyRemovals() {
+        val r = removals(); val now = System.currentTimeMillis(); var changed = false
+        r.keys().asSequence().toList().forEach { k ->
+            val p = k.split('|')
+            val listed = when (p[0]) { "m" -> p[1] in movies; "s" -> shows.containsKey(p[1]); else -> shows[p[1]]?.episodes?.contains(p[2]) == true }
+            if (!listed || now - r.optLong(k) > KEEP_MS) { r.remove(k); changed = true; return@forEach }
+            when (p[0]) {
+                "m" -> movies = movies - p[1]
+                "s" -> shows = shows - p[1]
+                else -> shows[p[1]]?.let { s -> shows = shows + (p[1] to Show(false, s.episodes - p[2])) }
+            }
+        }
+        if (changed) sp().edit().putString("removed", r.toString()).apply()
+    }
+
     /** Reads an answer into memory. Anything unexpected leaves an empty record rather than failing. */
     internal fun parse(text: String): Boolean {
         movies = emptySet(); shows = emptyMap()
@@ -40,7 +64,7 @@ object AccountWatched {
                 val eps = s.optJSONArray("episodes")?.let { e -> (0 until e.length()).map { e.optString(it) }.toSet() } ?: emptySet()
                 m[id] = Show(s.optBoolean("complete"), eps)
             }
-            shows = m; true
+            shows = m; applyRemovals(); true
         } catch (_: Exception) { movies = emptySet(); shows = emptyMap(); false }
     }
 
@@ -63,6 +87,7 @@ object AccountWatched {
         val p = videoId.split(':'); if (p.size < 3) return
         load()
         val key = "${p[1]}:${p[2]}"
+        setRemoval("e|$metaId|$key", !watched)
         val old = shows[metaId]
         val eps = (old?.episodes ?: emptySet()).let { if (watched) it + key else it - key }
         shows = shows.toMutableMap().also { if (eps.isEmpty() && old?.complete != true && !watched) it.remove(metaId) else it[metaId] = Show(if (watched) old?.complete == true else false, eps) }
@@ -77,6 +102,7 @@ object AccountWatched {
     /** After a title is marked by hand, the box's copy of the account's list follows at once (the account is told too), so the check mark does not wait for the next fetch. */
     fun mark(metaId: String, movie: Boolean, watched: Boolean) {
         load()
+        setRemoval((if (movie) "m|" else "s|") + metaId, !watched)
         if (movie) movies = if (watched) movies + metaId else movies - metaId
         else shows = shows.toMutableMap().also { if (watched) it[metaId] = Show(true, it[metaId]?.episodes ?: emptySet()) else it.remove(metaId) }
         save()

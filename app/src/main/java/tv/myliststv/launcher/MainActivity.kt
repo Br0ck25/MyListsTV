@@ -302,9 +302,14 @@ class MainActivity : Activity() {
         setTextColor(Ui.DIM)
     }
 
+    /** Home, Movies and Series stay built for a few minutes, so going back to one is not a reload (and keeps its place). Anything that changes what they show clears them. */
+    private val pages = HashMap<Int, Pair<BrowseScreen, Long>>()
+    private val PAGE_KEEP_MS = 5 * 60_000L
+
     private fun select(i: Int, force: Boolean = false) {
         if (!ready) return
         if (i == current && !force) return
+        if (force) pages.clear()
         current = i
         tabViews.forEachIndexed { idx, v -> v.isSelected = navStyle != 0 && idx == i; if (!v.isFocused) v.setTextColor(if (idx == i) Ui.TEXT else Ui.DIM) }
         refreshRailTint()
@@ -314,9 +319,18 @@ class MainActivity : Activity() {
         showBackdrop(i in 0..4)
         when (i) {
             0, 1, 2 -> {
+                val kept = pages[i]
+                if (kept != null && System.currentTimeMillis() - kept.second < PAGE_KEEP_MS) {
+                    screen = kept.first; content.addView(kept.first.view)
+                    if (i == 0) kept.first.refreshContinue()   // what you watched meanwhile
+                    return
+                }
                 val s = BrowseScreen(this, type = when (i) { 1 -> "movie"; 2 -> "series"; else -> null }, withContinue = i == 0, withApps = i == 0,
                     onMeta = ::openMeta, onResume = ::resumeEntry, onApp = ::launch, onAppMenu = ::appMenu, onBackdrop = ::setBackdrop)
                 screen = s; content.addView(s.view); s.start()
+                pages[i] = s to System.currentTimeMillis()
+                // Only the two newest pages stay built (a small box has little memory to spare).
+                while (pages.size > 2) pages.minByOrNull { it.value.second }?.let { pages.remove(it.key) }
             }
             3 -> { val s = SearchScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start() }
             4 -> { val s = LibraryScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start() }
@@ -406,7 +420,7 @@ class MainActivity : Activity() {
     /** One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do. */
     private fun runHome(action: String) {
         when (action) {
-            "home" -> { if (current != 0) select(0, force = true); tabViews[0].requestFocus() }
+            "home" -> { if (current != 0) select(0); tabViews[0].requestFocus() }
             "movies", "series", "library", "apps", "search", "settings", "profiles" -> go(action)
             else -> ButtonMap.run(this, action)
         }
@@ -483,6 +497,8 @@ class MainActivity : Activity() {
                 val up = f.focusSearch(View.FOCUS_UP)
                 if (up != null && isIn(up, topBar)) { tabViews[current.coerceIn(0, tabViews.size - 1)].requestFocus(); return true }
             }
+            // Down from the top bar's pages goes to the first row's remembered card, as Up and Down do between rows.
+            if (navStyle == 0 && e.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && f != null && f in tabViews && ready && (screen as? BrowseScreen)?.enter() == true) return true
             // With a side bar, Up from the top row goes to the bell, search and settings at the top right (the one nearest across), not into the side bar.
             if (navStyle != 0 && e.keyCode == KeyEvent.KEYCODE_DPAD_UP && f != null && isInContent(f) && ready) {
                 val up = f.focusSearch(View.FOCUS_UP)

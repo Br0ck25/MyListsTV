@@ -156,6 +156,9 @@ class BrowseScreen(
     /** The account's watched list arrived: redraw the cards so their check marks show, without reloading any row. */
     fun refreshChecks() = list.changedAll()
 
+    /** Down from the tab bar lands on the first row's remembered card. False when the rows are not there yet (the default focus move then applies). */
+    fun enter() = list.enter()
+
     /** Hide from Home: the app leaves the apps row where it is, and the focus moves to its neighbour. Nothing else reloads and the page keeps its place. */
     fun hideApp(pkg: String): Boolean {
         val r = rows.indexOfFirst { it.title == "Your Apps" }.takeIf { it >= 0 } ?: return false

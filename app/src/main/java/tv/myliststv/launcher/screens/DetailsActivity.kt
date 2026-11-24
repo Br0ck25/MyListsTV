@@ -35,6 +35,7 @@ class DetailsActivity : Activity() {
     private lateinit var desc: TextView
     private lateinit var extras: TextView
     private lateinit var panel: LinearLayout
+    private lateinit var scroll: ScrollView
     private var episodesView: View? = null
     private var season = -1
     private var buttonsSig = ""
@@ -77,7 +78,7 @@ class DetailsActivity : Activity() {
         body.addView(hero, Ui.matchWrap())
         panel = Ui.vbox(c).apply { clipChildren = false }   // the episode strip draws a little outside its column: the ring and the grow-on-focus
         body.addView(panel, Ui.matchWrap())
-        val scroll = ScrollView(c).apply { addView(body); isFillViewport = true; isVerticalScrollBarEnabled = false }
+        scroll = ScrollView(c).apply { addView(body); isFillViewport = true; isVerticalScrollBarEnabled = false }
         frame.addView(scroll, FrameLayout.LayoutParams(-1, -1))
         // Coming back up onto the buttons shows the whole first screen again (the title and logo above them), not only the buttons.
         frame.viewTreeObserver.addOnGlobalFocusChangeListener { _, now -> if (now != null && now.parent === buttons) scroll.post { scroll.smoothScrollTo(0, 0) } }
@@ -173,9 +174,12 @@ class DetailsActivity : Activity() {
     /** Redraws just the episodes (another season, a changed tick) and puts focus back on [episode] in the strip, or else on the selected season's chip. */
     private fun refreshEpisodes(episode: Int = -1) {
         val old = episodesView ?: return
+        // Swapping the strip must not move the page: hold its height and its scroll place until the new one is laid out.
+        val keepY = scroll.scrollY; panel.minimumHeight = panel.height
         val at = panel.indexOfChild(old)
         val fresh = episodesPanel(); episodesView = fresh
         panel.removeViewAt(at); panel.addView(fresh, at)
+        scroll.post { scroll.scrollTo(0, keepY); panel.minimumHeight = 0 }
         if (episode >= 0) fresh.findViewWithTag<RecyclerView>("episodes")?.let { rv -> rv.scrollToPosition(episode); rv.post { rv.findViewHolderForAdapterPosition(episode)?.itemView?.requestFocus() } }
         else fresh.findViewWithTag<LinearLayout>("seasons")?.let { chips -> (0 until chips.childCount).map { chips.getChildAt(it) }.firstOrNull { it.isSelected }?.requestFocus() }
     }
@@ -231,10 +235,19 @@ class DetailsActivity : Activity() {
         val done = Watched.has(meta.id, v.id)
         Sheet.menu(this, "S${v.season} \u00b7 E${v.episode}", v.title, listOf(
             "Choose a source" to { openSources(v.id) },
-            (if (done) "Mark as unwatched" else "Mark as watched") to {
-                Watched.set(meta.id, v.id, !done); Progress.markWatched(meta.id, "series", v.season, v.episode, !done)
-                refreshEpisodes(meta.videos.filter { it.season == season }.indexOfFirst { it.id == v.id })
-            }))
+            (if (done) "Mark as unwatched" else "Mark as watched") to { setEpisodeWatched(v, !done) }))
+    }
+
+    /** Ticks or un-ticks one episode here and in the account, then redraws only what changed: its card, and the Play button (which names the next episode to watch). */
+    private fun setEpisodeWatched(v: Video, watched: Boolean) {
+        Watched.set(meta.id, v.id, watched); Progress.markWatched(meta.id, "series", v.season, v.episode, watched)
+        if (!watched) {
+            // "Next" must not stay on a later episode than the one just taken off.
+            val r = WatchStore.forMeta(meta.id)
+            if (r != null && meta.videos.indexOfFirst { it.id == r.videoId } > meta.videos.indexOfFirst { it.id == v.id }) WatchStore.remove(meta.id)
+        }
+        buttonsSig = ""; render()
+        refreshEpisodes(meta.videos.filter { it.season == season }.indexOfFirst { it.id == v.id })
     }
 
     /** Cast & Crew, labelled, under the episodes (or on its own for a movie). */
@@ -265,8 +278,7 @@ class DetailsActivity : Activity() {
         val resume = WatchStore.forMeta(meta.id)
         val cur = resume?.let { r -> episodes.firstOrNull { it.id == r.videoId } }
         if (cur != null && resume.fraction < 0.93f) return cur
-        val done = Watched.of(meta.id)
-        return episodes.firstOrNull { it.id !in done && (cur == null || episodes.indexOf(it) > episodes.indexOf(cur)) } ?: episodes.firstOrNull { it.id !in done } ?: episodes.firstOrNull()
+        return episodes.firstOrNull { !Watched.has(meta.id, it.id) && (cur == null || episodes.indexOf(it) > episodes.indexOf(cur)) } ?: episodes.firstOrNull { !Watched.has(meta.id, it.id) } ?: episodes.firstOrNull()
     }
 
     private fun playMain() = playVideo(mainVideoId())

@@ -26,6 +26,17 @@ class AccountWatchedTest {
         assertTrue(AccountWatched.episodeDone("tt1", "tt1:2:1"))
     }
 
+    @Test fun aCheckTakenOffByHandDoesNotComeBackWhileTheAccountStillListsIt() {
+        val answer = """{"ok":true,"movies":[],"shows":[{"id":"tt7","complete":false,"episodes":["1:1","1:2"]}]}"""
+        AccountWatched.parse(answer)
+        AccountWatched.markEpisode("tt7", "tt7:1:2", false)
+        AccountWatched.parse(answer)   // the next fetch: the account has not removed it yet
+        assertFalse(AccountWatched.episodeDone("tt7", "tt7:1:2")); assertTrue(AccountWatched.episodeDone("tt7", "tt7:1:1"))
+        AccountWatched.parse("""{"ok":true,"movies":[],"shows":[{"id":"tt7","complete":false,"episodes":["1:1"]}]}""")   // now it has
+        AccountWatched.markEpisode("tt7", "tt7:1:2", true)
+        assertTrue("marking it again works", AccountWatched.episodeDone("tt7", "tt7:1:2"))
+    }
+
     @Test fun badAnswersLeaveAnEmptyRecord() {
         assertFalse(AccountWatched.parse("not json")); assertFalse(AccountWatched.parse(""))
         assertFalse(AccountWatched.movieDone("tt9"))

@@ -302,6 +302,9 @@ class RowsList(
         return super.focusSearch(focused, direction)
     }
 
+    /** Moving down from the tabs: the first row's remembered card (its first card if none), not whichever card happens to sit under the tab. */
+    fun enter(): Boolean { val first = findViewHolderForAdapterPosition(0)?.itemView as? RowView ?: return false; return cardIn(first)?.requestFocus() == true }
+
     fun changed(i: Int) = adapter!!.notifyItemChanged(i)
     fun changedAll() = adapter!!.notifyDataSetChanged()
     fun inserted(i: Int) = adapter!!.notifyItemInserted(i)
