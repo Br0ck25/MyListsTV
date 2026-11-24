@@ -1,5 +1,6 @@
 package tv.myliststv.launcher.screens
 
+import tv.myliststv.launcher.R
 import tv.myliststv.launcher.services.*
 
 import android.app.Activity
@@ -55,8 +56,10 @@ class PlayerActivity : Activity() {
     private lateinit var panelList: LinearLayout
     private lateinit var errorBox: LinearLayout
     private lateinit var errorText: TextView
-    private lateinit var playBtn: TextView
-    private lateinit var speedBtn: TextView
+    private lateinit var playBtn: ImageView
+    private lateinit var topInfo: LinearLayout
+    private lateinit var clockText: TextView
+    private lateinit var endsText: TextView
 
     private var fallback: SourceFallback? = null
     private lateinit var current: StreamItem
@@ -112,23 +115,39 @@ class PlayerActivity : Activity() {
         titleText = Ui.text(c, "", 26f, Ui.TEXT, true, 1)
         subText = Ui.text(c, "", 13f, Ui.TEXT2, false, 1)
         bottom.addView(titleText); bottom.addView(subText, Ui.wrap().apply { topMargin = Ui.dp(c, 4) })
-        track = FrameLayout(c).apply { setBackgroundColor(Ui.TRACK) }
+        track = FrameLayout(c).apply { background = Ui.rounded(c, Ui.TRACK, Ui.R_PILL); clipToOutline = true }
         fill = View(c).apply { setBackgroundColor(Ui.ACCENT) }
         track.addView(fill, FrameLayout.LayoutParams(0, -1))
         bottom.addView(track, LinearLayout.LayoutParams(-1, Ui.dp(c, 5)).apply { topMargin = Ui.dp(c, 14) })
-        timeText = Ui.text(c, "0:00", 12f, Ui.DIM)
-        bottom.addView(timeText, Ui.wrap().apply { topMargin = Ui.dp(c, 6) })
-        controls = Ui.hbox(c, 8)
-        playBtn = Ui.button(c, "Pause") { togglePlay() }
-        controls.addView(playBtn)
-        if (PlaySession.meta!!.type == "series") controls.addView(Ui.button(c, "Next episode") { playNextEpisode(manual = true) })
-        controls.addView(Ui.button(c, "Subtitles") { openTrackPanel(C.TRACK_TYPE_TEXT) })
-        controls.addView(Ui.button(c, "Audio") { openTrackPanel(C.TRACK_TYPE_AUDIO) })
-        speedBtn = Ui.button(c, "Speed 1x") { openSpeed() }
-        controls.addView(Ui.button(c, "Sources") { openSources() }); controls.addView(speedBtn)
-        controls.addView(Ui.button(c, "Info") { openInfo() })
-        bottom.addView(controls, Ui.wrap().apply { topMargin = Ui.dp(c, 10) })
+        timeText = Ui.text(c, "0:00", 15f, Ui.TEXT2)
+        // Nuvio's bar: the round play button, then one icon for each job, and the time at the far right.
+        controls = Ui.hbox(c, 12).apply { gravity = Gravity.CENTER_VERTICAL }
+        val big = Ui.dp(c, 54); val small = Ui.dp(c, 44)
+        playBtn = ImageView(c).apply {
+            setImageResource(R.drawable.ic_pause); setColorFilter(Ui.BG)
+            val p = Ui.dp(c, 12); setPadding(p, p, p, p)
+            background = Ui.rounded(c, Ui.TEXT, Ui.R_PILL); foreground = Ui.focusBg(c, Ui.R_PILL, Ui.CLEAR)
+            isFocusable = true; isClickable = true; setOnClickListener { togglePlay() }
+        }
+        controls.addView(playBtn, LinearLayout.LayoutParams(big, big))
+        fun icon(res: Int, desc: String, run: () -> Unit) = controls.addView(Ui.iconButton(c, res, desc, run), LinearLayout.LayoutParams(small, small))
+        val series = PlaySession.meta!!.type == "series"
+        if (series) icon(R.drawable.ic_next, "Next episode") { playNextEpisode(manual = true) }
+        icon(R.drawable.ic_cc, "Subtitles") { openTrackPanel(C.TRACK_TYPE_TEXT) }
+        icon(R.drawable.ic_speed, "Playback speed") { openSpeed() }
+        icon(R.drawable.ic_audio, "Audio") { openTrackPanel(C.TRACK_TYPE_AUDIO) }
+        icon(R.drawable.ic_source, "Sources") { openSources() }
+        if (series) icon(R.drawable.ic_episodes, "Episodes") { openEpisodes() }
+        icon(R.drawable.ic_info, "Stream info") { openInfo() }
+        controls.addView(View(c), LinearLayout.LayoutParams(0, 1, 1f))
+        controls.addView(timeText)
+        bottom.addView(controls, Ui.matchWrap().apply { topMargin = Ui.dp(c, 10) })
         root.addView(bottom, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
+        // The time and when it will end, at the top right, with the bar.
+        clockText = Ui.text(c, "", 22f, Ui.TEXT, false).apply { gravity = Gravity.END }
+        endsText = Ui.text(c, "", 14f, Ui.TEXT2, false).apply { gravity = Gravity.END }
+        topInfo = Ui.vbox(c).apply { addView(clockText); addView(endsText, Ui.wrap().apply { topMargin = Ui.dp(c, 2); gravity = Gravity.END }) }
+        root.addView(topInfo, FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.END).apply { topMargin = Ui.dp(c, 28); rightMargin = Ui.dp(c, 48) })
 
         banner = Ui.text(c, "", 15f, Ui.TEXT, true).apply {
             setPadding(Ui.dp(c, 22), Ui.dp(c, 10), Ui.dp(c, 22), Ui.dp(c, 10)); visibility = View.GONE
@@ -141,7 +160,7 @@ class PlayerActivity : Activity() {
             background = Ui.rounded(c, Ui.ELEVATED, Ui.R_PILL)
         }
         root.addView(skipBtn, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END).apply { bottomMargin = Ui.dp(c, 48); rightMargin = Ui.dp(c, 48) })
-        bottom.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> placeSkip() }
+        bottom.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> placeSkip(); topInfo.visibility = bottom.visibility }
 
         slateBg = ImageView(c).apply { scaleType = ImageView.ScaleType.CENTER_CROP; visibility = View.GONE }
         root.addView(slateBg, FrameLayout.LayoutParams(-1, -1))
@@ -152,7 +171,7 @@ class PlayerActivity : Activity() {
         root.addView(slate, FrameLayout.LayoutParams(-1, -1))
 
         panel = Ui.vbox(c).apply {
-            setBackgroundColor(Ui.ELEVATED); visibility = View.GONE
+            background = Ui.rounded(c, Ui.SIDE_GLASS, Ui.R_DIALOG); visibility = View.GONE
             setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 12))
         }
         panelTitle = Ui.text(c, "", 22f, Ui.TEXT, true)
@@ -162,7 +181,7 @@ class PlayerActivity : Activity() {
         panel.addView(chipScroll, Ui.matchWrap().apply { topMargin = Ui.dp(c, 8) })
         panelList = Ui.vbox(c)
         panel.addView(ScrollView(c).apply { addView(panelList) }, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = Ui.dp(c, 8) })
-        root.addView(panel, FrameLayout.LayoutParams(Ui.dp(c, 340), -1, Gravity.END))
+        root.addView(panel, FrameLayout.LayoutParams(Ui.dp(c, 360), -1, Gravity.END).apply { setMargins(0, Ui.dp(c, 16), Ui.dp(c, 16), Ui.dp(c, 16)) })
 
         errorBox = Ui.vbox(c).apply { gravity = Gravity.CENTER; setBackgroundColor(Ui.OVERLAY); visibility = View.GONE; setPadding(Ui.dp(c, 80), 0, Ui.dp(c, 80), 0) }
         errorBox.addView(Ui.text(c, "Playback error", 26f, Ui.TEXT, true))
@@ -219,7 +238,7 @@ class PlayerActivity : Activity() {
                 if (state == Player.STATE_READY && !gotFirstFrame && !playerHasVideo()) onFirstFrame()
             }
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                playBtn.text = if (isPlaying) "Pause" else "Play"
+                playBtn.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
                 if (!isPlaying) showControls() else scheduleHide()
             }
             override fun onPlayerError(error: PlaybackException) { onError(error) }
@@ -362,10 +381,16 @@ class PlayerActivity : Activity() {
     }
 
     private fun playNextEpisode(manual: Boolean) {
+        val m0 = PlaySession.meta!!
+        val idx0 = m0.videos.indexOfFirst { it.id == PlaySession.videoId }
+        val next0 = if (idx0 >= 0) m0.videos.drop(idx0 + 1).firstOrNull { it.season > 0 || PlaySession.season == 0 } else null
+        if (next0 == null) { if (manual) bannerShow("That was the last episode.") else finish(); return }
+        playEpisode(next0)
+    }
+
+    /** Plays [next] with the best source, preferring the one that played the last episode (same binge group, else the same addon). */
+    private fun playEpisode(next: Video) {
         val m = PlaySession.meta!!
-        val idx = m.videos.indexOfFirst { it.id == PlaySession.videoId }
-        val next = if (idx >= 0) m.videos.drop(idx + 1).firstOrNull { it.season > 0 || PlaySession.season == 0 } else null
-        if (next == null) { if (manual) bannerShow("That was the last episode.") else finish(); return }
         saveProgress(force = true)
         showSlate("Next: S${next.season} · E${next.episode}  ${next.title}\nFinding the best source…")
         val prevGroup = current.bingeGroup; val prevAddon = current.addonUrl
@@ -502,11 +527,29 @@ class PlayerActivity : Activity() {
         panelList.getChildAt(0)?.requestFocus()
     }
 
+    /** Every episode of the show, by season; OK plays that one (with the best source), the one playing now has a tick. */
+    private fun openEpisodes() {
+        val m = PlaySession.meta!!
+        openPanel("Episodes")
+        val seasons = m.videos.map { it.season }.distinct().sorted()
+        var shown = if (PlaySession.season in seasons) PlaySession.season else seasons.firstOrNull() ?: 0
+        fun fillList() {
+            panelChips.removeAllViews(); panelList.removeAllViews()
+            seasons.forEach { s -> panelChips.addView(chip(if (s == 0) "Specials" else "Season $s") { shown = s; fillList() }.also { it.isSelected = s == shown }) }
+            m.videos.filter { it.season == shown }.forEach { v ->
+                val now = v.id == PlaySession.videoId
+                panelList.addView(item("E${v.episode}  ${v.title}", null, if (now) "Playing" else null) { closePanel(); if (!now) playEpisode(v) })
+            }
+            (0 until panelList.childCount).map { panelList.getChildAt(it) }.firstOrNull()?.requestFocus()
+        }
+        fillList()
+    }
+
     private fun openSpeed() {
         openPanel("Playback speed")
         speeds.forEachIndexed { i, sp ->
             panelList.addView(item("${sp}x", null, if (i == speedIdx) "Selected" else null) {
-                speedIdx = i; player.setPlaybackSpeed(sp); speedBtn.text = "Speed ${sp}x"; closePanel() })
+                speedIdx = i; player.setPlaybackSpeed(sp); closePanel(); bannerShow(if (sp == 1f) "Normal speed" else "Speed ${sp}x") })
         }
         panelList.getChildAt(speedIdx)?.requestFocus()
     }
@@ -576,6 +619,9 @@ class PlayerActivity : Activity() {
     }
 
     private fun updateProgress() {
+        val now = System.currentTimeMillis(); val fmtT = android.text.format.DateFormat.getTimeFormat(this)
+        clockText.text = fmtT.format(java.util.Date(now))
+        player.duration.takeIf { it > 0 }?.let { endsText.text = "Ends at " + fmtT.format(java.util.Date(now + ((it - player.currentPosition) / player.playbackParameters.speed).toLong())) }
         updateSkip()
         val dur = player.duration
         val pos = player.currentPosition

@@ -532,60 +532,62 @@ Find a symbol with grep on this file, then read only that file around the line n
    340   fun onResume()  - Coming back from the player: the tick and the Next button move on.
    342   fun onDestroy()
 
-## screens/PlayerActivity.kt (673 lines) - Full-screen player.
-    35 class PlayerActivity  - Full-screen player.
-    82   fun onCreate(savedInstanceState: Bundle?)
-    97   fun buildUi()
-   183   fun refreshTitle()
-   196   fun buildPlayer()
-   230   fun playerHasVideo()
-   233   fun begin(s: StreamItem, pos: Long, msg: String)  - Starts a stream for a new video: asks subtitle addons first (3 s at most), then plays.
-   240   fun subMime(url: String)
-   246   fun startStream(s: StreamItem, positionMs: Long, message: String)
-   268   fun onFirstFrame()
-   279   fun onStartupTimeout()
-   284   fun onError(e: PlaybackException)
-   299   fun failed(reason: String, http: Int?, kind: PlayErrors.Kind)  - One place for every failure: refresh an expired link, else try the next source, else show the error screen.
-   317   fun refreshLink(positionMs: Long)  - Fetches the same source again from its addon (it may hand out a fresh link) and resumes where it stopped.
-   337   fun onEnded()
-   345   fun upNext()  - When an episode ends: "Next episode in 5" with OK to start now and Back to stop.
-   359   fun cancelCountdown(playNow: Boolean)
-   364   fun playNextEpisode(manual: Boolean)
-   390   fun panelOpen()
-   391   fun errorOpen()
-   393   fun openPanel(title: String)
-   401   fun closePanel()
-   407   fun item(label: String, sub: String?, tag: String?, tagColor: Int = Ui.GOOD, onC
-   422   fun openSources()
-   429   fun renderSources()
-   450   fun chip(label: String, onClick: ()
-   452   fun reloadSources()
-   467   fun switchTo(s: StreamItem)  - Manual switch: keeps the viewer's place, and the app stops choosing for them.
-   477   fun openTrackPanel(type: Int)
-   505   fun openSpeed()
-   514   fun openInfo()
-   525   fun openExternal()
-   534   fun showSlate(msg: String)  - The loading screen shows the title's own backdrop behind a dark fade.
-   540   fun hideSlate()
-   541   fun showError(msg: String)
-   542   fun hideError()
-   544   fun bannerShow(text: String)
-   550   fun showControls()
-   551   fun scheduleHide()
-   553   fun fmt(ms: Long)
-   555   fun togglePlay()
-   558   fun skipTarget()  - The segment under the playhead, or null; also what the skip button says and does.
-   561   fun placeSkip()  - The skip button sits just above the control bar while it shows, and low in the corner while it is hidden.
-   567   fun updateSkip()
-   574   fun doSkip(s: Segments.Seg)
-   578   fun updateProgress()
-   590   fun saveProgress(force: Boolean, ended: Boolean = false)
-   608   fun dispatchKeyEvent(e: KeyEvent)
-   638   fun seekStep(e: KeyEvent, dir: Int)  - Holding the key seeks faster: 10 s, then 20 s, then 40 s per step.
-   643   fun seekBy(deltaMs: Long)
-   650   fun onBackPressed()
-   659   fun onStop()
-   666   fun onDestroy()
+## screens/PlayerActivity.kt (719 lines) - Full-screen player.
+    36 class PlayerActivity  - Full-screen player.
+    85   fun onCreate(savedInstanceState: Bundle?)
+   100   fun buildUi()
+   202   fun refreshTitle()
+   215   fun buildPlayer()
+   249   fun playerHasVideo()
+   252   fun begin(s: StreamItem, pos: Long, msg: String)  - Starts a stream for a new video: asks subtitle addons first (3 s at most), then plays.
+   259   fun subMime(url: String)
+   265   fun startStream(s: StreamItem, positionMs: Long, message: String)
+   287   fun onFirstFrame()
+   298   fun onStartupTimeout()
+   303   fun onError(e: PlaybackException)
+   318   fun failed(reason: String, http: Int?, kind: PlayErrors.Kind)  - One place for every failure: refresh an expired link, else try the next source, else show the error screen.
+   336   fun refreshLink(positionMs: Long)  - Fetches the same source again from its addon (it may hand out a fresh link) and resumes where it stopped.
+   356   fun onEnded()
+   364   fun upNext()  - When an episode ends: "Next episode in 5" with OK to start now and Back to stop.
+   378   fun cancelCountdown(playNow: Boolean)
+   383   fun playNextEpisode(manual: Boolean)
+   392   fun playEpisode(next: Video)  - Plays [next] with the best source, preferring the one that played the last episode (same binge group, else the
+   415   fun panelOpen()
+   416   fun errorOpen()
+   418   fun openPanel(title: String)
+   426   fun closePanel()
+   432   fun item(label: String, sub: String?, tag: String?, tagColor: Int = Ui.GOOD, onC
+   447   fun openSources()
+   454   fun renderSources()
+   475   fun chip(label: String, onClick: ()
+   477   fun reloadSources()
+   492   fun switchTo(s: StreamItem)  - Manual switch: keeps the viewer's place, and the app stops choosing for them.
+   502   fun openTrackPanel(type: Int)
+   531   fun openEpisodes()  - Every episode of the show, by season; OK plays that one (with the best source), the one playing now has a tick
+   548   fun openSpeed()
+   557   fun openInfo()
+   568   fun openExternal()
+   577   fun showSlate(msg: String)  - The loading screen shows the title's own backdrop behind a dark fade.
+   583   fun hideSlate()
+   584   fun showError(msg: String)
+   585   fun hideError()
+   587   fun bannerShow(text: String)
+   593   fun showControls()
+   594   fun scheduleHide()
+   596   fun fmt(ms: Long)
+   598   fun togglePlay()
+   601   fun skipTarget()  - The segment under the playhead, or null; also what the skip button says and does.
+   604   fun placeSkip()  - The skip button sits just above the control bar while it shows, and low in the corner while it is hidden.
+   610   fun updateSkip()
+   617   fun doSkip(s: Segments.Seg)
+   621   fun updateProgress()
+   636   fun saveProgress(force: Boolean, ended: Boolean = false)
+   654   fun dispatchKeyEvent(e: KeyEvent)
+   684   fun seekStep(e: KeyEvent, dir: Int)  - Holding the key seeks faster: 10 s, then 20 s, then 40 s per step.
+   689   fun seekBy(deltaMs: Long)
+   696   fun onBackPressed()
+   705   fun onStop()
+   712   fun onDestroy()
 
 ## screens/SettingsActivity.kt (530 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     27 class SettingsActivity  - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
@@ -851,19 +853,24 @@ Find a symbol with grep on this file, then read only that file around the line n
   res/drawable/dialog_item.xml
   res/drawable/ic_add.xml
   res/drawable/ic_apps.xml
+  res/drawable/ic_audio.xml
   res/drawable/ic_back.xml
   res/drawable/ic_bell.xml
   res/drawable/ic_bookmark.xml
+  res/drawable/ic_cc.xml
   res/drawable/ic_check.xml
   res/drawable/ic_circle.xml
   res/drawable/ic_close.xml
   res/drawable/ic_compass.xml
+  res/drawable/ic_episodes.xml
   res/drawable/ic_home.xml
   res/drawable/ic_info.xml
   res/drawable/ic_layout.xml
   res/drawable/ic_list.xml
   res/drawable/ic_menu.xml
   res/drawable/ic_mic.xml
+  res/drawable/ic_next.xml
+  res/drawable/ic_pause.xml
   res/drawable/ic_people.xml
   res/drawable/ic_person.xml
   res/drawable/ic_play.xml
@@ -873,6 +880,8 @@ Find a symbol with grep on this file, then read only that file around the line n
   res/drawable/ic_restore.xml
   res/drawable/ic_search.xml
   res/drawable/ic_settings.xml
+  res/drawable/ic_source.xml
+  res/drawable/ic_speed.xml
   res/drawable/ic_trailer.xml
   res/drawable/ic_tv.xml
   res/drawable/ic_wrench.xml
