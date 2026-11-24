@@ -247,7 +247,7 @@ class BrowseScreen(
                     }
                 }
             }
-            is AppEntry -> { heroTitle.text = p.label; heroMeta.text = "Installed app"; heroDesc.text = "Press OK to open." }
+            is AppEntry -> { onBackdrop(""); heroTitle.text = p.label; heroMeta.text = "Installed app"; heroDesc.text = "Press OK to open." }
         }
     }
 }

@@ -13,6 +13,9 @@ object Prefs {
     @Volatile var epoch = 0
         private set
 
+    /** Tells Home to rebuild when it is next shown, for a change that is not a saved setting (a picked wallpaper or icon). */
+    fun bump() { epoch++ }
+
     fun init(c: Context) {
         appContext = c.applicationContext; sp = c.getSharedPreferences("settings", Context.MODE_PRIVATE)
         sp.getString("backupCode", null)?.let { if (Secure.needsWrap(it)) sp.edit().putString("backupCode", Secure.wrap(it)).apply() }    // wraps a code saved before the Keystore was used

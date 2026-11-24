@@ -158,15 +158,28 @@ class MainActivity : Activity() {
 
     /** Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every picture. A null leaves the current one. */
     private fun setBackdrop(url: String?) {
+        if (url == "") { if (Pictures.wallpaperFile(this).exists()) idleBackdrop(); return }    // "" means no title: show the wallpaper
         if (url == null || url == backdropUrl) return
         backdropJob?.let { handler.removeCallbacks(it) }
         backdropJob = Runnable { backdropUrl = url; ImageLoader.load(bg, url, Ui.dp(this, if (Prefs.lite()) 640 else 960), Ui.dp(this, if (Prefs.lite()) 360 else 540), fade = !Prefs.lite()) }.also { handler.postDelayed(it, 250) }
     }
 
     private fun showBackdrop(on: Boolean) {
-        val v = if (on) View.VISIBLE else View.GONE
+        val wall = Pictures.wallpaperFile(this).exists()
+        val v = if (on || wall) View.VISIBLE else View.GONE
         bg.visibility = v; scrims.forEach { it.visibility = v }
         if (!on) { backdropJob?.let { handler.removeCallbacks(it) }; backdropUrl = null; bg.setImageDrawable(null) }
+        if (wall && bg.drawable == null) idleBackdrop()
+    }
+
+    /** No title is highlighted: the owner's wallpaper, if they picked one. */
+    private fun idleBackdrop() {
+        backdropJob?.let { handler.removeCallbacks(it) }; backdropUrl = null
+        val f = Pictures.wallpaperFile(this).takeIf { it.exists() } ?: return
+        Http.background {
+            val bmp = try { android.graphics.BitmapFactory.decodeFile(f.path, android.graphics.BitmapFactory.Options().apply { inPreferredConfig = android.graphics.Bitmap.Config.RGB_565 }) } catch (_: Throwable) { null }
+            Http.post { if (bmp != null && backdropUrl == null) bg.setImageBitmap(bmp) }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -414,7 +427,7 @@ class MainActivity : Activity() {
         }
         if (::bellBadge.isInitialized) updateBell()
         if (::profileName.isInitialized) updateProfile()
-        if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; dropPages(); if (ready && current >= 0) select(current, force = true) }
+        if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; dropPages(); bg.setImageDrawable(null); backdropUrl = null; if (ready && current >= 0) select(current, force = true) }
         if (AddonStore.needsRefresh) { AddonStore.needsRefresh = false; AddonStore.load { dropPages(); select(current.coerceAtLeast(0), force = true) } }
         (screen as? BrowseScreen)?.refreshContinue()
         // Back from a details page: nothing is focused now, so put the focus where it was (otherwise Down lands on whatever sits under the pointer).

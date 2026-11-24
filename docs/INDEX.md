@@ -24,6 +24,7 @@ Start here, then `grep -n <name> docs/MAP.md` for the exact file and line. Rules
 | Profiles, kids filter, watch history | `data/Profiles.kt`, `data/WatchStore.kt` |
 | Remote button mapper, Home button | `data/ButtonMap.kt`, `services/HomeButtonService.kt`, `data/HomeSetup.kt` |
 | Gear panel: Inputs (HDMI), Android settings shortcuts | `ui/SystemPanel.kt`, `data/SystemLinks.kt`, `MainActivity.kt` (`showSettingsPanel`) |
+| Wallpaper, picking a picture from the device | `data/Pictures.kt`, `ui/PicturePicker.kt`, `MainActivity.kt` (`idleBackdrop`), `screens/SettingsActivity.kt` (`wallpaperMenu`) |
 | Notifications bell | `services/NotificationsService.kt` (`Notices`), `MainActivity.kt` (`showNotices`) |
 | Screensaver | `services/BackdropDream.kt` |
 | Watch Next row on the system home | `data/WatchNext.kt` |

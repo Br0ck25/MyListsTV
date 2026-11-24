@@ -62,6 +62,18 @@ class SettingsActivity : Activity() {
 
     override fun onResume() { super.onResume(); if (::rail.isInitialized) refresh() }
 
+    private val pictures = PicturePicker(this, 41)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) { super.onActivityResult(requestCode, resultCode, data); pictures.result(requestCode, resultCode, data) }
+
+    private fun wallpaperMenu() {
+        val items = ArrayList<Pair<String, () -> Unit>>()
+        items += "Choose a picture" to { pictures.pick { uri ->
+            Http.background { val ok = Pictures.save(this, uri, Pictures.wallpaperFile(this), 1280, 720, png = false); Http.post { if (ok) Prefs.bump(); Pop.toast(this, if (ok) "Wallpaper set" else "That file is not a picture this TV can read.", !ok) } }
+        } }
+        if (Pictures.wallpaperFile(this).exists()) items += "Remove wallpaper" to { Pictures.wallpaperFile(this).delete(); Prefs.bump(); Pop.toast(this, "Wallpaper removed") }
+        Sheet.menu(this, "Wallpaper", "Shown when no movie or show is highlighted.", items)
+    }
+
     private fun androidSettings() = Sheet.menu(this, "Android settings", "Opens the TV's own settings", SystemLinks.pages.map { (name, action) -> name to { SystemLinks.open(this, action) } })
 
     private fun testSources() {
@@ -143,6 +155,7 @@ class SettingsActivity : Activity() {
         add(toggle("Landscape posters", "Show catalog items as landscape pictures instead of tall posters.", { Prefs.horizontalPosters }, { Prefs.horizontalPosters = it }))
         add(choice("Navigation", "Where Home, Movies, Series and the other pages are listed. Hidden opens with Left.", listOf(0, 1, 2), { Prefs.navStyle }, { Prefs.navStyle = it }, { listOf("Top bar", "Side bar", "Hidden side bar")[it] }))
         add(choice("Card size", "Posters, wide cards and app tiles grow or shrink together.", listOf(-1, 0, 1, 2, 3), { Prefs.cardSize }, { Prefs.cardSize = it }, { listOf("Extra small", "Small", "Medium", "Large", "Extra large")[it + 1] }))
+        add(action("Wallpaper", "Your own picture behind Home when no title is highlighted (apps, the Apps page). Pick one from the TV's files.") { wallpaperMenu() })
         add(card("Home rows"))
         add(action("Arrange Home rows", "Move lists and the apps row up or down, or hide them from Home.") { arrange("rows") })
         add(action("Arrange apps row", "Reorder the apps on Home or hide some. The Apps tab still shows all of them.") { arrange("apps") })
