@@ -25,6 +25,7 @@ Start here, then `grep -n <name> docs/MAP.md` for the exact file and line. Rules
 | Remote button mapper, Home button | `data/ButtonMap.kt`, `services/HomeButtonService.kt`, `data/HomeSetup.kt` |
 | Gear panel: Inputs (HDMI), Android settings shortcuts | `ui/SystemPanel.kt`, `data/SystemLinks.kt`, `MainActivity.kt` (`showSettingsPanel`) |
 | Wallpaper, picking a picture from the device | `data/Pictures.kt`, `ui/PicturePicker.kt`, `MainActivity.kt` (`idleBackdrop`), `screens/SettingsActivity.kt` (`wallpaperMenu`) |
+| Icon packs, a picked icon for one app, rename app | `data/IconPacks.kt`, `AppRepository.kt` (`look`), `data/Pictures.kt`, `MainActivity.kt` (`appMenu`, `iconMenu`), `data/Prefs.kt` (`appNames`, `iconPack`) |
 | Notifications bell | `services/NotificationsService.kt` (`Notices`), `MainActivity.kt` (`showNotices`) |
 | Screensaver | `services/BackdropDream.kt` |
 | Watch Next row on the system home | `data/WatchNext.kt` |

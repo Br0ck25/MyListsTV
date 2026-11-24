@@ -397,9 +397,25 @@ class MainActivity : Activity() {
             items += "Hide from Home" to { Prefs.appHidden = Prefs.appHidden + pkg; if ((screen as? BrowseScreen)?.hideApp(pkg) != true) select(current, force = true) }
         }
         items += "Rename" to { Sheet.ask(this, "Rename app", "Name", "Save", "Leave it empty to use the app's own name.", initial = a.label) { Prefs.setAppName(pkg, it); select(current, force = true) } }
+        items += "Change icon" to { iconMenu(a) }
         items += "App info" to { system(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg"))) }
         items += "Uninstall" to { system(Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg"))) }
         Sheet.menu(this, a.label, "Installed app", items)
+    }
+
+    private val pictures = PicturePicker(this, 42)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) { super.onActivityResult(requestCode, resultCode, data); pictures.result(requestCode, resultCode, data) }
+
+    /** A picture of the owner's own for one app (an icon pack changes them all, in Settings). */
+    private fun iconMenu(a: AppEntry) {
+        val file = Pictures.iconFile(this, a.component.packageName)
+        val redraw = { dropPages(); select(current, force = true) }
+        val items = ArrayList<Pair<String, () -> Unit>>()
+        items += "Choose a picture" to { pictures.pick { uri ->
+            Http.background { val ok = Pictures.save(this, uri, file, 480, 270, png = true); Http.post { if (ok) redraw() else Pop.toast(this, "That file is not a picture this TV can read.", true) } }
+        } }
+        if (file.exists()) items += "Back to the usual icon" to { file.delete(); redraw() }
+        Sheet.menu(this, "Icon for ${a.label}", "Pick any picture on the TV. Square ones look best; wide ones fill the whole card.", items)
     }
 
     private var seenEpoch = Prefs.epoch

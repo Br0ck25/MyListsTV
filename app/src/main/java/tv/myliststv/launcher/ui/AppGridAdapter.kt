@@ -39,7 +39,7 @@ class AppGridAdapter(
     override fun onBindViewHolder(h: H, position: Int) {
         val a = apps[position]
         h.name.text = a.label
-        val (art, banner) = AppRepository.look(act.packageManager, a.component)
+        val (art, banner) = AppRepository.look(act, a.component)
         h.img.setImageDrawable(art)
         h.img.scaleType = if (banner) ImageView.ScaleType.CENTER_CROP else ImageView.ScaleType.FIT_CENTER
         h.img.setPadding(if (banner) 0 else Ui.dp(act, 20), if (banner) 0 else Ui.dp(act, 12), if (banner) 0 else Ui.dp(act, 20), if (banner) 0 else Ui.dp(act, 12))

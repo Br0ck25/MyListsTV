@@ -4,6 +4,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import tv.myliststv.launcher.data.IconPacks
+import tv.myliststv.launcher.data.Pictures
 import tv.myliststv.launcher.data.Prefs
 
 /**
@@ -13,6 +15,7 @@ import tv.myliststv.launcher.data.Prefs
  */
 object AppRepository {
     fun load(context: Context): List<AppEntry> {
+        IconPacks.prepare(context)
         val pm = context.packageManager
         val own = context.packageName
         val tv = query(pm, Intent.CATEGORY_LEANBACK_LAUNCHER, sideloaded = false)
@@ -31,8 +34,12 @@ object AppRepository {
         return load(context).filter { it.component.packageName !in hidden }.sortedBy { order.indexOf(it.component.packageName).let { i -> if (i < 0) Int.MAX_VALUE else i } }
     }
 
-    /** What to draw for an app: its TV banner if it has one (a wide picture), else its icon. */
-    fun look(pm: PackageManager, c: ComponentName): Pair<android.graphics.drawable.Drawable?, Boolean> {
+    /** What to draw for an app: the picture the owner chose for it, else the icon pack's, else its TV banner if it has one (a wide picture), else its icon. */
+    fun look(ctx: Context, c: ComponentName): Pair<android.graphics.drawable.Drawable?, Boolean> {
+        val own = Pictures.iconFile(ctx, c.packageName)
+        if (own.exists()) android.graphics.BitmapFactory.decodeFile(own.path)?.let { return android.graphics.drawable.BitmapDrawable(ctx.resources, it) to (it.width > it.height * 1.3) }
+        IconPacks.drawable(c)?.let { return it to false }
+        val pm = ctx.packageManager
         val banner = try { pm.getActivityBanner(c) } catch (_: Exception) { null }
         if (banner != null) return banner to true
         return (try { pm.getActivityIcon(c) } catch (_: Exception) { null }) to false

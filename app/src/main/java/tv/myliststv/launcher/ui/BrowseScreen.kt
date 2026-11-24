@@ -96,7 +96,7 @@ class BrowseScreen(
                 val apps = AppRepository.forHome(act)
                 Http.post {
                     val row = RowModel("Your Apps", "Installed", CardKind.APP, apps.map { a ->
-                        AppRepository.look(act.packageManager, a.component).let { (icon, banner) -> CardModel(a.label, null, payload = a, icon = icon, banner = banner) }
+                        AppRepository.look(act, a.component).let { (icon, banner) -> CardModel(a.label, null, payload = a, icon = icon, banner = banner) }
                     })
                     rows += row
                     rows.sortBy { Prefs.homeRank(it.title) }

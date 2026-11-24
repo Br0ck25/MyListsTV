@@ -94,6 +94,9 @@ object Prefs {
     var appOrder: List<String> get() = strings("appOrder"); set(v) = putStrings("appOrder", v)
     var appHidden: List<String> get() = strings("appHidden"); set(v) = putStrings("appHidden", v)
 
+    /** The package of the icon pack in use, or empty for the apps' own icons. */
+    var iconPack: String get() = sp.getString("iconPack", "") ?: ""; set(v) { sp.edit().putString("iconPack", v).apply(); epoch++ }
+
     /** The names the owner gave apps, by package. */
     val appNames: Map<String, String> get() = strings("appNames").mapNotNull { l -> l.split('\t', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] } }.toMap()
     /** Names an app; a blank name puts its own name back. */

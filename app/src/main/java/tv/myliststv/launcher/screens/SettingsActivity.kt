@@ -155,6 +155,9 @@ class SettingsActivity : Activity() {
         add(toggle("Landscape posters", "Show catalog items as landscape pictures instead of tall posters.", { Prefs.horizontalPosters }, { Prefs.horizontalPosters = it }))
         add(choice("Navigation", "Where Home, Movies, Series and the other pages are listed. Hidden opens with Left.", listOf(0, 1, 2), { Prefs.navStyle }, { Prefs.navStyle = it }, { listOf("Top bar", "Side bar", "Hidden side bar")[it] }))
         add(choice("Card size", "Posters, wide cards and app tiles grow or shrink together.", listOf(-1, 0, 1, 2, 3), { Prefs.cardSize }, { Prefs.cardSize = it }, { listOf("Extra small", "Small", "Medium", "Large", "Extra large")[it + 1] }))
+        IconPacks.installed(this@SettingsActivity).let { packs ->
+            add(choice("Icon pack", if (packs.isEmpty()) "Install an icon pack (Nova, ADW or Apex format) from the Play Store, then pick it here." else "Changes the icon of every app it covers. Hold OK on an app to change just that one.", listOf("") + packs.map { it.pkg }, { Prefs.iconPack }, { Prefs.iconPack = it }, { p -> packs.firstOrNull { it.pkg == p }?.label ?: "Default" }))
+        }
         add(action("Wallpaper", "Your own picture behind Home when no title is highlighted (apps, the Apps page). Pick one from the TV's files.") { wallpaperMenu() })
         add(card("Home rows"))
         add(action("Arrange Home rows", "Move lists and the apps row up or down, or hide them from Home.") { arrange("rows") })
