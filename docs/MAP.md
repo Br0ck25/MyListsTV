@@ -67,21 +67,21 @@ Find a symbol with grep on this file, then read only that file around the line n
    582   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
    583   fun setTextColor(color: Int)
 
-## data/AccountWatched.kt (127 lines) - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
+## data/AccountWatched.kt (131 lines) - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
     12 object AccountWatched  - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
-    19   fun sp()
-    21   fun load()
-    31   fun removals()
-    32   fun setRemoval(key: String, on: Boolean)
-    37   fun applyRemovals()
-    53   fun parse(text: String)  - Reads an answer into memory.
-    71   fun movieDone(id: String)
-    72   fun showDone(id: String)
-    78   fun episodeDone(metaId: String, videoId: String)  - [videoId] is "tt123:1:2".
-    86   fun markEpisode(metaId: String, videoId: String, watched: Boolean)  - An episode marked by hand: the box's copy follows at once.
-    97   fun save()
-   103   fun mark(metaId: String, movie: Boolean, watched: Boolean)  - After a title is marked by hand, the box's copy of the account's list follows at once (the account is told too
-   112   fun pull(changed: ()  - Fetches the account's list.
+    20   fun sp()
+    22   fun load()
+    33   fun removals()
+    34   fun setRemoval(key: String, on: Boolean)
+    40   fun applyRemovals(prune: Boolean)  - [prune]: the answer is a fresh one from the account, so a removal it no longer lists is done and is forgotten.
+    57   fun parse(text: String, prune: Boolean = false)  - Reads an answer into memory.
+    75   fun movieDone(id: String)
+    76   fun showDone(id: String)
+    82   fun episodeDone(metaId: String, videoId: String)  - [videoId] is "tt123:1:2".
+    90   fun markEpisode(metaId: String, videoId: String, watched: Boolean)  - An episode marked by hand: the box's copy follows at once.
+   101   fun save()
+   107   fun mark(metaId: String, movie: Boolean, watched: Boolean)  - After a title is marked by hand, the box's copy of the account's list follows at once (the account is told too
+   116   fun pull(changed: ()  - Fetches the account's list.
 
 ## data/AddonStore.kt (127 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
@@ -523,7 +523,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    112   fun persist()
    115   fun onBackPressed()
 
-## screens/DetailsActivity.kt (417 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
+## screens/DetailsActivity.kt (415 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     25 class DetailsActivity  - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     41   fun reveal()
     51   fun onCreate(savedInstanceState: Bundle?)
@@ -542,22 +542,23 @@ Find a symbol with grep on this file, then read only that file around the line n
    244   fun episodeBadge(v: Video)  - "EPISODE 6" with its air date: "Nov 12, 2026" once aired, "AIRS Nov 19, 2026" before.
    251   fun episodeMenu(v: Video)  - Hold OK on an episode: choose a source, or mark it watched or not.
    259   fun setEpisodeWatched(v: Video, watched: Boolean)  - Ticks or un-ticks one episode here and in the account, then redraws only what changed: its card, and the Play 
-   280   fun castSection()  - Cast & Crew, labelled, under the episodes (or on its own for a movie).
-   286   fun openTrailer(id: String)  - Plays the trailer in the app (TrailerActivity), which hands over to the YouTube app only when YouTube will not
-   288   fun toggleWatched(watched: Boolean)
-   298   fun mainVideoId()  - The episode to play from the main button: where the viewer left off, else the first one.
-   301   fun mainVideo()  - Series: the episode being watched, else the first one not finished yet, else the first.
-   310   fun playMain()
-   311   fun sourcesMain()
-   313   fun videoFor(id: String)
-   316   fun playVideo(videoId: String)  - Finds streams, picks the best, and starts the player.
-   346   fun openSources(videoId: String)
-   350   fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: Stre
-   362   fun noStreams(videoId: String, statuses: List<StreamResolver.AddonStatus>)  - Says why nothing played and offers the next step: add an addon when there is none, or try again when they answ
-   371   fun showBusy(msg: String)
-   376   fun dismissBusy()
-   379   fun onResume()  - Coming back from the player: the tick and the Next button move on.
-   386   fun onDestroy()
+   274   fun castSection()  - Cast & Crew, labelled, under the episodes (or on its own for a movie).
+   280   fun openTrailer(id: String)  - Plays the trailer in the app (TrailerActivity), which hands over to the YouTube app only when YouTube will not
+   282   fun toggleWatched(watched: Boolean)
+   292   fun mainVideoId()  - The episode to play from the main button: where the viewer left off, else the first one.
+   295   fun firstUnwatched()  - The first episode (not a special) that has not been watched, here or on the account.
+   298   fun mainVideo()  - Series: the episode you are part way through, else the first one not watched yet, else the first.
+   308   fun playMain()
+   309   fun sourcesMain()
+   311   fun videoFor(id: String)
+   314   fun playVideo(videoId: String)  - Finds streams, picks the best, and starts the player.
+   344   fun openSources(videoId: String)
+   348   fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: Stre
+   360   fun noStreams(videoId: String, statuses: List<StreamResolver.AddonStatus>)  - Says why nothing played and offers the next step: add an addon when there is none, or try again when they answ
+   369   fun showBusy(msg: String)
+   374   fun dismissBusy()
+   377   fun onResume()  - Coming back from the player: the tick and the Next button move on.
+   384   fun onDestroy()
 
 ## screens/PlayerActivity.kt (722 lines) - Full-screen player.
     36 class PlayerActivity  - Full-screen player.

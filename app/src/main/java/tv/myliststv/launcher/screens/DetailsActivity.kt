@@ -259,18 +259,12 @@ class DetailsActivity : Activity() {
     private fun setEpisodeWatched(v: Video, watched: Boolean) {
         Watched.set(meta.id, v.id, watched)
         Progress.markWatched(meta.id, "series", v.season, v.episode, watched) { ok, why -> if (!ok) tv.myliststv.launcher.ui.Pop.toast(this, "My Lists did not accept that: $why", true) }
+        // The "next up" card on Home follows the same rule as the Play button: the first episode not watched.
         val r = WatchStore.forMeta(meta.id)
-        val order = meta.videos.filter { it.season > 0 }.ifEmpty { meta.videos }
-        val at = order.indexOfFirst { it.id == v.id }
-        if (r != null && at >= 0) {
-            val rAt = order.indexOfFirst { it.id == r.videoId }
-            if (!watched && rAt > at) WatchStore.remove(meta.id)   // "Next" must not stay on a later episode than the one just taken off
-            if (watched && rAt == at) {
-                // The episode being watched is now done: the next one becomes "next up", or there is nothing left to continue.
-                val next = order.getOrNull(at + 1)
-                if (next == null) WatchStore.remove(meta.id)
-                else WatchStore.save(r.copy(videoId = next.id, season = next.season, episode = next.episode, episodeTitle = next.title, positionMs = 0L, durationMs = 0L, updated = System.currentTimeMillis()))
-            }
+        if (r != null && r.durationMs == 0L) {
+            val n = firstUnwatched()
+            if (n == null) WatchStore.remove(meta.id)
+            else if (n.id != r.videoId) WatchStore.save(r.copy(videoId = n.id, season = n.season, episode = n.episode, episodeTitle = n.title))
         }
         buttonsSig = ""; render()
         refreshEpisodeCard(v)
@@ -297,14 +291,18 @@ class DetailsActivity : Activity() {
     /** The episode to play from the main button: where the viewer left off, else the first one. */
     private fun mainVideoId(): String = mainVideo()?.id ?: meta.id
 
-    /** Series: the episode being watched, else the first one not finished yet, else the first. Movies: null. */
+    /** The first episode (not a special) that has not been watched, here or on the account. */
+    private fun firstUnwatched(): Video? = meta.videos.filter { it.season > 0 }.ifEmpty { meta.videos }.firstOrNull { !Watched.has(meta.id, it.id) }
+
+    /** Series: the episode you are part way through, else the first one not watched yet, else the first. Movies: null. */
     private fun mainVideo(): Video? {
         if (meta.type != "series") return null
         val episodes = meta.videos.filter { it.season > 0 }.ifEmpty { meta.videos }
         val resume = WatchStore.forMeta(meta.id)
-        val cur = resume?.let { r -> episodes.firstOrNull { it.id == r.videoId } }
-        if (cur != null && resume.fraction < 0.93f && !Watched.has(meta.id, cur.id)) return cur
-        return episodes.firstOrNull { !Watched.has(meta.id, it.id) && (cur == null || episodes.indexOf(it) > episodes.indexOf(cur)) } ?: episodes.firstOrNull { !Watched.has(meta.id, it.id) } ?: episodes.firstOrNull()
+        if (resume != null && resume.durationMs > 0 && resume.fraction in 0.02f..0.93f) {
+            episodes.firstOrNull { it.id == resume.videoId }?.takeIf { !Watched.has(meta.id, it.id) }?.let { return it }
+        }
+        return firstUnwatched() ?: episodes.firstOrNull()
     }
 
     private fun playMain() = playVideo(mainVideoId())

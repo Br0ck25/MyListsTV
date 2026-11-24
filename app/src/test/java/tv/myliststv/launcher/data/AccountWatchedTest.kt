@@ -30,9 +30,9 @@ class AccountWatchedTest {
         val answer = """{"ok":true,"movies":[],"shows":[{"id":"tt7","complete":false,"episodes":["1:1","1:2"]}]}"""
         AccountWatched.parse(answer)
         AccountWatched.markEpisode("tt7", "tt7:1:2", false)
-        AccountWatched.parse(answer)   // the next fetch: the account has not removed it yet
+        AccountWatched.parse(answer, prune = true)   // the next fetch: the account has not removed it yet
         assertFalse(AccountWatched.episodeDone("tt7", "tt7:1:2")); assertTrue(AccountWatched.episodeDone("tt7", "tt7:1:1"))
-        AccountWatched.parse("""{"ok":true,"movies":[],"shows":[{"id":"tt7","complete":false,"episodes":["1:1"]}]}""")   // now it has
+        AccountWatched.parse("""{"ok":true,"movies":[],"shows":[{"id":"tt7","complete":false,"episodes":["1:1"]}]}""", prune = true)   // now it has
         AccountWatched.markEpisode("tt7", "tt7:1:2", true)
         assertTrue("marking it again works", AccountWatched.episodeDone("tt7", "tt7:1:2"))
     }

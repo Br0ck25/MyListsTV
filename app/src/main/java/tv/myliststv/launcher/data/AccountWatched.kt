@@ -13,6 +13,7 @@ object AccountWatched {
     private const val ORIGIN = "https://mylistsaddon.com"
     private class Show(val complete: Boolean, val episodes: Set<String>)
     private var cachedFor = ""
+    @Volatile private var freshFromServer = false
     private var movies: Set<String> = emptySet()
     private var shows: Map<String, Show> = emptyMap()
 
@@ -22,7 +23,8 @@ object AccountWatched {
         val key = Profiles.activeId
         if (cachedFor == key) return
         cachedFor = key
-        parse(sp().getString("data", "") ?: "")
+        val fresh = freshFromServer; freshFromServer = false
+        parse(sp().getString("data", "") ?: "", fresh)
     }
 
     // Things taken off by hand. The account may not have applied the removal yet (or never does), and without this the check mark would come
@@ -34,12 +36,14 @@ object AccountWatched {
         sp().edit().putString("removed", r.toString()).apply()
     }
 
-    private fun applyRemovals() {
+    /** [prune]: the answer is a fresh one from the account, so a removal it no longer lists is done and is forgotten. From our own saved copy it is kept, since that copy never lists it. */
+    private fun applyRemovals(prune: Boolean) {
         val r = removals(); val now = System.currentTimeMillis(); var changed = false
         r.keys().asSequence().toList().forEach { k ->
             val p = k.split('|')
             val listed = when (p[0]) { "m" -> p[1] in movies; "s" -> shows.containsKey(p[1]); else -> shows[p[1]]?.episodes?.contains(p[2]) == true }
-            if (!listed || now - r.optLong(k) > KEEP_MS) { r.remove(k); changed = true; return@forEach }
+            if ((prune && !listed) || now - r.optLong(k) > KEEP_MS) { r.remove(k); changed = true; return@forEach }
+            if (!listed) return@forEach
             when (p[0]) {
                 "m" -> movies = movies - p[1]
                 "s" -> shows = shows - p[1]
@@ -50,7 +54,7 @@ object AccountWatched {
     }
 
     /** Reads an answer into memory. Anything unexpected leaves an empty record rather than failing. */
-    internal fun parse(text: String): Boolean {
+    internal fun parse(text: String, prune: Boolean = false): Boolean {
         movies = emptySet(); shows = emptyMap()
         if (text.isEmpty()) return false
         return try {
@@ -64,7 +68,7 @@ object AccountWatched {
                 val eps = s.optJSONArray("episodes")?.let { e -> (0 until e.length()).map { e.optString(it) }.toSet() } ?: emptySet()
                 m[id] = Show(s.optBoolean("complete"), eps)
             }
-            shows = m; applyRemovals(); true
+            shows = m; applyRemovals(prune); true
         } catch (_: Exception) { movies = emptySet(); shows = emptyMap(); false }
     }
 
@@ -119,7 +123,7 @@ object AccountWatched {
                 val before = sp().getString("data", "")
                 if (text == before) return@background
                 sp().edit().putString("data", text).apply()
-                cachedFor = ""
+                freshFromServer = true; cachedFor = ""
                 Http.post(changed)
             } catch (_: Exception) {}
         }

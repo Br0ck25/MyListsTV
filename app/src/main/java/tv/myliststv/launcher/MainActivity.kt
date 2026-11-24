@@ -329,8 +329,8 @@ class MainActivity : Activity() {
         }
         fun keep(s: Any, v: View) {
             pages[i] = Kept(s, v, System.currentTimeMillis())
-            // Only the three newest pages stay built (a small box has little memory to spare).
-            while (pages.size > 3) pages.minByOrNull { it.value.at }?.let { pages.remove(it.key) }
+            // Only the four newest pages stay built (Home, Movies, Series and Search) (a small box has little memory to spare).
+            while (pages.size > 4) pages.minByOrNull { it.value.at }?.let { pages.remove(it.key) }
         }
         when (i) {
             0, 1, 2 -> {
