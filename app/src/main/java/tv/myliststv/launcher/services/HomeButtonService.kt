@@ -22,7 +22,6 @@ class HomeButtonService : AccessibilityService() {
 
     /** The app whose window came forward last, so a button can work only outside (or only inside) My Lists TV. */
     private var frontApp = ""
-
     override fun onAccessibilityEvent(e: AccessibilityEvent) {
         if (e.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         e.packageName?.toString()?.let { frontApp = it }

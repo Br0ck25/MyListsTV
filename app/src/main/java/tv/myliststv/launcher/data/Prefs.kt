@@ -73,7 +73,8 @@ object Prefs {
     var cardSize: Int
         get() = sp.getInt("cardSize", 1)
         set(v) { sp.edit().putInt("cardSize", v).apply(); epoch++ }
-    val cardScale get() = floatArrayOf(0.85f, 1f, 1.2f)[cardSize.coerceIn(0, 2)]
+    /** The card size setting: -1 extra small, 0 small, 1 medium (the default), 2 large, 3 extra large. */
+    val cardScale get() = when (cardSize) { -1 -> 0.7f; 0 -> 0.85f; 1 -> 1f; 2 -> 1.2f; else -> 1.4f }
 
     private fun strings(k: String) = (sp.getString(k, "") ?: "").split('\n').filter { it.isNotEmpty() }
     private fun putStrings(k: String, v: List<String>) { sp.edit().putString(k, v.joinToString("\n")).apply(); epoch++ }

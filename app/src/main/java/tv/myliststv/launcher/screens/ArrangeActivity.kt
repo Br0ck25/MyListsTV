@@ -5,77 +5,112 @@ import tv.myliststv.launcher.*
 import android.app.Activity
 import android.os.Bundle
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import tv.myliststv.launcher.data.*
 import tv.myliststv.launcher.ui.*
 
 /**
- * Orders and hides the Home rows or the apps row. Each item has Up, Down and Hide buttons; a press moves the row in place,
- * saves at once and leaves focus on the same button, so a run of moves needs no reloading and never jumps back to the top.
- * Back leaves; nothing else to confirm.
+ * Reorder Home Catalogs (or the apps row): a page of cards, each with its name, where it comes from, an on/off toggle and a
+ * handle. OK on the toggle shows or hides the row on Home. OK on the handle picks the card up; Up and Down then move it and OK
+ * (or Back) puts it down. Everything saves at once, in place, so a run of moves never reloads or jumps back to the top.
  */
 class ArrangeActivity : Activity() {
-    private class Item(val key: String, val name: String, var hidden: Boolean)
+    private class Item(val key: String, val name: String, val sub: String, var hidden: Boolean)
 
     private lateinit var list: LinearLayout
     private val items = ArrayList<Item>()
     private var save: (List<String>, List<String>) -> Unit = { _, _ -> }
+    private var carrying: View? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val apps = intent.getStringExtra("what") == "apps"
-        list = Ui.vbox(this)
-        // A modal over Settings, not a page: a rounded card in a window that only dims what is behind it.
-        val root = Ui.vbox(this).apply { background = Ui.rounded(this@ArrangeActivity, Ui.CARD, Ui.R_DIALOG); setPadding(Ui.dp(this@ArrangeActivity, 24), Ui.dp(this@ArrangeActivity, 20), Ui.dp(this@ArrangeActivity, 24), Ui.dp(this@ArrangeActivity, 16)) }
-        root.addView(Ui.text(this, if (apps) "Arrange apps row" else "Arrange Home rows", 24f, Ui.TEXT, true))
-        root.addView(Ui.text(this, "Up and Down move it. Hide takes it off Home. Back when you are done.", 13f, Ui.DIM).apply { setPadding(0, Ui.dp(this@ArrangeActivity, 6), 0, Ui.dp(this@ArrangeActivity, 14)) })
-        root.addView(ScrollView(this).apply { addView(list); isVerticalScrollBarEnabled = false }, LinearLayout.LayoutParams(-1, 0, 1f))
+        val c = this
+        list = Ui.vbox(c).apply { setPadding(Ui.dp(c, 3), Ui.dp(c, 3), Ui.dp(c, 3), Ui.dp(c, 3)) }
+        val root = Ui.vbox(c).apply { setBackgroundColor(Ui.BG); setPadding(Ui.dp(c, 48), Ui.dp(c, 28), Ui.dp(c, 48), Ui.dp(c, 8)) }
+        root.addView(Ui.text(c, if (apps) "Reorder Apps Row" else "Reorder Home Catalogs", 30f, Ui.TEXT, true))
+        root.addView(Ui.text(c, if (apps) "This controls the order of the apps on Home. The Apps page still shows all of them." else "This controls row order on Home. OK on a handle picks a row up; Up and Down move it.", 14f, Ui.DIM).apply { setPadding(0, Ui.dp(c, 6), 0, Ui.dp(c, 14)) })
+        root.addView(ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false; clipToPadding = false }, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(root)
-        window.setGravity(android.view.Gravity.CENTER)
-        window.setLayout(Ui.dp(this, 560), (resources.displayMetrics.heightPixels * 0.86f).toInt())   // after the content: a dialog-themed window resets its size when content is attached
         if (apps) Http.background {
             val order = Prefs.appOrder
             val all = AppRepository.load(this).sortedBy { order.indexOf(it.component.packageName).let { i -> if (i < 0) Int.MAX_VALUE else i } }
-            Http.post { fill(all.map { it.component.packageName to it.label }, Prefs.appHidden) { o, h -> Prefs.appOrder = o; Prefs.appHidden = h } }
+            Http.post { fill(all.map { Triple(it.component.packageName, it.label, "Installed app") }, Prefs.appHidden) { o, h -> Prefs.appOrder = o; Prefs.appHidden = h } }
         } else {
-            val titles = listOf("Continue watching", "Airing next") + Catalogs.browseRows(null, 8).map { (_, c) -> Catalogs.rowTitle(null, c) } + "Your apps"
-            fill(titles.distinct().sortedBy { Prefs.homeRank(it) }.map { it to it }, Prefs.homeHidden) { o, h -> Prefs.homeOrder = o; Prefs.homeHidden = h }
+            val fixed = mapOf("Continue watching" to "Your progress", "Airing next" to "Next episodes of the shows you follow", "Your apps" to "Installed apps")
+            val source = Catalogs.browseRows(null, 8).associate { (a, cat) -> Catalogs.rowTitle(null, cat) to (if (a.name.startsWith("My Lists")) "My Lists" else a.name) }
+            val titles = listOf("Continue watching", "Airing next") + Catalogs.browseRows(null, 8).map { (_, cat) -> Catalogs.rowTitle(null, cat) } + "Your apps"
+            fill(titles.distinct().sortedBy { Prefs.homeRank(it) }.map { Triple(it, it, fixed[it] ?: source[it] ?: "Catalog") }, Prefs.homeHidden) { o, h -> Prefs.homeOrder = o; Prefs.homeHidden = h }
         }
     }
 
-    private fun fill(keys: List<Pair<String, String>>, hidden: List<String>, onSave: (List<String>, List<String>) -> Unit) {
+    private fun fill(keys: List<Triple<String, String, String>>, hidden: List<String>, onSave: (List<String>, List<String>) -> Unit) {
         save = onSave
-        keys.forEach { (k, n) -> items += Item(k, n, k in hidden) }
-        items.forEach { list.addView(rowFor(it), Ui.matchWrap().apply { topMargin = Ui.dp(this@ArrangeActivity, 8) }) }
-        list.getChildAt(0)?.let { ((it as LinearLayout).getChildAt(2)).requestFocus() }   // first Down button: Up would do nothing there
+        keys.forEach { (k, n, s) -> items += Item(k, n, s, k in hidden) }
+        items.forEach { list.addView(rowFor(it), Ui.matchWrap().apply { topMargin = Ui.dp(this@ArrangeActivity, 10) }) }
+        list.getChildAt(0)?.let { ((it as LinearLayout).getChildAt(1)).requestFocus() }
     }
 
     private fun rowFor(item: Item): View {
         val c = this
-        val name = Ui.text(c, item.name, 16f, if (item.hidden) Ui.DIM else Ui.TEXT, true, 1)
-        val row = Ui.hbox(c, 8).apply { setPadding(Ui.dp(c, 16), Ui.dp(c, 8), Ui.dp(c, 12), Ui.dp(c, 8)); Ui.rowStyle(c, this); tag = item }
-        row.addView(name, LinearLayout.LayoutParams(0, -2, 1f))
-        val hide = Ui.button(c, if (item.hidden) "Show" else "Hide") {}
-        fun refreshLook() { name.setTextColor(if (item.hidden) Ui.DIM else Ui.TEXT); hide.text = if (item.hidden) "Show" else "Hide" }
-        val up = Ui.button(c, "▲") { move(row, -1) }
-        val down = Ui.button(c, "▼") { move(row, 1) }
-        hide.setOnClickListener { item.hidden = !item.hidden; refreshLook(); persist() }
-        row.addView(up); row.addView(down); row.addView(hide)
+        val row = Ui.hbox(c, 12).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(Ui.dp(c, 20), Ui.dp(c, 12), Ui.dp(c, 14), Ui.dp(c, 12)); background = Ui.rounded(c, Ui.CARD, Ui.R_PANEL); tag = item }
+        val words = Ui.vbox(c)
+        val name = Ui.text(c, item.name, 16f, Ui.TEXT, false, 1)
+        words.addView(name)
+        words.addView(Ui.text(c, item.sub, 13f, Ui.DIM, false, 1), Ui.matchWrap().apply { topMargin = Ui.dp(c, 2) })
+        row.addView(words, LinearLayout.LayoutParams(0, -2, 1f))
+        val toggle = Toggle(c, !item.hidden)
+        val tHolder = Ui.hbox(c).apply {
+            gravity = Gravity.CENTER; setPadding(Ui.dp(c, 8), Ui.dp(c, 8), Ui.dp(c, 8), Ui.dp(c, 8))
+            background = Ui.pillBg(c, Ui.CLEAR, Ui.FOCUS_FILL); isFocusable = true; isClickable = true
+            addView(toggle)
+            setOnClickListener { item.hidden = !item.hidden; toggle.on = !item.hidden; toggle.invalidate(); name.alpha = if (item.hidden) 0.5f else 1f; persist() }
+        }
+        name.alpha = if (item.hidden) 0.5f else 1f
+        val handle = ImageView(c).apply {
+            setImageResource(R.drawable.ic_menu); setColorFilter(Ui.DIM)
+            val p = Ui.dp(c, 10); setPadding(p, p, p, p)
+            background = Ui.pillBg(c, Ui.CLEAR, Ui.FOCUS_FILL); isFocusable = true; isClickable = true
+            setOnClickListener { carrying = if (carrying === row) null else row; refreshCarry() }
+            setOnKeyListener { _, code, ev ->
+                if (carrying !== row || ev.action != KeyEvent.ACTION_DOWN) false
+                else when (code) {
+                    KeyEvent.KEYCODE_DPAD_UP -> { move(row, -1); true }
+                    KeyEvent.KEYCODE_DPAD_DOWN -> { move(row, 1); true }
+                    KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT -> true
+                    else -> false
+                }
+            }
+        }
+        row.addView(tHolder); row.addView(handle, LinearLayout.LayoutParams(Ui.dp(c, 44), Ui.dp(c, 44)))
         return row
     }
 
-    /** Swaps the row with its neighbour and puts focus back on the button that was pressed. */
+    /** The card being carried is outlined in the brand colour. */
+    private fun refreshCarry() {
+        for (i in 0 until list.childCount) {
+            val r = list.getChildAt(i)
+            r.background = if (r === carrying) Ui.rounded(this, Ui.CARD, Ui.R_PANEL, Ui.BRAND) else Ui.rounded(this, Ui.CARD, Ui.R_PANEL)
+        }
+    }
+
+    /** Swaps the card with its neighbour and keeps focus on its handle. */
     private fun move(row: View, d: Int) {
         val i = list.indexOfChild(row); val j = i + d
         if (j < 0 || j >= list.childCount) return
-        val pressed = row.findFocus()
-        list.removeViewAt(i); list.addView(row, j)
+        val handle = (row as LinearLayout).getChildAt(2)
+        list.removeViewAt(i); list.addView(row, j, Ui.matchWrap().apply { topMargin = Ui.dp(this@ArrangeActivity, 10) })
         items.add(j, items.removeAt(i))
-        pressed?.requestFocus()
+        handle.requestFocus()
         persist()
     }
 
     private fun persist() = save(items.map { it.key }, items.filter { it.hidden }.map { it.key })
+
+    @Deprecated("Back puts a carried card down first, then leaves.")
+    override fun onBackPressed() { if (carrying != null) { carrying = null; refreshCarry() } else super.onBackPressed() }
 }

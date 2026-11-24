@@ -83,7 +83,7 @@ function skip(s){if(!player)return;player.seekTo(Math.max(0,player.getCurrentTim
         if (leaving) return
         leaving = true
         try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$id"))) }
-        catch (_: Exception) { try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$id"))) } catch (_: Exception) { Toast.makeText(this, "This trailer cannot be played here.", Toast.LENGTH_LONG).show() } }
+        catch (_: Exception) { try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$id"))) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(this, "This trailer cannot be played here.", true) } }
         finish()
     }
 

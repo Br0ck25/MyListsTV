@@ -21,13 +21,13 @@ class EpisodesLeftTest {
 
     @Test fun whenTheNextOneIsNotOutYetNothingIsLeftAndItSaysWhenItAirs() {
         val v = listOf(ep(1, 1, now - 8 * day), ep(1, 2, now + 3 * day - 1000))
-        assertEquals(EpisodesLeft.Info(0, "Airs in 3 days"), EpisodesLeft.compute(v, entry(1, 2), now, utc))
+        assertEquals(EpisodesLeft.Info(0, "Airs in 3 Days"), EpisodesLeft.compute(v, entry(1, 2), now, utc))
     }
 
     @Test fun airsTextCountsCalendarDays() {
-        assertEquals("Airs today", EpisodesLeft.airsText(midnight, now, utc))
-        assertEquals("Airs tomorrow", EpisodesLeft.airsText(midnight + day, now, utc))
-        assertEquals("Airs in 2 days", EpisodesLeft.airsText(midnight + 2 * day, now, utc))
+        assertEquals("Airs Today", EpisodesLeft.airsText(midnight, now, utc))
+        assertEquals("Airs Tomorrow", EpisodesLeft.airsText(midnight + day, now, utc))
+        assertEquals("Airs in 2 Days", EpisodesLeft.airsText(midnight + 2 * day, now, utc))
     }
 
     @Test fun unknownEpisodeGivesNoAnswer() = assertNull(EpisodesLeft.compute(listOf(ep(1, 1, now - day)), entry(2, 9), now, utc))
@@ -36,6 +36,6 @@ class EpisodesLeftTest {
         assertEquals("45 min left", EpisodesLeft.timeLeft(entry(1, 1, dur = 50 * 60_000L, pos = 5 * 60_000L)))
         assertEquals("1h 5m left", EpisodesLeft.timeLeft(entry(1, 1, dur = 70 * 60_000L, pos = 5 * 60_000L)))
         assertNull(EpisodesLeft.timeLeft(entry(1, 1)))
-        assertEquals("1 episode left", EpisodesLeft.leftText(1))
+        assertEquals("1 EP left", EpisodesLeft.leftText(1))
     }
 }

@@ -40,7 +40,7 @@ object HomeSetup {
             if (android.os.Build.VERSION.SDK_INT >= 29) a.startActivityForResult(a.getSystemService(android.app.role.RoleManager::class.java).createRequestRoleIntent(android.app.role.RoleManager.ROLE_HOME), 1)
             else a.startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
         } catch (_: Exception) {
-            try { a.startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) { android.widget.Toast.makeText(a, "This TV has no Home setting. Use the phone or computer steps.", android.widget.Toast.LENGTH_LONG).show() }
+            try { a.startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(a, "This TV has no Home setting. Use the phone or computer steps.", true) }
         }
     }
 
@@ -48,18 +48,23 @@ object HomeSetup {
     fun phoneSteps(a: android.app.Activity) {
         val server = PhoneServer { _, done -> done("Nothing to add here.") }
         server.start()
-        val address = server.address()?.let { "$it/setup" } ?: "Connect the TV to Wi-Fi first."
-        android.app.AlertDialog.Builder(a).setTitle("Open this on your phone").setMessage(address)
-            .setPositiveButton("Done", null).setOnDismissListener { server.stop() }.show()
+        val url = server.address()?.let { "$it/setup" }
+        val d = tv.myliststv.launcher.ui.Ui.dialog(a, "Set up from your phone or computer",
+            if (url != null) "Scan this with your phone, or open the address in a browser on the same Wi-Fi. It lists each command to run, in order, and what it does.\n\n$url" else "Connect the TV to Wi-Fi first.",
+            tv.myliststv.launcher.ui.Ui.Act("Done", true) {}, image = url?.let { tv.myliststv.launcher.ui.Qr.bitmap(it, tv.myliststv.launcher.ui.Ui.dp(a, 190)) })
+        d.setOnDismissListener { server.stop() }
     }
 
     /** The commands to run from a computer, with this box's address filled in. */
-    fun commands(ip: String): List<String> = listOf(
-        "adb connect $ip:5555",
-        "adb shell cmd package set-home-activity tv.myliststv.launcher/.MainActivity",
-        "adb shell pm grant tv.myliststv.launcher android.permission.WRITE_SECURE_SETTINGS",
-        "adb shell settings put secure enabled_accessibility_services $SERVICE",
-        "adb shell settings put secure accessibility_enabled 1",
-        "adb shell cmd notification allow_listener tv.myliststv.launcher/tv.myliststv.launcher.services.NotificationsService",
+    fun commands(ip: String): List<String> = steps(ip).map { it.first }
+
+    /** Each command with a plain sentence on what it does, for the phone page. */
+    fun steps(ip: String): List<Pair<String, String>> = listOf(
+        "adb connect $ip:5555" to "Connects your computer to this TV over Wi-Fi. Turn on USB debugging in the TV's Developer options first.",
+        "adb shell cmd package set-home-activity tv.myliststv.launcher/.MainActivity" to "Makes My Lists TV the Home screen, so the Home button opens it.",
+        "adb shell pm grant tv.myliststv.launcher android.permission.WRITE_SECURE_SETTINGS" to "Lets the app switch on its own Home button fallback, so you do not have to find it in the TV's menus.",
+        "adb shell settings put secure enabled_accessibility_services $SERVICE" to "Turns on the Home button fallback: if the TV opens its own launcher, My Lists TV takes over again.",
+        "adb shell settings put secure accessibility_enabled 1" to "Switches on accessibility services, which the fallback runs as.",
+        "adb shell cmd notification allow_listener tv.myliststv.launcher/tv.myliststv.launcher.services.NotificationsService" to "Lets the bell show the TV's notifications.",
     )
 }

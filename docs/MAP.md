@@ -18,43 +18,53 @@ Find a symbol with grep on this file, then read only that file around the line n
     33   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
     39   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (453 lines) - The home screen.
-    31 class MainActivity  - The home screen.
-    57   fun updateBell()
-    59   fun updateProfile()
-    62   fun profileChip()  - Who is watching: the current profile at the top right; OK switches.
-    73   fun pickProfile()
-    81   fun showNotices()  - The bell: a panel down the right edge.
-    92   fun fill(list: LinearLayout, panel: SidePanel)
-   122   fun showSettingsPanel()  - The gear: Apps, Launcher settings (the full settings) and Android settings, in the same right-hand panel.
-   138   fun appsPage(panel: SidePanel)  - Every app as a banner with its name under it, two across; OK opens it, hold OK for its menu.
-   156   fun setBackdrop(url: String?)  - Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every p
-   162   fun showBackdrop(on: Boolean)
-   168   fun onCreate(savedInstanceState: Bundle?)
-   233   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
-   247   fun welcome()  - First run: the setup screens (Home app, Home button, notifications, addons), each one skippable.
-   249   fun tabView(t: String)
-   256   fun select(i: Int, force: Boolean = false)
-   279   fun reloadAddons()
-   282   fun go(where: String)  - Where a mapped remote button sends the launcher.
-   292   fun openMeta(m: Meta)
-   296   fun resumeEntry(e: WatchStore.Entry)
-   301   fun launch(a: AppEntry)
-   310   fun appMenu(a: AppEntry)
-   330   fun onResume()
-   353   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
-   361   fun onNewIntent(intent: Intent)
-   378   fun onBackPressed()
-   389   fun dispatchKeyEvent(e: KeyEvent)
-   411   fun isIn(v: View, container: View)
-   412   fun isInContent(v: View)
-   415   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
-   421   fun openSide()
-   422   fun closeSide()
-   425   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
-   445   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   450   fun onDestroy()
-   452   fun onTrimMemory(level: Int)
+## MainActivity.kt (564 lines) - The home screen.
+    32 class MainActivity  - The home screen.
+    59   fun updateBell()
+    61   fun updateProfile()
+    66   fun profileChip()
+    78   fun pickProfile()
+    86   fun showNotices()  - The bell: a panel down the right edge.
+    97   fun fill(list: LinearLayout, panel: SidePanel)
+   127   fun showSettingsPanel()  - The gear: Apps, Launcher settings (the full settings) and Android settings, in the same right-hand panel.
+   143   fun appsPage(panel: SidePanel)  - Every app as a banner with its name under it, two across; OK opens it, hold OK for its menu.
+   161   fun setBackdrop(url: String?)  - Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every p
+   167   fun showBackdrop(on: Boolean)
+   173   fun onCreate(savedInstanceState: Bundle?)
+   242   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
+   256   fun welcome()  - First run: the setup screens (Home app, Home button, notifications, addons), each one skippable.
+   262   fun setSideOpen(open: Boolean)  - Side bar (always there): a slim strip of icons that opens into the labelled panel while the focus is on it.
+   283   fun refreshRailTint()  - While the strip is slim only the icons show: the open page's is blue, the others dim.
+   288   fun sideItems()
+   292   fun tabView(t: String)
+   305   fun select(i: Int, force: Boolean = false)
+   330   fun reloadAddons()
+   333   fun go(where: String)  - Where a mapped remote button sends the launcher.
+   342   fun openMeta(m: Meta)
+   346   fun resumeEntry(e: WatchStore.Entry)
+   351   fun launch(a: AppEntry)
+   360   fun appMenu(a: AppEntry)
+   380   fun onPause()
+   383   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue watching, Airing next) at most every five minutes; als
+   392   fun onResume()
+   411   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
+   419   fun onNewIntent(intent: Intent)
+   439   fun onBackPressed()
+   462   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
+   469   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
+   480   fun dispatchKeyEvent(e: KeyEvent)
+   508   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
+   514   fun isIn(v: View, container: View)
+   515   fun isInContent(v: View)
+   518   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
+   524   fun openSide()
+   525   fun closeSide()
+   528   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
+   548   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   553   fun onDestroy()
+   555   fun onTrimMemory(level: Int)
+   562   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
+   563   fun setTextColor(color: Int)
 
 ## data/AddonStore.kt (127 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
@@ -116,7 +126,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     12 class ButtonGestures  - Single, double and hold presses of the buttons the owner mapped (see [ButtonMap]).
     18   fun onKey(e: KeyEvent)  - True when the key belongs to a mapped button and was used.
 
-## data/ButtonMap.kt (124 lines) - Remote buttons the owner has given a job: a button (the colour keys, a streaming-app key...) plus how it is pr
+## data/ButtonMap.kt (142 lines) - Remote buttons the owner has given a job: a button (the colour keys, a streaming-app key...) plus how it is pr
     18 object ButtonMap  - Remote buttons the owner has given a job: a button (the colour keys, a streaming-app key...) plus how it is pr
     20   class Rule  - [scope] "all": everywhere.
     52   fun homeAction(press: String)  - What the Home button does for a press: the owner's job when Customize Home Button is on, otherwise the factory
@@ -133,12 +143,14 @@ Find a symbol with grep on this file, then read only that file around the line n
     81   fun setKeyOn(key: Int, on: Boolean)
     84   fun active(r: Rule)  - Is this rule in force: the mapper is on and so is its button.
     87   fun status(c: Context, key: Int)  - In plain words, whether a button works right now.
-   100   fun scopeName(scope: String)
-   101   fun keyName(key: Int)
-   102   fun pressName(p: String)
-   103   fun actionName(c: Context, a: String)
-   107   fun run(c: Context, action: String)  - Does the action: open an app or a system page, press a media key, or tell the launcher where to go.
-   118   fun media(c: Context, action: String)
+   101   fun badge(c: Context, key: Int)  - The short word at the right of a button's row.
+   115   fun pressLabel(c: Context, key: Int, press: String)  - What one press of a button does, in words ("Not Assigned" when nothing).
+   118   fun scopeName(scope: String)
+   119   fun keyName(key: Int)
+   120   fun pressName(p: String)
+   121   fun actionName(c: Context, a: String)
+   125   fun run(c: Context, action: String)  - Does the action: open an app or a system page, press a media key, or tell the launcher where to go.
+   136   fun media(c: Context, action: String)
 
 ## data/Catalogs.kt (108 lines) - Catalog, meta and search lookups across installed addons.
      4 object Catalogs  - Catalog, meta and search lookups across installed addons.
@@ -175,7 +187,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     31   fun leftText(n: Int)
     34   fun timeLeft(e: WatchStore.Entry)  - "45 min left" or "1h 5m left" for something you have started, null when its length is not known.
 
-## data/HomeSetup.kt (65 lines) - What the Home screen setup page needs: where we stand, how to change it, and the commands for the phone page.
+## data/HomeSetup.kt (70 lines) - What the Home screen setup page needs: where we stand, how to change it, and the commands for the phone page.
     12 object HomeSetup  - What the Home screen setup page needs: where we stand, how to change it, and the commands for the phone page.
     15   fun homeIntent()
     22   fun stockHomeScreens(c: Context)  - The Home screens of every other Home app, as "package/class": what the Home button fallback watches for.
@@ -184,7 +196,8 @@ Find a symbol with grep on this file, then read only that file around the line n
     31   fun enableFallback(c: Context)  - Turns the fallback on straight away if the app was allowed to (the phone page's grant command); false means op
     38   fun requestHome(a: android.app.Activity)  - The system's own choice of Home app (Android 10 and up), or its Home settings page on older versions.
     48   fun phoneSteps(a: android.app.Activity)  - Shows the address of the phone page with the exact steps and commands, for TVs that block the switches on the 
-    57   fun commands(ip: String)  - The commands to run from a computer, with this box's address filled in.
+    59   fun commands(ip: String)  - The commands to run from a computer, with this box's address filled in.
+    62   fun steps(ip: String)  - Each command with a plain sentence on what it does, for the phone page.
 
 ## data/Http.kt (159 lines) - Small HTTP layer: HttpURLConnection (built in, no library), a three-thread pool, and a disk cache that answers
     16 object Http  - Small HTTP layer: HttpURLConnection (built in, no library), a three-thread pool, and a disk cache that answers
@@ -285,15 +298,15 @@ Find a symbol with grep on this file, then read only that file around the line n
     11   fun parsePhoto(text: String)  - The profile photo of the first match, or null.
     16   fun photo(name: String, cb: (String?)  - Cached for a month: a person's photo does not change.
 
-## data/PhoneServer.kt (74 lines) - A tiny web page on the TV so a phone on the same Wi-Fi can paste an addon link instead of typing it with the r
-    12 class PhoneServer  - A tiny web page on the TV so a phone on the same Wi-Fi can paste an addon link instead of typing it with the r
-    16   fun address()  - The address to open on the phone, or null when the TV has no local network address.
-    18   fun start()
-    28   fun stop()
-    30   fun serve(c: java.net.Socket)
-    53   fun page(msg: String)
-    60   fun setupPage()
-    70   fun localIp()
+## data/PhoneServer.kt (87 lines) - A tiny web page on the TV so a phone on the same Wi-Fi can paste an addon link instead of typing it with the r
+    14 class PhoneServer  - A tiny web page on the TV so a phone on the same Wi-Fi can paste an addon link instead of typing it with the r
+    18   fun address()  - The address to open on the phone, or null when the TV has no local network address.
+    20   fun start()
+    30   fun stop()
+    32   fun serve(c: java.net.Socket)
+    60   fun page(msg: String)
+    68   fun setupPage()
+    83   fun localIp()
 
 ## data/PlayErrors.kt (20 lines) - Plain-language reasons for playback failures, each ending with what to do.
      4 object PlayErrors  - Plain-language reasons for playback failures, each ending with what to do.
@@ -301,7 +314,7 @@ Find a symbol with grep on this file, then read only that file around the line n
      7   fun describe(httpStatus: Int?, kind: Kind)
     19   fun worthTryingAnotherSource(httpStatus: Int?, kind: Kind)  - True when a different source is likely to help, so fallback should run.
 
-## data/Prefs.kt (186 lines) - All user settings in one place.
+## data/Prefs.kt (187 lines) - All user settings in one place.
      8 object Prefs  - All user settings in one place.
     16   fun init(c: Context)
     21   var liteMode
@@ -317,40 +330,40 @@ Find a symbol with grep on this file, then read only that file around the line n
     63   var showAppsRow
     68   var horizontalPosters  - Catalog items as wide backdrop pictures (true) or tall posters (false).
     73   var cardSize  - Size of posters, wide cards and app tiles together: 0 small, 1 medium, 2 large.
-    76   val cardScale
-    78   fun strings(k: String)
-    79   fun putStrings(k: String, v: List<String>)
-    81   var homeOrder  - Home rows (by title) and apps in the order the owner chose, and the ones hidden from Home.
-    82   var homeHidden
-    83   var appOrder
-    84   var appHidden
-    86   fun homeRank(title: String)  - Sort key for a home row: its place in [homeOrder], else Continue watching first, apps last, catalogs between.
-    89   var navStyle  - Where the pages (Home, Movies...) are listed: 0 across the top, 1 side bar, 2 side bar that stays hidden until
-    94   var buttonMap  - Remote button rules, see ButtonMap.
-    98   var mapperOn  - The Button Mapper's master switch, and the buttons switched off one by one (key codes).
-   102   var homeCustom  - "Customize Home Button": when off, Home does its factory jobs (single press: Home, double press: profile switc
-   105   var buttonMapOff
-   110   fun recallTracks(metaId: String?)  - The audio and subtitle language the viewer last chose for a title, so the next episode starts the same way.
-   113   fun rememberTrack(metaId: String?, audio: Boolean, lang: String)
-   120   var showAiring  - The "Airing next" row on Home: the next episode of shows the account follows, soonest first.
-   125   var airingJson  - The last Airing Next answer for the profile in use (JSON), so Home shows it at once.
-   129   var showContinue
-   134   var backupCode  - Recovery code for this box's online backup.
-   139   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
-   144   var accountName  - The My Lists account name of the profile in use, shown as "Signed in as ...".
-   149   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
-   151   var lastBackup
-   156   fun forget(id: String)  - Forgets what a removed profile kept here.
-   159   fun export()  - Settings as JSON for a backup.
-   161   fun import(o: org.json.JSONObject)
-   167   var setupDone
-   171   var advanced
-   175   fun isLowRamBox()
-   180   fun lite()
-   183   fun effectiveMaxResolution()  - The highest resolution to prefer.
-   185   fun memoryCacheBytes()
+    77   val cardScale  - The card size setting: -1 extra small, 0 small, 1 medium (the default), 2 large, 3 extra large.
+    79   fun strings(k: String)
+    80   fun putStrings(k: String, v: List<String>)
+    82   var homeOrder  - Home rows (by title) and apps in the order the owner chose, and the ones hidden from Home.
+    83   var homeHidden
+    84   var appOrder
+    85   var appHidden
+    87   fun homeRank(title: String)  - Sort key for a home row: its place in [homeOrder], else Continue watching first, apps last, catalogs between.
+    90   var navStyle  - Where the pages (Home, Movies...) are listed: 0 across the top, 1 side bar, 2 side bar that stays hidden until
+    95   var buttonMap  - Remote button rules, see ButtonMap.
+    99   var mapperOn  - The Button Mapper's master switch, and the buttons switched off one by one (key codes).
+   103   var homeCustom  - "Customize Home Button": when off, Home does its factory jobs (single press: Home, double press: profile switc
+   106   var buttonMapOff
+   111   fun recallTracks(metaId: String?)  - The audio and subtitle language the viewer last chose for a title, so the next episode starts the same way.
+   114   fun rememberTrack(metaId: String?, audio: Boolean, lang: String)
+   121   var showAiring  - The "Airing next" row on Home: the next episode of shows the account follows, soonest first.
+   126   var airingJson  - The last Airing Next answer for the profile in use (JSON), so Home shows it at once.
+   130   var showContinue
+   135   var backupCode  - Recovery code for this box's online backup.
+   140   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
+   145   var accountName  - The My Lists account name of the profile in use, shown as "Signed in as ...".
+   150   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
+   152   var lastBackup
+   157   fun forget(id: String)  - Forgets what a removed profile kept here.
+   160   fun export()  - Settings as JSON for a backup.
+   162   fun import(o: org.json.JSONObject)
+   168   var setupDone
+   172   var advanced
+   176   fun isLowRamBox()
+   181   fun lite()
+   184   fun effectiveMaxResolution()  - The highest resolution to prefer.
+   186   fun memoryCacheBytes()
 
-## data/Profiles.kt (74 lines) - Viewer profiles.
+## data/Profiles.kt (76 lines) - Viewer profiles.
      9 object Profiles  - Viewer profiles.
     10   class P
     16   fun init(c: Context)
@@ -361,23 +374,24 @@ Find a symbol with grep on this file, then read only that file around the line n
     42   fun shareAddons(id: String, with: String?)
     45   fun switchTo(c: Context, id: String)  - Makes [id] the profile in use.
     47   fun active()
-    49   fun add(name: String, kids: Boolean)
-    52   fun remove(id: String)  - The last profile cannot be removed.
-    59   fun forget(id: String)  - Deletes what a removed profile kept: history, Library, watched ticks, alerts, addons, account and backup code.
-    66   fun restore(l: List<P>, active: String)  - Replaces the whole list (used when restoring a backup).
-    71   fun allows(m: Meta)
-    73   fun safeForKids(m: Meta)
+    49   fun rename(id: String, name: String)
+    51   fun add(name: String, kids: Boolean)
+    54   fun remove(id: String)  - The last profile cannot be removed.
+    61   fun forget(id: String)  - Deletes what a removed profile kept: history, Library, watched ticks, alerts, addons, account and backup code.
+    68   fun restore(l: List<P>, active: String)  - Replaces the whole list (used when restoring a backup).
+    73   fun allows(m: Meta)
+    75   fun safeForKids(m: Meta)
 
-## data/Progress.kt (96 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
+## data/Progress.kt (95 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
     11 object Progress  - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
     16   fun request(link: String, e: WatchStore.Entry)  - The request for this play, or null when it should not be sent (no account, no IMDb id, a start, or live TV).
     29   class Airing  - The account's Continue Watching as a launcher entry.
     32   fun airing(today: String = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Lo  - The saved Airing Next answer, soonest first, without dates already past.
     40   fun entryFrom(o: JSONObject, index: Int = 0)  - [index] is the place in the account's list: an entry with no date keeps the account's order by getting a date 
     50   fun pull(changed: ()  - Brings the account's Continue Watching in (the website's and the other TVs'), keeping whichever entry for a ti
-    73   fun watchedRequest(link: String, metaId: String, type: String, season: Int, epis  - The request that adds a title or episode to the account's watched history, or removes it, or null when it shou
-    83   fun markWatched(metaId: String, type: String, season: Int, episode: Int, watched  - A title or episode marked watched (or not watched) by hand also goes to the account's watched history, so the 
-    89   fun report(e: WatchStore.Entry, force: Boolean)  - Sends at most once a minute unless [force] (leaving the player, or the end of the title).
+    72   fun watchedRequest(link: String, metaId: String, type: String, season: Int, epis  - The request that adds a title or episode to the account's watched history, or removes it, or null when it shou
+    82   fun markWatched(metaId: String, type: String, season: Int, episode: Int, watched  - A title or episode marked watched (or not watched) by hand also goes to the account's watched history, so the 
+    88   fun report(e: WatchStore.Entry, force: Boolean)  - Sends at most once a minute unless [force] (leaving the player, or the end of the title).
 
 ## data/Secure.kt (56 lines) - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
     18 object Secure  - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
@@ -468,56 +482,55 @@ Find a symbol with grep on this file, then read only that file around the line n
     69   fun toJson(e: Entry)
     76   fun fromJson(o: JSONObject)
 
-## data/Watched.kt (21 lines) - Which episodes of each show this profile has finished (90% or more, or marked by hand).
+## data/Watched.kt (27 lines) - Which episodes of each show this profile has finished (90% or more, or marked by hand).
      8 object Watched  - Which episodes of each show this profile has finished (90% or more, or marked by hand).
      9   fun sp()
     11   fun of(metaId: String)
     15   fun has(metaId: String, videoId: String)
-    17   fun set(metaId: String, videoId: String, watched: Boolean)
+    18   fun titleDone(m: Meta)
+    21   fun setTitle(m: Meta, watched: Boolean)  - A whole title marked by hand: a movie is its own "episode", a show gets the flag "*" (its episodes keep their 
+    23   fun set(metaId: String, videoId: String, watched: Boolean)
 
-## screens/AddonsActivity.kt (27 lines) - Settings, Addons: the list of addons, in a page of its own.
-    13 class AddonsActivity  - Settings, Addons: the list of addons, in a page of its own.
-    16   fun onCreate(savedInstanceState: Bundle?)
-    26   fun onDestroy()
+## screens/ArrangeActivity.kt (116 lines) - Reorder Home Catalogs (or the apps row): a page of cards, each with its name, where it comes from, an on/off t
+    21 class ArrangeActivity  - Reorder Home Catalogs (or the apps row): a page of cards, each with its name, where it comes from, an on/off t
+    29   fun onCreate(savedInstanceState: Bundle?)
+    51   fun fill(keys: List<Triple<String, String, String>>, hidden: List<String>, onSav
+    58   fun rowFor(item: Item)
+    94   fun refreshCarry()  - The card being carried is outlined in the brand colour.
+   102   fun move(row: View, d: Int)  - Swaps the card with its neighbour and keeps focus on its handle.
+   112   fun persist()
+   115   fun onBackPressed()
 
-## screens/ArrangeActivity.kt (81 lines) - Orders and hides the Home rows or the apps row.
-    19 class ArrangeActivity  - Orders and hides the Home rows or the apps row.
-    26   fun onCreate(savedInstanceState: Bundle?)
-    48   fun fill(keys: List<Pair<String, String>>, hidden: List<String>, onSave: (List<S
-    55   fun rowFor(item: Item)
-    70   fun move(row: View, d: Int)  - Swaps the row with its neighbour and puts focus back on the button that was pressed.
-    80   fun persist()
-
-## screens/DetailsActivity.kt (368 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
+## screens/DetailsActivity.kt (372 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     26 class DetailsActivity  - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     48   fun onCreate(savedInstanceState: Bundle?)
-    89   fun render()
-   143   fun statusLabel()
-   146   fun nextEpisodeLine()  - "Next episode: S4 \u00b7 E6 \u00b7 Friday, Nov 19" for the first episode that has not aired yet.
-   152   fun chip(text: String)
-   158   fun people()  - People shown in Cast & crew: directors first, then writers, then cast, each name once.
-   162   fun renderPanel()  - The episodes (series) with Cast & Crew under them.
-   172   fun refreshEpisodes(episode: Int = -1)  - Redraws just the episodes (another season, a changed tick) and puts focus back on [episode] in the strip, or e
-   181   fun strip(h: Int)
-   191   fun episodesPanel()
-   221   fun episodeBadge(v: Video)  - "EPISODE 6" with its air date: "Nov 12, 2026" once aired, "AIRS Nov 19, 2026" before.
-   228   fun episodeMenu(v: Video)  - Hold OK on an episode: choose a source, or mark it watched or not.
-   237   fun castSection()  - Cast & Crew, labelled, under the episodes (or on its own for a movie).
-   243   fun openTrailer(id: String)  - Plays the trailer in the app (TrailerActivity), which hands over to the YouTube app only when YouTube will not
-   245   fun toggleWatched(watched: Boolean)
-   254   fun mainVideoId()  - The episode to play from the main button: where the viewer left off, else the first one.
-   257   fun mainVideo()  - Series: the episode being watched, else the first one not finished yet, else the first.
-   267   fun playMain()
-   268   fun sourcesMain()
-   270   fun videoFor(id: String)
-   273   fun playVideo(videoId: String)  - Finds streams, picks the best, and starts the player.
-   303   fun openSources(videoId: String)
-   307   fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: Stre
-   319   fun noStreams(videoId: String, statuses: List<StreamResolver.AddonStatus>)  - Says why nothing played and offers the next step: add an addon when there is none, or try again when they answ
-   327   fun showBusy(msg: String)
-   332   fun dismissBusy()
-   335   fun onResume()  - Coming back from the player: the tick and the Next button move on.
-   337   fun onDestroy()
+    92   fun render()
+   146   fun statusLabel()
+   149   fun nextEpisodeLine()  - "Next episode: S4 \u00b7 E6 \u00b7 Friday, Nov 19" for the first episode that has not aired yet.
+   155   fun chip(text: String)
+   161   fun people()  - People shown in Cast & crew: directors first, then writers, then cast, each name once.
+   165   fun renderPanel()  - The episodes (series) with Cast & Crew under them.
+   175   fun refreshEpisodes(episode: Int = -1)  - Redraws just the episodes (another season, a changed tick) and puts focus back on [episode] in the strip, or e
+   184   fun strip(h: Int)
+   194   fun episodesPanel()
+   224   fun episodeBadge(v: Video)  - "EPISODE 6" with its air date: "Nov 12, 2026" once aired, "AIRS Nov 19, 2026" before.
+   231   fun episodeMenu(v: Video)  - Hold OK on an episode: choose a source, or mark it watched or not.
+   240   fun castSection()  - Cast & Crew, labelled, under the episodes (or on its own for a movie).
+   246   fun openTrailer(id: String)  - Plays the trailer in the app (TrailerActivity), which hands over to the YouTube app only when YouTube will not
+   248   fun toggleWatched(watched: Boolean)
+   258   fun mainVideoId()  - The episode to play from the main button: where the viewer left off, else the first one.
+   261   fun mainVideo()  - Series: the episode being watched, else the first one not finished yet, else the first.
+   271   fun playMain()
+   272   fun sourcesMain()
+   274   fun videoFor(id: String)
+   277   fun playVideo(videoId: String)  - Finds streams, picks the best, and starts the player.
+   307   fun openSources(videoId: String)
+   311   fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: Stre
+   323   fun noStreams(videoId: String, statuses: List<StreamResolver.AddonStatus>)  - Says why nothing played and offers the next step: add an addon when there is none, or try again when they answ
+   331   fun showBusy(msg: String)
+   336   fun dismissBusy()
+   339   fun onResume()  - Coming back from the player: the tick and the Next button move on.
+   341   fun onDestroy()
 
 ## screens/PlayerActivity.kt (673 lines) - Full-screen player.
     35 class PlayerActivity  - Full-screen player.
@@ -574,40 +587,53 @@ Find a symbol with grep on this file, then read only that file around the line n
    659   fun onStop()
    666   fun onDestroy()
 
-## screens/SearchActivity.kt (65 lines) - Search across the catalog addons.
-    20 class SearchActivity  - Search across the catalog addons.
-    24   fun onCreate(savedInstanceState: Bundle?)
+## screens/SettingsActivity.kt (575 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
+    27 class SettingsActivity  - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
+    32   fun card(title: String)  - A card inside a group (kind S): its title, then the rows that follow it up to the next card.
+    35   fun header(t: String, subtitle: String = "", icon: Int = 0, divider: Boolean = f  - A group of the left list: its name, the line under the page title, its icon, and whether a divider line comes 
+    38   fun field(label: String, hint: String, submit: (String)  - Text typed in the page itself (kind E): [value] is the hint, [input] gets the text, the button says [label].
+    39   fun toggle(label: String, desc: String, get: ()
+    40   fun choice(label: String, desc: String, opts: List<T>, get: ()
+    42   fun action(label: String, desc: String = "", icon: Int = 0, value: ()
+    43   fun info(label: String, value: String)
+    60   fun openSub(id: String)
+    61   fun focusFirst()
+    63   fun onResume()
+    65   fun androidSettings()
+    76   fun testSources()
+    86   fun turnOnFallback()  - Turns the Home button fallback on, or opens the system accessibility page when this app may not do it itself.
+    91   fun profileMenu()
+   105   fun shareMenu()  - Choose another profile whose addons this one uses, or stop sharing.
+   116   fun askName(kids: Boolean)
+   118   fun arrange(what: String)
+   120   fun backupNow()
+   130   fun showCode(code: String, extra: String = "")
+   134   fun restoreDialog()
+   140   fun lastBackupText()
+   142   fun signIn()
+   163   fun signOut()
+   167   fun rows()
+   268   fun subPage()
+   278   fun showPhonePopup(addr: String)  - Manage from phone: a bare pop-up over the dimmed page with a code to scan, its address and Close.
+   300   fun addonName(url: String)
+   302   fun provides(a: Addon)
+   313   fun addonsChanged()  - Reloads the addons, tells Home to reload, and redraws this page.
+   315   fun installAddon(link: String)
+   321   fun addonsRows()
+   348   fun addonRows(url: String)
+   363   fun profileRows()
+   388   fun checkUpdate()
+   401   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
+   403   fun onCreate(savedInstanceState: Bundle?)
+   419   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
+   445   fun railItem(g: Group, i: Int)
+   457   fun closeSubs()
+   459   fun buildPanel(keep: Int)
+   504   fun view(r: Row, changed: ()
+   565   fun onBackPressed()
+   574   fun onDestroy()
 
-## screens/SettingsActivity.kt (321 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
-    26 class SettingsActivity  - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
-    30   fun header(t: String)
-    31   fun toggle(label: String, desc: String, get: ()
-    32   fun choice(label: String, desc: String, opts: List<T>, get: ()
-    34   fun action(label: String, desc: String = "", run: ()
-    35   fun info(label: String, value: String)
-    44   fun onResume()
-    46   fun androidSettings()
-    57   fun testSources()
-    66   fun profileMenu()
-    80   fun shareMenu()  - Choose another profile whose addons this one uses, or stop sharing.
-    91   fun askName(kids: Boolean)
-    93   fun arrange(what: String)
-    95   fun backupNow()
-   105   fun showCode(code: String, extra: String = "")
-   109   fun restoreDialog()
-   115   fun lastBackupText()
-   117   fun signIn()
-   138   fun signOut()
-   142   fun rows()
-   214   fun checkUpdate()
-   226   fun onCreate(savedInstanceState: Bundle?)
-   242   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
-   259   fun railItem(name: String, i: Int)
-   269   fun buildPanel(keep: Int)
-   292   fun view(r: Row, changed: ()
-   318   fun onBackPressed()
-
-## screens/SetupActivity.kt (128 lines) - First run: one full screen per step (Home app, Home button, notifications, addons).
+## screens/SetupActivity.kt (129 lines) - First run: one full screen per step (Home app, Home button, notifications, addons).
     25 class SetupActivity  - First run: one full screen per step (Home app, Home button, notifications, addons).
     43   fun onCreate(savedInstanceState: Bundle?)
     50   fun onResume()
@@ -642,12 +668,12 @@ Find a symbol with grep on this file, then read only that file around the line n
     40   fun next()
     48   fun onDetachedFromWindow()
 
-## services/HomeButtonService.kt (41 lines) - For boxes whose system keeps its own launcher as Home: when the original launcher's Home screen comes to the f
+## services/HomeButtonService.kt (40 lines) - For boxes whose system keeps its own launcher as Home: when the original launcher's Home screen comes to the f
     18 class HomeButtonService  - For boxes whose system keeps its own launcher as Home: when the original launcher's Home screen comes to the f
     21   fun onServiceConnected()
-    26   fun onAccessibilityEvent(e: AccessibilityEvent)
-    38   fun onKeyEvent(e: KeyEvent)  - The button mapper outside the launcher: the rules that work everywhere, or only outside My Lists TV.
-    40   fun onInterrupt()
+    25   fun onAccessibilityEvent(e: AccessibilityEvent)
+    37   fun onKeyEvent(e: KeyEvent)  - The button mapper outside the launcher: the rules that work everywhere, or only outside My Lists TV.
+    39   fun onInterrupt()
 
 ## services/NotificationsService.kt (53 lines) - The bell at the top right of Home.
     17 class NotificationsService  - The bell at the top right of Home.
@@ -663,19 +689,6 @@ Find a symbol with grep on this file, then read only that file around the line n
     50   fun dismiss(key: String)
     51   fun dismissAll()
     52   fun component(c: Context)
-
-## ui/AddonsScreen.kt (125 lines) - Installed addons: what each provides, on or off, order, remove, and a way to add one.
-    16 class AddonsScreen  - Installed addons: what each provides, on or off, order, remove, and a way to add one.
-    22   fun stop()
-    30   fun start()
-    32   fun rebuild()
-    64   fun provides(a: Addon)
-    74   fun row(title: String, sub: String, trailing: String, onClick: ()
-    91   fun menu(url: String, name: String)
-   103   fun confirmRemove(url: String, name: String)
-   111   fun askUrl()
-   119   fun install(raw: String)
-   124   fun reload()
 
 ## ui/AppGridAdapter.kt (49 lines) - The apps of the Apps panel: a banner (or the icon on a dark tile) with the app's name under it.
     14 class AppGridAdapter  - The apps of the Apps panel: a banner (or the icon on a dark tile) with the app's name under it.
@@ -697,42 +710,57 @@ Find a symbol with grep on this file, then read only that file around the line n
    158   fun refreshContinue()  - Called when coming back from the player, or when the account's lists arrive, so they show without reloading ca
    168   fun hero(m: CardModel)
 
-## ui/Cards.kt (268 lines)
-    20 class CardKind
-    22 class CardModel
-    39 class RowModel
-    54 class Card  - One tile.
-   109   fun bind(m: CardModel)
-   135 class CardAdapter  - A horizontal strip of cards.
-   145   class H
-   147   fun set(newItems: List<CardModel>)
-   149   fun payloads()
-   152   fun move(from: Int, to: Int)  - Moves one card to another place (the list is changed in place, so the row's own model stays in step).
-   157   fun onCreateViewHolder(parent: ViewGroup, viewType: Int)
-   163   fun onBindViewHolder(h: H, position: Int)
-   175   fun getItemCount()
-   179 class RowView  - A titled row: heading, optional source label, horizontal strip.
-   205 class RowsList  - A vertical list of [RowView]s over [rows].
-   216   fun requestChildFocus(child: View?, focused: View?)  - Going to the first row shows it whole (its title included), not cut off at the top.
-   223   fun focusSearch(focused: View, direction: Int)  - Up and down land on the card you last had focus on in the next row (its first card if you have not been there)
-   248   fun changed(i: Int)
-   249   fun changedAll()
-   250   fun inserted(i: Int)
+## ui/Cards.kt (308 lines)
+    22 class CardKind
+    24 class CardModel
+    41 class RowModel
+    56 class Card  - One tile.
+   113   fun bind(m: CardModel)
+   139 class CardAdapter  - A horizontal strip of cards.
+   151   class H
+   153   fun set(newItems: List<CardModel>)
+   155   fun payloads()
+   158   fun move(from: Int, to: Int)  - Moves one card to another place (the list is changed in place, so the row's own model stays in step).
+   163   fun onCreateViewHolder(parent: ViewGroup, viewType: Int)
+   169   fun onBindViewHolder(h: H, position: Int)
+   185   fun getItemCount()
+   189 class RowView  - A titled row: heading, optional source label, horizontal strip.
+   215 class RowsList  - A vertical list of [RowView]s over [rows].
+   226   fun requestChildFocus(child: View?, focused: View?)  - Landing on a row shows it whole, title included: the first row goes to the very top, any other row is scrolled
+   235   fun rowOf(v: View)  - The row (a direct child of this list) that holds [v].
+   238   fun cardIn(next: RowView)  - The card to land on in [next]: the one you were last on in that row, or its first card if you have not been th
+   254   fun focusRowAt(target: Int, tries: Int = 0)  - A row that is not on screen yet (it was scrolled away): bring it in, then put the focus on its card.
+   263   fun focusSearch(focused: View, direction: Int)  - Up and down land on the card you last had focus on in the next row (its first card if you have not been there)
+   288   fun changed(i: Int)
+   289   fun changedAll()
+   290   fun inserted(i: Int)
 
-## ui/LibraryScreen.kt (55 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
+## ui/LibraryScreen.kt (53 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     12 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     34   fun start()
     44   fun show()
 
-## ui/MapperDialogs.kt (113 lines) - The Button Mapper's dialogs, opened from Settings, Remote & Buttons: "Add Button Mapping" (press a button, or 
-    19 object MapperDialogs  - The Button Mapper's dialogs, opened from Settings, Remote & Buttons: "Add Button Mapping" (press a button, or 
-    21   fun add(act: Activity, changed: ()  - Press a button on the remote, or choose it from a list when the remote does not report it.
-    32   fun chooseFromList(act: Activity, changed: ()
-    40   fun edit(act: Activity, key: Int, changed: ()  - One button: what its presses do, on or off, where it works, delete.
-    95   fun pickAction(act: Activity, key: Int, press: String, done: ()  - Kind of job first, then the job.
+## ui/MapperDialogs.kt (270 lines) - The Button Mapper's modals, in the order Settings, Remote & Buttons opens them: Add Button Mapping (press a bu
+    25 object MapperDialogs  - The Button Mapper's modals, in the order Settings, Remote & Buttons opens them: Add Button Mapping (press a bu
+    27   class Sheet  - One modal: a title, a line under it, then a scrolling list of cards.
+    73   fun iconFor(key: Int)  - The icon of a button's row: its own for the common buttons, otherwise by kind.
+    90   fun pressTitle(p: String)
+    92   fun categoryOf(key: Int)
+   107   fun add(act: Activity, changed: ()  - Press the button on the remote (it listens for ten seconds), or choose it from the known buttons.
+   139   fun timedOut(act: Activity, changed: ()
+   148   fun reserved(act: Activity, changed: ()
+   156   fun known(act: Activity, changed: ()  - The known buttons, by kind.
+   169   fun configure(act: Activity, key: Int, changed: ()  - What a found button will do: a draft of its three presses, saved by "Save Mapping".
+   197   fun edit(act: Activity, key: Int, changed: ()  - One button: what its presses do, on or off, where it works, restore, delete.
+   233   fun confirm(act: Activity, title: String, message: String, confirmText: String,   - A yes or no.
+   244   fun pickAction(act: Activity, key: Int, press: String, current: String?, done: (  - The jobs a press can do, in groups.
 
 ## ui/PlaySession.kt (19 lines) - What the player needs, handed over in memory because a stream list is too big and too short-lived for an inten
      7 object PlaySession  - What the player needs, handed over in memory because a stream list is too big and too short-lived for an inten
+
+## ui/Pop.kt (44 lines) - A short message at the bottom of the screen, drawn by the app itself.
+    18 object Pop  - A short message at the bottom of the screen, drawn by the app itself.
+    23   fun toast(c: Context, text: CharSequence, long: Boolean = false)
 
 ## ui/Qr.kt (122 lines) - A small QR code maker for short links (byte mode, error correction L, versions 1 to 5, so up to 106 bytes).
      8 object Qr  - A small QR code maker for short links (byte mode, error correction L, versions 1 to 5, so up to 106 bytes).
@@ -747,6 +775,13 @@ Find a symbol with grep on this file, then read only that file around the line n
    102   fun remainder(data: ByteArray, div: IntArray)
    109   fun penalty(m: Array<BooleanArray>)  - A simple badness score (long runs, 2x2 blocks, dark share) to pick the mask that scans best.
 
+## ui/SearchScreen.kt (103 lines) - "Search" as a page like the others: a field to type in with the system keyboard.
+    24 class SearchScreen  - "Search" as a page like the others: a field to type in with the system keyboard.
+    56   fun card(m: Meta)
+    59   fun loadTrending()  - Trending movies and series from the first catalog of each kind, as rows under the field.
+    75   fun start()
+   102   fun stop()
+
 ## ui/SidePanel.kt (95 lines) - A tall rounded panel on the right edge over a dimmed screen.
     20 class SidePanel  - A tall rounded panel on the right edge over a dimmed screen.
     42   fun show(page: View)
@@ -758,59 +793,79 @@ Find a symbol with grep on this file, then read only that file around the line n
     69   fun focusIndex(page: View)
     70   fun focusFirst(page: View, at: Int = 0)
 
+## ui/TitleMenu.kt (33 lines) - Hold OK on a poster or tile: Go to details, add to or remove from the Library, mark as watched or not.
+     8 object TitleMenu  - Hold OK on a poster or tile: Go to details, add to or remove from the Library, mark as watched or not.
+     9   fun show(act: Activity, meta: Meta, open: ()
+    25   fun setWatched(act: Activity, meta: Meta, watched: Boolean)  - Marks a whole title watched (or not), here and in the account's watched history.
+
 ## ui/Toggle.kt (21 lines) - An on/off switch: a pill with a white knob, brand blue when on.
      9 class Toggle  - An on/off switch: a pill with a white knob, brand blue when on.
     12   fun onMeasure(w: Int, h: Int)
     14   fun onDraw(canvas: Canvas)
 
-## ui/Ui.kt (178 lines) - Colors and small view builders.
+## ui/Ui.kt (182 lines) - Colors and small view builders.
     20 object Ui  - Colors and small view builders.
-    51   fun fade(o: GradientDrawable.Orientation, vararg colors: Int)  - The three dark fades laid over artwork so text stays readable: from the left, from the bottom, from the top, a
-    52   fun scrimLeft()
-    53   fun scrimBottom()
-    54   fun scrimTop()
-    55   fun scrimShade()
-    57   fun rounded(c: Context, color: Int, radius: Int, outline: Int = CLEAR)
-    61   fun rowStyle(c: Context, v: View, radius: Int = R_PANEL, fill: Int = CARD)  - The look of a focusable row or panel: rounded CARD fill, clipped to its corners, white focus ring at the same 
-    69   fun scale(c: Context)  - Every size is designed for a 960-unit-wide screen and scaled by the real screen width, because TV boxes report
-    70   fun dp(c: Context, v: Int)
-    71   fun dpf(c: Context, v: Float)
-    72   fun size(t: TextView, sp: Float)
-    75   fun focusBg(c: Context, radiusDp: Int = 10, fill: Int = FOCUS_FILL)  - White ring and soft fill while focused, nothing otherwise.
-    86   fun iconButton(c: Context, icon: Int, desc: String, onClick: ()  - A round icon button for the top bar: a white ring while focused.
-    96   fun pillBg(c: Context, normal: Int = FILL, focusedFill: Int = FOCUS_FILL)  - A pill: a white ring on a soft fill when focused (the text stays white), a brand-blue outline on a faint fill 
-   105   fun text(c: Context, s: CharSequence?, sp: Float, color: Int = TEXT, bold: Boole
-   114   fun button(c: Context, label: String, primary: Boolean = false, onClick: ()  - [primary] is the one main action on a screen: filled brand blue until focused.
-   124   class Act  - One button of [dialog].
-   127   fun dialog(a: android.app.Activity, title: String, message: CharSequence, vararg  - A message dialog in the app's own look: title, a sentence or two, and a row of buttons (the first one has the 
-   145   fun askText(a: android.app.Activity, title: String, hint: String, ok: String, me  - Asks for one line of text.
-   159   fun hbox(c: Context, gapDp: Int = 0)
-   164   fun vbox(c: Context)
-   166   fun matchWrap()
-   167   fun wrap()
-   170   fun focusScale(v: View, lite: Boolean, amount: Float = 1.06f)  - Scale-up on focus unless the box is in lite mode.
+    52   fun fade(o: GradientDrawable.Orientation, vararg colors: Int)  - The three dark fades laid over artwork so text stays readable: from the left, from the bottom, from the top, a
+    53   fun scrimLeft()
+    54   fun scrimBottom()
+    55   fun scrimTop()
+    56   fun scrimShade()
+    58   fun rounded(c: Context, color: Int, radius: Int, outline: Int = CLEAR)
+    62   fun rowStyle(c: Context, v: View, radius: Int = R_PANEL, fill: Int = CARD)  - The look of a focusable row or panel: rounded CARD fill, clipped to its corners, white focus ring at the same 
+    70   fun scale(c: Context)  - Every size is designed for a 960-unit-wide screen and scaled by the real screen width, because TV boxes report
+    71   fun dp(c: Context, v: Int)
+    74   fun columns(c: Context, bw: Int, pad: Int = 84)  - How many cards of unit width [bw] (a card kind's width before the size setting) fit across a page, so a larger
+    75   fun dpf(c: Context, v: Float)
+    76   fun size(t: TextView, sp: Float)
+    79   fun focusBg(c: Context, radiusDp: Int = 10, fill: Int = FOCUS_FILL)  - White ring and soft fill while focused, nothing otherwise.
+    90   fun iconButton(c: Context, icon: Int, desc: String, onClick: ()  - A round icon button for the top bar: a white ring while focused.
+   100   fun pillBg(c: Context, normal: Int = FILL, focusedFill: Int = FOCUS_FILL)  - A pill: a white ring on a soft fill when focused (the text stays white), a brand-blue outline on a faint fill 
+   109   fun text(c: Context, s: CharSequence?, sp: Float, color: Int = TEXT, bold: Boole
+   118   fun button(c: Context, label: String, primary: Boolean = false, onClick: ()  - [primary] is the one main action on a screen: filled brand blue until focused.
+   128   class Act  - One button of [dialog].
+   131   fun dialog(a: android.app.Activity, title: String, message: CharSequence, vararg  - A message dialog in the app's own look: title, a sentence or two, and a row of buttons (the first one has the 
+   149   fun askText(a: android.app.Activity, title: String, hint: String, ok: String, me  - Asks for one line of text.
+   163   fun hbox(c: Context, gapDp: Int = 0)
+   168   fun vbox(c: Context)
+   170   fun matchWrap()
+   171   fun wrap()
+   174   fun focusScale(v: View, lite: Boolean, amount: Float = 1.06f)  - Scale-up on focus unless the box is in lite mode.
 
 ## Resources and manifest
-  res/drawable/banner.xml
   res/drawable/dialog_bg.xml
   res/drawable/dialog_button.xml
   res/drawable/dialog_item.xml
   res/drawable/ic_add.xml
   res/drawable/ic_apps.xml
+  res/drawable/ic_back.xml
   res/drawable/ic_bell.xml
   res/drawable/ic_bookmark.xml
   res/drawable/ic_check.xml
+  res/drawable/ic_circle.xml
   res/drawable/ic_close.xml
+  res/drawable/ic_compass.xml
   res/drawable/ic_home.xml
-  res/drawable/ic_launcher.xml
+  res/drawable/ic_info.xml
+  res/drawable/ic_layout.xml
   res/drawable/ic_list.xml
+  res/drawable/ic_menu.xml
+  res/drawable/ic_mic.xml
+  res/drawable/ic_people.xml
+  res/drawable/ic_person.xml
+  res/drawable/ic_play.xml
+  res/drawable/ic_puzzle.xml
+  res/drawable/ic_refresh.xml
+  res/drawable/ic_remote.xml
+  res/drawable/ic_restore.xml
   res/drawable/ic_search.xml
   res/drawable/ic_settings.xml
   res/drawable/ic_trailer.xml
+  res/drawable/ic_tv.xml
+  res/drawable/ic_wrench.xml
   res/values/colors.xml
   res/values/ids.xml
   res/values/strings.xml
   res/values/themes.xml
   res/xml/file_paths.xml
   res/xml/home_button_service.xml
-  manifest components: activity .MainActivity, activity .screens.DetailsActivity, activity .screens.SetupActivity, activity .screens.StreamsActivity, activity .screens.SearchActivity, service .services.BackdropDream, service .services.NotificationsService, service .services.HomeButtonService, activity .screens.AddonsActivity, activity .screens.SettingsActivity, activity .screens.TrailerActivity, activity .screens.ArrangeActivity, activity .screens.PlayerActivity
+  manifest components: activity .MainActivity, activity .screens.DetailsActivity, activity .screens.SetupActivity, activity .screens.StreamsActivity, service .services.BackdropDream, service .services.NotificationsService, service .services.HomeButtonService, activity .screens.SettingsActivity, activity .screens.TrailerActivity, activity .screens.ArrangeActivity, activity .screens.PlayerActivity

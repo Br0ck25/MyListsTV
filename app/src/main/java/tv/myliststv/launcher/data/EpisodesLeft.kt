@@ -25,10 +25,10 @@ object EpisodesLeft {
     fun airsText(airMs: Long, nowMs: Long, tz: TimeZone = TimeZone.getDefault()): String {
         val day = 86_400_000L
         val days = (Math.floorDiv(airMs, day) - Math.floorDiv(nowMs + tz.getOffset(nowMs), day)).toInt()
-        return when { days <= 0 -> "Airs today"; days == 1 -> "Airs tomorrow"; else -> "Airs in $days days" }
+        return when { days <= 0 -> "Airs Today"; days == 1 -> "Airs Tomorrow"; else -> "Airs in $days Days" }
     }
 
-    fun leftText(n: Int) = if (n == 1) "1 episode left" else "$n episodes left"
+    fun leftText(n: Int) = "$n EP left"
 
     /** "45 min left" or "1h 5m left" for something you have started, null when its length is not known. */
     fun timeLeft(e: WatchStore.Entry): String? {

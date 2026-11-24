@@ -92,7 +92,7 @@ class SmokeTest {
     }
 
     @Test fun addonsPageOpensFromSettings() {
-        val a = Robolectric.buildActivity(AddonsActivity::class.java).setup().get()
+        val a = Robolectric.buildActivity(SettingsActivity::class.java, Intent().putExtra("open", "addons")).setup().get()
         settle(1500)
         assertTrue(views(a.window.decorView).filterIsInstance<android.widget.TextView>().any { it.text.toString() == "Addons" })
     }
@@ -105,7 +105,7 @@ class SmokeTest {
         assertTrue(views(d.window.decorView).any { it is android.widget.TextView && it.text.toString() == "Dune" })
         Robolectric.buildActivity(StreamsActivity::class.java, Intent().putExtra("meta", json).putExtra("videoId", "tt1160419")).setup()
         settle(2000)
-        Robolectric.buildActivity(SearchActivity::class.java).setup()
+        tv.myliststv.launcher.ui.SearchScreen(d, {}).start()   // Search is a page of Home now, not an activity
         Robolectric.buildActivity(SettingsActivity::class.java).setup()
     }
 

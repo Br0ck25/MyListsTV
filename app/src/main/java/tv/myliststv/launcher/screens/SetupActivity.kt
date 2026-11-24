@@ -73,6 +73,7 @@ class SetupActivity : Activity() {
 
         val page = Ui.hbox(this, 48).apply { setPadding(Ui.dp(this@SetupActivity, 64), Ui.dp(this@SetupActivity, 40), Ui.dp(this@SetupActivity, 64), Ui.dp(this@SetupActivity, 40)) }
         val left = Ui.vbox(this).apply { gravity = Gravity.CENTER_VERTICAL }
+        left.addView(android.widget.ImageView(this).apply { setImageResource(tv.myliststv.launcher.R.drawable.ic_launcher) }, LinearLayout.LayoutParams(Ui.dp(this, 96), Ui.dp(this, 96)).apply { bottomMargin = Ui.dp(this@SetupActivity, 18) })
         left.addView(Ui.text(this, "Set up My Lists TV", 34f, Ui.TEXT, true))
         left.addView(Ui.text(this, "Every step is optional. You can do any of them later in Settings.", 14f, Ui.DIM).apply { setLineSpacing(0f, 1.15f) }, Ui.matchWrap().apply { topMargin = Ui.dp(this@SetupActivity, 8) })
         steps.forEach { s ->
@@ -104,12 +105,12 @@ class SetupActivity : Activity() {
                 Step.HOME -> add("Make My Lists TV my Home app", true) { HomeSetup.requestHome(this) }
                 Step.BUTTON -> add("Turn on the Home button", true) {
                     if (HomeSetup.enableFallback(this)) { shown = ""; render() }
-                    else try { Toast.makeText(this, "Turn on My Lists TV Home button", Toast.LENGTH_LONG).show(); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
+                    else try { tv.myliststv.launcher.ui.Pop.toast(this, "Turn on My Lists TV Home button", true); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
                 }
                 Step.NOTICES -> add("Open notification settings", true) {
-                    try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Toast.makeText(this, "This TV has no such setting. Use the phone or computer steps.", Toast.LENGTH_LONG).show() }
+                    try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(this, "This TV has no such setting. Use the phone or computer steps.", true) }
                 }
-                Step.ADDONS -> add("Add an addon", true) { startActivity(Intent(this, AddonsActivity::class.java)) }
+                Step.ADDONS -> add("Add an addon", true) { startActivity(Intent(this, SettingsActivity::class.java).putExtra("open", "addons")) }
             }
             // TVs that block these switches on the TV itself can be set up from a phone or computer.
             if (current != Step.ADDONS) add("Set up from a phone or computer") { HomeSetup.phoneSteps(this) }
@@ -117,7 +118,7 @@ class SetupActivity : Activity() {
         } else {
             val all = steps.all { done(it) }
             panel.addView(Ui.text(this, if (all) "You are all set" else "Setup finished", 24f, Ui.TEXT, true))
-            panel.addView(Ui.text(this, if (all) "My Lists TV is ready." else "The steps you skipped are in Settings, under Default launcher and Addons, whenever you want them.", 16f, Ui.DIM).apply { setLineSpacing(0f, 1.15f) },
+            panel.addView(Ui.text(this, if (all) "My Lists TV is ready." else "The steps you skipped are in Settings, under Default Launcher and Addons, whenever you want them.", 16f, Ui.DIM).apply { setLineSpacing(0f, 1.15f) },
                 Ui.matchWrap().apply { topMargin = Ui.dp(this@SetupActivity, 12) })
             add("Continue", true) { finishSetup() }
         }
