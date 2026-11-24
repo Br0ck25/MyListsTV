@@ -84,7 +84,7 @@ class BrowseScreen(
                 val idx = rows.indexOf(row)
                 if (idx < 0) return@load
                 if (metas != null) {
-                    row.items = metas.filter(Profiles::allows).take(30).map { if (wide) CardModel(it.name, it.background ?: it.poster, listOfNotNull(it.year, it.rating?.let { r -> "\u2605 $r" }).joinToString("  \u00b7  "), payload = it) else CardModel(it.name, it.poster, payload = it) }
+                    row.items = metas.filter(Profiles::allows).take(30).map { if (wide) CardModel(it.name, it.background ?: it.poster, listOfNotNull(it.year, it.rating?.let { r -> "\u2605 $r" }).joinToString("  \u00b7  "), payload = it) else CardModel(it.name, it.poster, payload = it, done = Watched.titleDone(it)) }
                     row.loaded = true
                 } else if (row.items.isEmpty()) row.loaded = true
                 list.changed(idx)
@@ -113,7 +113,7 @@ class BrowseScreen(
         if (episode) { Watched.set(e.metaId, e.videoId, true); WatchStore.remove(e.metaId) }
         else WatchStore.save(e.copy(positionMs = 1L, durationMs = 1L, updated = System.currentTimeMillis()))
         Progress.markWatched(e.metaId, e.type, e.season, e.episode, true)
-        Toast.makeText(c, if (Prefs.accountLink.isNotEmpty()) "Marked watched, and added to My Lists" else "Marked watched", Toast.LENGTH_SHORT).show()
+        tv.myliststv.launcher.ui.Pop.toast(c, if (Prefs.accountLink.isNotEmpty()) "Marked watched, and added to My Lists" else "Marked watched")
     }
 
     private fun addContinue() {

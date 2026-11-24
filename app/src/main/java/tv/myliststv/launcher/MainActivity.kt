@@ -16,6 +16,7 @@ import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -30,10 +31,9 @@ import tv.myliststv.launcher.ui.*
  */
 class MainActivity : Activity() {
 
-    private val tabs = listOf("Home", "Movies", "Series", "Library", "Apps")
+    private val tabs = listOf("Home", "Movies", "Series", "Search", "Library", "Apps")
     private val tabViews = ArrayList<TextView>()
     private lateinit var content: FrameLayout
-    private lateinit var searchBtn: View
     private lateinit var settingsBtn: View
     private lateinit var profileAvatar: TextView
     private lateinit var profileName: TextView
@@ -46,6 +46,8 @@ class MainActivity : Activity() {
     private lateinit var scrims: List<View>
     private lateinit var bellBtn: View
     private lateinit var side: LinearLayout
+    private lateinit var clock: TextView
+    private val clockTick = object : Runnable { override fun run() { clock.text = android.text.format.DateFormat.getTimeFormat(this@MainActivity).format(java.util.Date()); handler.postDelayed(this, 60_000L - System.currentTimeMillis() % 60_000L) } }
     private lateinit var topBar: LinearLayout
     /** True while an app is being moved with the D-pad (hold OK on an app, Move). */
     private var moving = false
@@ -59,7 +61,10 @@ class MainActivity : Activity() {
     private fun updateProfile() { val n = Profiles.active().name; profileName.text = n; profileAvatar.text = n.take(1).uppercase() }
 
     /** Who is watching: the current profile at the top right; OK switches. */
+    private var profileChipView: View? = null
+
     private fun profileChip(): View = Ui.hbox(this, 8).apply {
+        profileChipView = this
         gravity = Gravity.CENTER_VERTICAL
         setPadding(Ui.dp(this@MainActivity, 6), Ui.dp(this@MainActivity, 5), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 5))
         background = Ui.pillBg(this@MainActivity); isFocusable = true; isClickable = true
@@ -114,7 +119,7 @@ class MainActivity : Activity() {
         sys.forEach { n -> card(n.pkg, n.app, n.time, n.title, n.text, { try { n.open?.send() } catch (_: Exception) {}; Notices.dismiss(n.key) }, { Notices.dismiss(n.key) }) }
         if (own.isEmpty() && sys.isEmpty()) list.addView(Ui.text(c, if (allowed) "Nothing new. New episodes of series in your Library show up here." else "Nothing new yet.", 14f, Ui.DIM, false, 3))
         if (!allowed) list.addView(Ui.button(c, "Show the TV's own notifications too") {
-            try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Toast.makeText(c, "This TV has no such setting. See Settings, Launcher setup, for the phone steps.", Toast.LENGTH_LONG).show() }
+            try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(c, "This TV has no such setting. See Settings, Launcher setup, for the phone steps.", true) }
         }, Ui.wrap().apply { topMargin = Ui.dp(c, 8) })
     }
 
@@ -129,7 +134,7 @@ class MainActivity : Activity() {
         item(R.drawable.ic_home, "Launcher settings") { panel.dismiss(); startActivity(Intent(c, SettingsActivity::class.java)) }
         item(R.drawable.ic_settings, "Android settings") {
             panel.dismiss()
-            try { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) } catch (_: Exception) { Toast.makeText(c, "This TV does not open its settings from apps.", Toast.LENGTH_LONG).show() }
+            try { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(c, "This TV does not open its settings from apps.", true) }
         }
         panel.show(page)
     }
@@ -185,8 +190,8 @@ class MainActivity : Activity() {
             background = Ui.scrimTop()
         }
         side = Ui.vbox(this).apply {
-            val p = Ui.dp(this@MainActivity, 10); setPadding(p, Ui.dp(this@MainActivity, 72), p, p)
-            background = Ui.rounded(this@MainActivity, Ui.CARD, Ui.R_DIALOG)
+            val p = Ui.dp(this@MainActivity, 10); setPadding(p, Ui.dp(this@MainActivity, 16), p, p)
+            background = Ui.rounded(this@MainActivity, Ui.SIDE_GLASS, Ui.R_DIALOG)
             visibility = if (navStyle == 1) View.VISIBLE else View.GONE
         }
         tabs.forEachIndexed { i, t ->
@@ -205,26 +210,30 @@ class MainActivity : Activity() {
             addView(Ui.iconButton(this@MainActivity, R.drawable.ic_bell, "Notifications") { showNotices() }, FrameLayout.LayoutParams(icon, icon))
             addView(bellBadge, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, Ui.dp(this@MainActivity, 16), Gravity.TOP or Gravity.END))
         }
-        searchBtn = Ui.iconButton(this, R.drawable.ic_search, "Search") { startActivity(Intent(this, SearchActivity::class.java)) }
         settingsBtn = Ui.iconButton(this, R.drawable.ic_settings, "Settings") { showSettingsPanel() }
-        topBar.addView(profileChip(), LinearLayout.LayoutParams(-2, icon).apply { rightMargin = Ui.dp(this@MainActivity, 8) })
-        topBar.addView(bellBtn, LinearLayout.LayoutParams(icon, icon)); topBar.addView(searchBtn, LinearLayout.LayoutParams(icon, icon)); topBar.addView(settingsBtn, LinearLayout.LayoutParams(icon, icon))
+        if (navStyle == 0) topBar.addView(profileChip(), LinearLayout.LayoutParams(-2, icon).apply { rightMargin = Ui.dp(this@MainActivity, 8) })
+        else side.addView(profileChip(), 0, LinearLayout.LayoutParams(-1, icon).apply { bottomMargin = Ui.dp(this@MainActivity, 10) })
+        topBar.addView(bellBtn, LinearLayout.LayoutParams(icon, icon));  topBar.addView(settingsBtn, LinearLayout.LayoutParams(icon, icon))
+        clock = Ui.text(this, "", 16f, Ui.TEXT2, true).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(Ui.dp(this@MainActivity, 14), 0, 0, 0) }
+        topBar.addView(clock, LinearLayout.LayoutParams(-2, icon))
         updateProfile()
         root.addView(topBar, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
         if (navStyle != 0) {
             root.addView(side, FrameLayout.LayoutParams(sideWidth, -1, Gravity.START).apply { setMargins(Ui.dp(this@MainActivity, 12), Ui.dp(this@MainActivity, 12), 0, Ui.dp(this@MainActivity, 12)) })
-            if (navStyle == 1) content.setPadding(sideWidth + Ui.dp(this, 16), Ui.dp(this, 64), 0, 0)
+            if (navStyle == 1) { content.setPadding(slimWidth - Ui.dp(this, 12), Ui.dp(this, 64), 0, 0); setSideOpen(false) }
         }
         setContentView(root)
         // Moving along the tabs switches page; coming up from a page onto the tabs does not (OK does).
         root.viewTreeObserver.addOnGlobalFocusChangeListener { old, new ->
             val i = tabViews.indexOf(new)
+            if (navStyle == 1) { val inSide = new != null && isIn(new, side); if (inSide != sideOpen) setSideOpen(inSide) else refreshRailTint() }
             if (navStyle != 0 && i >= 0) tabViews.forEachIndexed { k, v -> v.isSelected = k == i }   // the highlight follows the focus at once, no trail
+            if (navStyle == 1) refreshRailTint()
             if (i >= 0 && old != null && old in tabViews) { pendingSelect?.let { handler.removeCallbacks(it) }; pendingSelect = Runnable { select(i) }.also { handler.postDelayed(it, 140) } }
         }
         content.addView(Ui.text(this, "Loading…", 16f, Ui.DIM).apply { gravity = Gravity.CENTER }, FrameLayout.LayoutParams(-1, -1))
         val safe = CrashGuard.safeMode(this)
-        val start = { ready = true; select(0, force = true); tabViews[0].requestFocus(); afterStart(safe); intent.getStringExtra("go")?.let { go(it) } }
+        val start = { ready = true; select(0, force = true); tabViews[0].requestFocus(); afterStart(safe); if (!safe) syncAccount(); intent.getStringExtra("go")?.let { go(it) } }
         if (safe) start() else AddonStore.load { start() }
         handler.postDelayed({ CrashGuard.clear(this) }, 30_000)
     }
@@ -246,11 +255,51 @@ class MainActivity : Activity() {
     /** First run: the setup screens (Home app, Home button, notifications, addons), each one skippable. */
     private fun welcome() = startActivity(Intent(this, SetupActivity::class.java))
 
-    private fun tabView(t: String) = TextView(this).apply {
-        text = t; Ui.size(this, if (navStyle != 0) 20f else 15f); setTextColor(Ui.DIM); typeface = android.graphics.Typeface.DEFAULT_BOLD
+    private var sideOpen = true
+    private val slimWidth get() = Ui.dp(this, 72)
+
+    /** Side bar (always there): a slim strip of icons that opens into the labelled panel while the focus is on it. */
+    private fun setSideOpen(open: Boolean) {
+        if (navStyle != 1 || !::side.isInitialized) return
+        sideOpen = open
+        side.layoutParams = (side.layoutParams as FrameLayout.LayoutParams).apply { width = if (open) sideWidth else slimWidth }
+        side.background = if (open) Ui.rounded(this, Ui.SIDE_GLASS, Ui.R_DIALOG) else android.graphics.drawable.ColorDrawable(Ui.CLEAR)
+        sideItems().forEach { it.showLabel(open, Ui.dp(this, 14)) }
+        if (::profileName.isInitialized) profileName.visibility = if (open) View.VISIBLE else View.GONE
+        // Slim: no pills, just the icons; the one that is focused gets a ring. Open: the names, and the open page outlined.
+        sideItems().forEach {
+            it.background = if (open) Ui.pillBg(this, Ui.CLEAR) else Ui.focusBg(this, Ui.R_PILL, Ui.FOCUS_FILL)
+            it.setPadding(Ui.dp(this, if (open) 16 else 18), Ui.dp(this, 12), Ui.dp(this, 16), Ui.dp(this, 12))
+        }
+        profileChipView?.apply {
+            background = if (open) Ui.pillBg(this@MainActivity) else Ui.focusBg(this@MainActivity, Ui.R_PILL, Ui.FOCUS_FILL)
+            (this as LinearLayout).gravity = if (open) Gravity.CENTER_VERTICAL else Gravity.CENTER
+            setPadding(Ui.dp(this@MainActivity, if (open) 6 else 0), Ui.dp(this@MainActivity, 5), Ui.dp(this@MainActivity, if (open) 16 else 0), Ui.dp(this@MainActivity, 5))
+        }
+        refreshRailTint()
+    }
+
+    /** While the strip is slim only the icons show: the open page's is blue, the others dim. */
+    private fun refreshRailTint() {
+        if (navStyle != 1 || sideOpen) return
+        tabViews.forEach { it.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(if (it.isSelected) Ui.BRAND else Ui.DIM) }
+    }
+
+    private fun sideItems(): List<TabText> = tabViews.map { it as TabText }
+
+    private val tabIcons = listOf(R.drawable.ic_home, R.drawable.ic_play, R.drawable.ic_tv, R.drawable.ic_search, R.drawable.ic_bookmark, R.drawable.ic_apps)
+
+    private fun tabView(t: String) = TabText(this).apply {
+        text = t; label = t; Ui.size(this, if (navStyle != 0) 20f else 15f); typeface = android.graphics.Typeface.DEFAULT_BOLD
         val v = if (navStyle != 0) 12 else 8
         setPadding(Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, v), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, v))
         background = Ui.pillBg(this@MainActivity, Ui.CLEAR); isFocusable = true; isClickable = true
+        // The side bar shows an icon before each name, in the same colour as the name.
+        if (navStyle != 0) {
+            val d = getDrawable(tabIcons[tabs.indexOf(t).coerceAtLeast(0)])!!.mutate(); val s = Ui.dp(this@MainActivity, 22)
+            d.setBounds(0, 0, s, s); setCompoundDrawables(d, null, null, null); compoundDrawablePadding = Ui.dp(this@MainActivity, 14); gravity = Gravity.CENTER_VERTICAL
+        }
+        setTextColor(Ui.DIM)
     }
 
     private fun select(i: Int, force: Boolean = false) {
@@ -258,18 +307,20 @@ class MainActivity : Activity() {
         if (i == current && !force) return
         current = i
         tabViews.forEachIndexed { idx, v -> v.isSelected = navStyle != 0 && idx == i; if (!v.isFocused) v.setTextColor(if (idx == i) Ui.TEXT else Ui.DIM) }
-        (screen as? AddonsScreen)?.stop()
+        refreshRailTint()
+        (screen as? SearchScreen)?.stop()
         content.removeAllViews()
         screen = null
-        showBackdrop(i in 0..2)
+        showBackdrop(i in 0..4)
         when (i) {
             0, 1, 2 -> {
                 val s = BrowseScreen(this, type = when (i) { 1 -> "movie"; 2 -> "series"; else -> null }, withContinue = i == 0, withApps = i == 0,
                     onMeta = ::openMeta, onResume = ::resumeEntry, onApp = ::launch, onAppMenu = ::appMenu, onBackdrop = ::setBackdrop)
                 screen = s; content.addView(s.view); s.start()
             }
-            3 -> { val s = LibraryScreen(this, ::openMeta); screen = s; content.addView(s.view); s.start() }
-            4 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
+            3 -> { val s = SearchScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start() }
+            4 -> { val s = LibraryScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start() }
+            5 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
         }
     }
 
@@ -280,10 +331,9 @@ class MainActivity : Activity() {
 
     /** Where a mapped remote button sends the launcher. */
     private fun go(where: String) {
-        val tab = listOf("home", "movies", "series", "library", "apps").indexOf(where)
+        val tab = listOf("home", "movies", "series", "search", "library", "apps").indexOf(where)
         when {
             tab >= 0 -> { select(tab, force = true); tabViews[tab].requestFocus() }
-            where == "search" -> startActivity(Intent(this, SearchActivity::class.java))
             where == "settings" -> startActivity(Intent(this, SettingsActivity::class.java))
             where == "profiles" -> pickProfile()
         }
@@ -304,7 +354,7 @@ class MainActivity : Activity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
             addCategory(if (a.sideloaded) Intent.CATEGORY_LAUNCHER else Intent.CATEGORY_LEANBACK_LAUNCHER)
         }
-        try { startActivity(intent) } catch (e: Exception) { Toast.makeText(this, "Could not open ${a.label}", Toast.LENGTH_SHORT).show() }
+        try { startActivity(intent) } catch (e: Exception) { tv.myliststv.launcher.ui.Pop.toast(this, "Could not open ${a.label}") }
     }
 
     private fun appMenu(a: AppEntry) {
@@ -314,31 +364,38 @@ class MainActivity : Activity() {
         AlertDialog.Builder(this).setTitle(a.label).setItems(items) { _, i ->
             val which = i - if (onHome) 2 else 0
             if (which < 0) {
-                if (i == 0) { moving = true; Toast.makeText(this, "Move it with Left and Right, then press OK", Toast.LENGTH_LONG).show() }
+                if (i == 0) { moving = true; tv.myliststv.launcher.ui.Pop.toast(this, "Move it with Left and Right, then press OK", true) }
                 else { Prefs.appHidden = Prefs.appHidden + pkg; select(current, force = true) }
                 return@setItems
             }
             try {
                 if (which == 0) startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg")))
                 else startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg")))
-            } catch (e: Exception) { Toast.makeText(this, "Not available on this device", Toast.LENGTH_SHORT).show() }
+            } catch (e: Exception) { tv.myliststv.launcher.ui.Pop.toast(this, "Not available on this device") }
         }.show()
     }
 
     private var seenEpoch = Prefs.epoch
 
+    override fun onPause() { handler.removeCallbacks(clockTick); super.onPause() }
+
+    /** Pulls what the account holds (Library, addons, Continue watching, Airing next) at most every five minutes; also right after the first load, which onResume cannot do as the pages are not ready yet. */
+    private fun syncAccount() {
+        val t = System.currentTimeMillis()
+        if (t - lastSync <= 5 * 60_000L) return
+        lastSync = t
+        Library.pull { if (current == 4) select(4, force = true) }
+        SetupSync.pull { reloadAddons() }
+        Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
+    }
+
     override fun onResume() {
+        if (::clock.isInitialized) { handler.removeCallbacks(clockTick); clockTick.run() }
         super.onResume()
         if (Prefs.navStyle != navStyle) { recreate(); return }
         if (ready) {
             Alerts.check { if (::bellBadge.isInitialized) updateBell() }
-            val t = System.currentTimeMillis()
-            if (t - lastSync > 5 * 60_000L) {
-                lastSync = t
-                Library.pull { if (current == 3) select(3, force = true) }
-                SetupSync.pull { reloadAddons() }
-                Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
-            }
+            syncAccount()
         }
         if (::bellBadge.isInitialized) updateBell()
         if (::profileName.isInitialized) updateProfile()
@@ -348,6 +405,7 @@ class MainActivity : Activity() {
     }
 
     private var pendingHome: Runnable? = null
+    private var lastHomeSeen = 0L
 
     /** One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do. */
     private fun runHome(action: String) {
@@ -363,6 +421,9 @@ class MainActivity : Activity() {
         if (intent.hasCategory(Intent.CATEGORY_HOME)) {
             // Home goes to the Home page; pressing it twice quickly asks who is watching.
             val t = System.currentTimeMillis()
+            // One press can arrive twice (from the system and from the fallback service); anything this close is the same press.
+            if (t - lastHomeSeen < 300) return
+            lastHomeSeen = t
             val double = ButtonMap.homeAction("double")
             if (double != null && t - lastHome < 700) { lastHome = 0; pendingHome?.let { handler.removeCallbacks(it) }; pendingHome = null; runHome(double); return }
             lastHome = t
@@ -374,12 +435,42 @@ class MainActivity : Activity() {
         intent.getStringExtra("go")?.let { go(it) }
     }
 
-    @Deprecated("Back moves to the tabs; the launcher itself never closes.")
+    @Deprecated("Back walks toward the top; the launcher itself never closes.")
     override fun onBackPressed() {
         val f = currentFocus
         val inBar = f != null && (f.parent === tabViews[0].parent)
-        if (!inBar && current >= 0) tabViews[current.coerceIn(0, tabViews.size - 1)].requestFocus()
-        // On the tab bar, Back does nothing: this is the home screen.
+        if (inBar || current < 0) return   // On the tab bar, Back does nothing: this is the home screen.
+        val strip = f?.parent as? androidx.recyclerview.widget.RecyclerView
+        val pos = if (f != null) strip?.getChildAdapterPosition(f) ?: -1 else -1
+        // Not on the first tile: go to the first tile of this row (or of this grid).
+        if (strip != null && pos > 0) { focusItem(strip, 0); return }
+        // On the first tile of a row: go to the first tile of the page, unless this already is it.
+        var list: View? = strip?.parent as? View
+        while (list != null && list !is RowsList) list = list.parent as? View
+        if (list is RowsList) {
+            val first = list.findViewHolderForAdapterPosition(0)?.itemView as? RowView
+            if (first == null || strip !== first.strip) {
+                list.scrollToPosition(0)
+                afterLayout(list) { (list.findViewHolderForAdapterPosition(0)?.itemView as? RowView)?.strip?.let { focusItem(it, 0) } }
+                return
+            }
+        }
+        tabViews[current.coerceIn(0, tabViews.size - 1)].requestFocus()
+    }
+
+    /** Scrolls [rv] to [pos] and puts the focus on that item once it exists. */
+    private fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int) {
+        rv.setTag(R.id.tag_row_pos, pos)
+        rv.scrollToPosition(pos)
+        afterLayout(rv) { rv.findViewHolderForAdapterPosition(pos)?.itemView?.requestFocus() }
+    }
+
+    /** Runs [then] after [rv]'s next layout, when the item it scrolled to exists. */
+    private fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: () -> Unit) {
+        rv.addOnLayoutChangeListener(object : View.OnLayoutChangeListener {
+            override fun onLayoutChange(v: View?, l: Int, t: Int, r: Int, b: Int, ol: Int, ot: Int, or: Int, ob: Int) { rv.removeOnLayoutChangeListener(this); rv.post(then) }
+        })
+        rv.requestLayout()
     }
 
     /** Side bars: Left from the left edge of a page goes to the side bar (and opens it when hidden); Right, or Back, closes a hidden one. While moving an app, Left and Right move it. */
@@ -396,6 +487,11 @@ class MainActivity : Activity() {
                 val up = f.focusSearch(View.FOCUS_UP)
                 if (up != null && isIn(up, topBar)) { tabViews[current.coerceIn(0, tabViews.size - 1)].requestFocus(); return true }
             }
+            // With a side bar, Up from the top row goes to the bell, search and settings at the top right (the one nearest across), not into the side bar.
+            if (navStyle != 0 && e.keyCode == KeyEvent.KEYCODE_DPAD_UP && f != null && isInContent(f) && ready) {
+                val up = f.focusSearch(View.FOCUS_UP)
+                if (up != null && !isInContent(up)) { nearestTopIcon(f).requestFocus(); return true }
+            }
             if (navStyle != 0 && f != null) {
                 if (e.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
                     if (isInContent(f) && atLeftEdge(f)) { openSide(); return true }
@@ -406,6 +502,13 @@ class MainActivity : Activity() {
             }
         }
         return super.dispatchKeyEvent(e)
+    }
+
+    /** Of the three buttons at the top right, the one whose middle is nearest across to [from]. */
+    private fun nearestTopIcon(from: View): View {
+        fun midX(v: View): Int { val p = IntArray(2); v.getLocationOnScreen(p); return p[0] + v.width / 2 }
+        val x = midX(from)
+        return listOf((bellBtn as ViewGroup).getChildAt(0), settingsBtn).minByOrNull { Math.abs(midX(it) - x) }!!
     }
 
     private fun isIn(v: View, container: View): Boolean { var p: android.view.ViewParent? = v.parent; while (p != null) { if (p === container) return true; p = p.parent }; return false }
@@ -437,17 +540,25 @@ class MainActivity : Activity() {
                 }
                 true
             }
-            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_BACK -> { moving = false; Toast.makeText(this, "Placed", Toast.LENGTH_SHORT).show(); true }
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_BACK -> { moving = false; tv.myliststv.launcher.ui.Pop.toast(this, "Placed"); true }
             else -> { moving = false; false }
         }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_SEARCH) { startActivity(Intent(this, SearchActivity::class.java)); return true }
+        if (keyCode == KeyEvent.KEYCODE_SEARCH) { go("search"); return true }
         return super.onKeyDown(keyCode, event)
     }
 
-    override fun onDestroy() { (screen as? AddonsScreen)?.stop(); super.onDestroy() }
+    override fun onDestroy() { (screen as? SearchScreen)?.stop(); super.onDestroy() }
 
     override fun onTrimMemory(level: Int) { super.onTrimMemory(level); if (level >= TRIM_MEMORY_UI_HIDDEN) ImageLoader.trim() }
+}
+
+/** A tab label whose icon follows the text colour. */
+private class TabText(c: android.content.Context) : TextView(c) {
+    var label = ""
+    /** The side bar is a slim strip of icons until it opens; then each icon gets its name. */
+    fun showLabel(on: Boolean, gap: Int) { text = if (on) label else ""; compoundDrawablePadding = if (on) gap else 0; gravity = if (on) Gravity.CENTER_VERTICAL else Gravity.CENTER }
+    override fun setTextColor(color: Int) { super.setTextColor(color); compoundDrawableTintList = android.content.res.ColorStateList.valueOf(color) }
 }

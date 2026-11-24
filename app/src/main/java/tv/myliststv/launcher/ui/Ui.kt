@@ -41,6 +41,7 @@ object Ui {
     const val QR_DARK = 0xFF000000.toInt()      // a QR code must be black on white to scan, whatever the theme
     const val QR_LIGHT = 0xFFFFFFFF.toInt()
     const val OVERLAY = 0xE6000000.toInt()     // dims everything behind a slate or an error
+    const val SIDE_GLASS = 0xE01C1C1E.toInt()  // the hidden side bar: the card colour, a little see-through
     const val BRAND_LINE = 0x800A84FF.toInt()  // brand outline on a banner
     const val R_PILL = 999
     const val R_CARD = 14
@@ -68,6 +69,9 @@ object Ui {
      */
     fun scale(c: Context): Float { val m = c.resources.displayMetrics; return maxOf(m.widthPixels, m.heightPixels) / 960f }
     fun dp(c: Context, v: Int): Int = (v * scale(c) + 0.5f).toInt()
+
+    /** How many cards of unit width [bw] (a card kind's width before the size setting) fit across a page, so a larger size never overlaps. */
+    fun columns(c: Context, bw: Int, pad: Int = 84): Int = ((c.resources.displayMetrics.widthPixels - dp(c, pad)) / (dp(c, bw) * tv.myliststv.launcher.data.Prefs.cardScale + dp(c, 12))).toInt().coerceAtLeast(1)
     fun dpf(c: Context, v: Float): Float = v * scale(c)
     fun size(t: TextView, sp: Float) = t.setTextSize(TypedValue.COMPLEX_UNIT_PX, sp * scale(t.context))
 
@@ -142,9 +146,9 @@ object Ui {
     }
 
     /** Asks for one line of text. The keyboard is closed again when the dialog goes away, and Done on the keyboard confirms. */
-    fun askText(a: android.app.Activity, title: String, hint: String, ok: String, message: String? = null, caps: Boolean = false, onOk: (String) -> Unit) {
+    fun askText(a: android.app.Activity, title: String, hint: String, ok: String, message: String? = null, caps: Boolean = false, initial: String = "", onOk: (String) -> Unit) {
         val e = android.widget.EditText(a).apply {
-            this.hint = hint; setHintTextColor(DIM); setTextColor(TEXT); setSingleLine(true)
+            this.hint = hint; setHintTextColor(DIM); setTextColor(TEXT); setSingleLine(true); setText(initial); setSelection(initial.length)
             inputType = android.text.InputType.TYPE_CLASS_TEXT or (if (caps) android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS else android.text.InputType.TYPE_TEXT_VARIATION_URI)
             imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_DONE
         }

@@ -78,7 +78,10 @@ class DetailsActivity : Activity() {
         body.addView(hero, Ui.matchWrap())
         panel = Ui.vbox(c).apply { clipChildren = false }   // the episode strip draws a little outside its column: the ring and the grow-on-focus
         body.addView(panel, Ui.matchWrap())
-        frame.addView(ScrollView(c).apply { addView(body); isFillViewport = true; isVerticalScrollBarEnabled = false }, FrameLayout.LayoutParams(-1, -1))
+        val scroll = ScrollView(c).apply { addView(body); isFillViewport = true; isVerticalScrollBarEnabled = false }
+        frame.addView(scroll, FrameLayout.LayoutParams(-1, -1))
+        // Coming back up onto the buttons shows the whole first screen again (the title and logo above them), not only the buttons.
+        frame.viewTreeObserver.addOnGlobalFocusChangeListener { _, now -> if (now != null && now.parent === buttons) scroll.post { scroll.smoothScrollTo(0, 0) } }
         setContentView(frame)
         render()
         Catalogs.meta(meta.type, meta.id, meta) { m -> if (m != null && !isFinishing) { meta = m; render() } }
@@ -97,7 +100,7 @@ class DetailsActivity : Activity() {
         }
         val resume = WatchStore.forMeta(meta.id)
         val resumable = resume != null && resume.fraction in 0.02f..0.93f
-        val watched = resume != null && resume.fraction > 0.93f
+        val watched = (resume != null && resume.fraction > 0.93f) || Watched.titleDone(meta)
         val sig = "$resumable|$watched|${meta.trailers.firstOrNull()}|${meta.type}|${Library.has(meta.id)}|${mainVideo()?.id}|${Alerts.isOn(meta.id)}"
         if (sig != buttonsSig) {
             // Rebuilding the buttons (coming back from the player, say) drops focus to nothing: keep it on the buttons, or give it to Play when nothing has it.
@@ -111,13 +114,13 @@ class DetailsActivity : Activity() {
             buttons.addView(play, LinearLayout.LayoutParams(-2, round))
             val saved = Library.has(meta.id)
             buttons.addView(Ui.iconButton(c, if (saved) R.drawable.ic_bookmark else R.drawable.ic_add, if (saved) "Remove from Library" else "Add to Library") {
-                val now = Library.toggle(meta); Toast.makeText(c, if (now) "Added to Library" else "Removed from Library", Toast.LENGTH_SHORT).show(); buttonsSig = ""; render(); buttons.getChildAt(1)?.requestFocus()
+                val now = Library.toggle(meta); tv.myliststv.launcher.ui.Pop.toast(c, if (now) "Added to Library" else "Removed from Library"); buttonsSig = ""; render(); buttons.getChildAt(1)?.requestFocus()
             }.also { it.isSelected = saved }, LinearLayout.LayoutParams(round, round))
             if (meta.type == "series") {
                 val on = Alerts.isOn(meta.id)
                 buttons.addView(Ui.iconButton(c, R.drawable.ic_bell, if (on) "Turn off new-episode alerts" else "Tell me about new episodes") {
                     val now = !Alerts.isOn(meta.id); Alerts.setOn(meta, now)
-                    Toast.makeText(c, if (now) "You will get an alert in the bell when a new episode is out" else "New-episode alerts are off for this show", Toast.LENGTH_LONG).show()
+                    tv.myliststv.launcher.ui.Pop.toast(c, if (now) "You will get an alert in the bell when a new episode is out" else "New-episode alerts are off for this show", true)
                     buttonsSig = ""; render(); buttons.getChildAt(2)?.requestFocus()
                 }.also { it.isSelected = on }, LinearLayout.LayoutParams(round, round))
             }
@@ -245,8 +248,9 @@ class DetailsActivity : Activity() {
     private fun toggleWatched(watched: Boolean) {
         if (watched) WatchStore.remove(meta.id)
         else WatchStore.save(WatchStore.Entry(meta.id, meta.type, meta.name, meta.poster, meta.background, meta.id, -1, -1, null, 1L, 1L, System.currentTimeMillis()))
+        Watched.setTitle(meta, !watched)
         Progress.markWatched(meta.id, meta.type, -1, -1, !watched)
-        Toast.makeText(this, if (watched) "Marked not watched" else if (Prefs.accountLink.isNotEmpty()) "Marked watched, and added to My Lists" else "Marked watched", Toast.LENGTH_SHORT).show()
+        tv.myliststv.launcher.ui.Pop.toast(this, if (watched) "Marked not watched" else if (Prefs.accountLink.isNotEmpty()) "Marked watched, and added to My Lists" else "Marked watched")
         render()
     }
 
@@ -319,7 +323,7 @@ class DetailsActivity : Activity() {
     private fun noStreams(videoId: String, statuses: List<StreamResolver.AddonStatus>) {
         if (statuses.isEmpty()) Ui.dialog(this, "Add a stream addon",
             "My Lists TV found your lists, but it needs a stream addon to find something to play. Add one in Settings, then Addons. You can paste its link from your phone.",
-            Ui.Act("Open Addons", true) { startActivity(Intent(this, AddonsActivity::class.java)) }, Ui.Act("Close"))
+            Ui.Act("Open Addons", true) { startActivity(Intent(this, SettingsActivity::class.java).putExtra("open", "addons")) }, Ui.Act("Close"))
         else Ui.dialog(this, "No sources found", statuses.joinToString("\n\n") { "✗ ${it.name} ${it.note ?: "gave nothing."}" },
             Ui.Act("Try again", true) { playVideo(videoId) }, Ui.Act("See all sources") { openSources(videoId) }, Ui.Act("Close"))
     }

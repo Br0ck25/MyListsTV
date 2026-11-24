@@ -599,7 +599,7 @@ class PlayerActivity : Activity() {
         val entry = WatchStore.Entry(m.id, m.type, m.name, m.poster, m.background, PlaySession.videoId, PlaySession.season, PlaySession.episode,
             PlaySession.episodeTitle, pos, dur, now)
         WatchStore.save(entry)
-        if (m.type == "series" && entry.fraction >= 0.9f) Watched.set(m.id, PlaySession.videoId, true)
+        if ((m.type == "series" || m.type == "movie") && entry.fraction >= 0.9f) Watched.set(m.id, PlaySession.videoId.ifEmpty { m.id }, true)
         Progress.report(entry, force)
     }
 

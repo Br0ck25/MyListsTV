@@ -15,7 +15,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import tv.myliststv.launcher.data.ImageLoader
+import tv.myliststv.launcher.data.Meta
 import tv.myliststv.launcher.data.Prefs
+import tv.myliststv.launcher.data.Watched
 
 enum class CardKind { POSTER, WIDE, APP, EPISODE }
 
@@ -33,7 +35,7 @@ data class CardModel(
     /** A small label in the top-right corner of a wide card, e.g. "45 min left" or "Airs in 3 days". */
     var badgeEnd: String? = null,
     /** An episode the viewer has finished: shows a tick in the corner. */
-    val done: Boolean = false,
+    var done: Boolean = false,
 )
 
 data class RowModel(
@@ -69,12 +71,27 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
     val appIcon = ImageView(c).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
     private var wPx = 0; private var hPx = 0
 
+    /** Both corner badges on a wide card must fit its top edge. When they do not (a big card size), the right one drops its leading word ("Airs in 3 Days" becomes "in 3 Days"), and only then is it cut. */
+    private fun fitBadges(m: CardModel) {
+        val left = m.badge; val right = m.badgeEnd
+        if (left == null || right == null) { badge.maxWidth = wPx; badgeEnd.maxWidth = wPx; return }
+        val room = wPx - Ui.dp(context, 8) * 3   // the margin at each end and a gap between
+        fun width(t: TextView, s: String) = t.paint.measureText(s) + t.paddingLeft + t.paddingRight
+        badge.maxWidth = width(badge, left).toInt() + 2
+        var text = right
+        if (width(badge, left) + width(badgeEnd, text) > room && text.startsWith("Airs ")) text = text.removePrefix("Airs ")
+        badgeEnd.text = text
+        badgeEnd.maxWidth = (room - width(badge, left)).toInt().coerceAtLeast(Ui.dp(context, 40))
+    }
+
     init {
         // App tiles are the same size as wide cards; the size setting scales all of them together.
         val (bw, bh) = when (kind) { CardKind.POSTER -> 118 to 177; CardKind.EPISODE -> 300 to 170; else -> 208 to 117 }
         val w = (Ui.dp(c, bw) * Prefs.cardScale).toInt()
         val h = (Ui.dp(c, bh) * Prefs.cardScale).toInt()
         wPx = w; hPx = h
+        // The two corner badges share the top edge; bind() fits them side by side whatever the card size.
+        badge.maxWidth = w; badgeEnd.maxWidth = w
         layoutParams = RecyclerView.LayoutParams(w, h).also { it.setMargins(Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6), Ui.dp(c, 6)) }
         isFocusable = true; isClickable = true
         background = Ui.rounded(c, Ui.CARD, Ui.R_CARD); clipToOutline = true
@@ -92,8 +109,8 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
             if (ep) {
                 subLabel.maxLines = 2
                 addView(badge, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.START).apply { setMargins(Ui.dp(c, 8), Ui.dp(c, 8), 0, 0) })
-                addView(tick, LayoutParams(Ui.dp(c, 24), Ui.dp(c, 24), Gravity.TOP or Gravity.END).apply { setMargins(0, Ui.dp(c, 8), Ui.dp(c, 8), 0) })
             }
+            addView(tick, LayoutParams(Ui.dp(c, 24), Ui.dp(c, 24), Gravity.TOP or Gravity.END).apply { setMargins(0, Ui.dp(c, 8), Ui.dp(c, 8), 0) })
             if (kind == CardKind.WIDE) {
                 addView(badge, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.START).apply { setMargins(Ui.dp(c, 8), Ui.dp(c, 8), 0, 0) })
                 addView(badgeEnd, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.END).apply { setMargins(0, Ui.dp(c, 8), Ui.dp(c, 8), 0) })
@@ -123,6 +140,7 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
         tick.visibility = if (m.done) VISIBLE else GONE
         badge.text = m.badge ?: ""; badge.visibility = if (m.badge == null) GONE else VISIBLE
         badgeEnd.text = m.badgeEnd ?: ""; badgeEnd.visibility = if (m.badgeEnd == null) GONE else VISIBLE
+        fitBadges(m)
         if (kind == CardKind.WIDE || kind == CardKind.EPISODE) {
             bar.visibility = if (m.progress > 0f) VISIBLE else GONE
             (bar.layoutParams as LayoutParams).width = (wPx * m.progress).toInt()
@@ -140,6 +158,8 @@ class CardAdapter(
     private val onClick: (CardModel) -> Unit,
     private val onLong: ((CardModel) -> Unit)? = null,
     private val onPos: ((Int) -> Unit)? = null,
+    /** A title was added to or taken off the Library from its hold-OK menu: a screen that lists the Library redraws itself. */
+    private val onTitleChanged: (() -> Unit)? = null,
 ) : RecyclerView.Adapter<CardAdapter.H>() {
 
     class H(val card: Card) : RecyclerView.ViewHolder(card)
@@ -164,7 +184,11 @@ class CardAdapter(
         val m = items[position]
         h.card.bind(m)
         h.card.setOnClickListener { onClick(m) }
-        h.card.setOnLongClickListener { onLong?.invoke(m); onLong != null }
+        h.card.setOnLongClickListener {
+            val meta = m.payload as? Meta
+            if (meta != null) { TitleMenu.show(h.card.context as android.app.Activity, meta, { onClick(m) }) { m.done = Watched.titleDone(meta); onTitleChanged?.invoke() ?: notifyItemChanged(h.bindingAdapterPosition) }; true }
+            else { onLong?.invoke(m); onLong != null }
+        }
         h.card.setOnFocusChangeListener { v, f ->
             if (f) { (v.parent as? RecyclerView)?.setTag(tv.myliststv.launcher.R.id.tag_row_pos, h.bindingAdapterPosition); onPos?.invoke(h.bindingAdapterPosition) }
             if (!lite) v.animate().scaleX(if (f) 1.06f else 1f).scaleY(if (f) 1.06f else 1f).setDuration(110).start()
@@ -212,34 +236,64 @@ class RowsList(
 ) : RecyclerView(c) {
     init { layoutManager = LinearLayoutManager(c); itemAnimator = null; clipToPadding = false; setPadding(0, 0, 0, Ui.dp(c, 56)); setItemViewCacheSize(3); adapter = A() }
 
-    /** Going to the first row shows it whole (its title included), not cut off at the top. */
+    /** Landing on a row shows it whole, title included: the first row goes to the very top, any other row is scrolled until its heading is in view. */
     override fun requestChildFocus(child: View?, focused: View?) {
         super.requestChildFocus(child, focused)
-        // Only when it is not already at the top: scrolling re-requests focus, which would otherwise loop.
-        if (child != null && getChildAdapterPosition(child) == 0 && computeVerticalScrollOffset() != 0) post { (layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(0, 0) }
+        if (child == null) return
+        // Only when it is not already in place: scrolling re-requests focus, which would otherwise loop.
+        if (getChildAdapterPosition(child) == 0 && computeVerticalScrollOffset() != 0) post { smoothScrollBy(0, -computeVerticalScrollOffset()) }   // the same easing as scrolling down, not a jump
+        else if (child.top < 0) post { if (child.isAttachedToWindow && child.top < 0) smoothScrollBy(0, child.top) }
     }
 
-    /** Up and down land on the card you last had focus on in the next row (its first card if you have not been there). */
+    /** The row (a direct child of this list) that holds [v]. */
+    private fun rowOf(v: View): View? { var r: View = v; while (r.parent != null && r.parent !== this) r = r.parent as? View ?: return null; return if (r.parent === this) r else null }
+
+    /** The card to land on in [next]: the one you were last on in that row, or its first card if you have not been there. */
+    private fun cardIn(next: RowView): View? {
+        val strip = next.strip
+        val pos = (strip.getTag(tv.myliststv.launcher.R.id.tag_row_pos) as? Int) ?: 0
+        fun at() = strip.layoutManager?.findViewByPosition(pos)?.takeIf { it.isFocusable }
+        var hit = at()
+        // That card is scrolled out of the strip: bring it in now, or the first card still on screen (say the fifth) would get the focus instead.
+        if (hit == null && strip.width > 0) {
+            strip.scrollToPosition(pos)
+            strip.measure(MeasureSpec.makeMeasureSpec(strip.width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(strip.height, MeasureSpec.EXACTLY))
+            strip.layout(strip.left, strip.top, strip.right, strip.bottom)
+            hit = at()
+        }
+        return hit ?: (0 until strip.childCount).map { strip.getChildAt(it) }.firstOrNull { it.isFocusable }
+    }
+
+    /** A row that is not on screen yet (it was scrolled away): bring it in, then put the focus on its card. */
+    private fun focusRowAt(target: Int, tries: Int = 0) {
+        val row = findViewHolderForAdapterPosition(target)?.itemView as? RowView
+        val card = row?.let { cardIn(it) }
+        if (card != null) { card.requestFocus(); return }
+        if (tries == 0) smoothScrollToPosition(target)   // the same easing as going down to a row that is off screen
+        if (tries < 30) postDelayed({ focusRowAt(target, tries + 1) }, 40)
+    }
+
+    /** Up and down land on the card you last had focus on in the next row (its first card if you have not been there), also when that row is not on screen. */
     override fun focusSearch(focused: View, direction: Int): View? {
+        // Right at the end of a row (or Left at its start) stays put; it must not jump to a card in some other row.
+        if (direction == FOCUS_LEFT || direction == FOCUS_RIGHT) {
+            val found = super.focusSearch(focused, direction)
+            val mine = rowOf(focused)
+            return if (found != null && mine != null && rowOf(found) === mine) found else if (mine != null) focused else found
+        }
         if (direction == FOCUS_UP || direction == FOCUS_DOWN) {
-            var row: View = focused
-            while (row.parent != null && row.parent !== this) row = row.parent as View
-            val next = getChildAt(indexOfChild(row) + if (direction == FOCUS_DOWN) 1 else -1) as? RowView
-            if (next != null && next.visibility == VISIBLE) {
-                // The card you were last on in that row, or its first card if you have not been there.
-                val strip = next.strip
-                val pos = (strip.getTag(tv.myliststv.launcher.R.id.tag_row_pos) as? Int) ?: 0
-                fun at() = strip.layoutManager?.findViewByPosition(pos)?.takeIf { it.isFocusable }
-                var hit = at()
-                // That card is scrolled out of the strip: bring it in now, or the first card still on screen (say the fifth) would get the focus instead.
-                if (hit == null && strip.width > 0) {
-                    strip.scrollToPosition(pos)
-                    strip.measure(MeasureSpec.makeMeasureSpec(strip.width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(strip.height, MeasureSpec.EXACTLY))
-                    strip.layout(strip.left, strip.top, strip.right, strip.bottom)
-                    hit = at()
+            val here = rowOf(focused)
+            if (here != null) {
+                val step = if (direction == FOCUS_DOWN) 1 else -1
+                var t = getChildAdapterPosition(here) + step
+                while (t in rows.indices && rows[t].items.isEmpty()) t += step   // rows with nothing in them are skipped
+                if (t in rows.indices) {
+                    val shown = findViewHolderForAdapterPosition(t)?.itemView as? RowView
+                    val card = shown?.let { cardIn(it) }
+                    if (card != null) return card
+                    focusRowAt(t)   // it is off screen: the same-column card of some other row must not get the focus meanwhile
+                    return focused
                 }
-                if (hit == null) hit = (0 until strip.childCount).map { strip.getChildAt(it) }.firstOrNull { it.isFocusable }
-                if (hit != null) return hit
             }
         }
         return super.focusSearch(focused, direction)
@@ -262,7 +316,7 @@ class RowsList(
             h.row.source.text = m.source ?: ""
             // The remembered card belongs to the row, not to the (recycled) strip view: a strip reused for another row must not carry its position over.
             h.row.strip.setTag(tv.myliststv.launcher.R.id.tag_row_pos, m.lastPos)
-            h.row.strip.adapter = CardAdapter(m.kind, m.items, lite, onFocus, onClick, onLong) { m.lastPos = it }.also { m.adapter = it }
+            h.row.strip.adapter = CardAdapter(m.kind, m.items, lite, onFocus, onClick, onLong, { m.lastPos = it }).also { m.adapter = it }
         }
     }
 }

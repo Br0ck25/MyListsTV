@@ -46,6 +46,8 @@ object Profiles {
 
     fun active(): P = all().firstOrNull { it.id == activeId } ?: all().first()
 
+    fun rename(id: String, name: String) { val n = name.trim(); if (n.isNotEmpty()) write(all().map { if (it.id == id) it.copy(name = n) else it }) }
+
     fun add(name: String, kids: Boolean) { write(all() + P("p" + System.currentTimeMillis(), name.trim().ifEmpty { "Profile" }, kids)) }
 
     /** The last profile cannot be removed. */

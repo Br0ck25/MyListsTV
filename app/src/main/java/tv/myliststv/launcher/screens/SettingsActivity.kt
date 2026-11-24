@@ -11,6 +11,7 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -25,13 +26,20 @@ import tv.myliststv.launcher.ui.*
  */
 class SettingsActivity : Activity() {
     /** kind: H header (starts a group), T toggle, C choice, A action, I info. [act] gets +1 or -1 for choices, anything else otherwise. */
-    private class Row(val kind: Char, val label: String, val desc: String = "", val value: () -> String = { "" }, val on: () -> Boolean = { false }, val act: (Int) -> Unit = {})
+    private class Row(val kind: Char, val label: String, val desc: String = "", val value: () -> String = { "" }, val on: () -> Boolean = { false }, val act: (Int) -> Unit = {}, val icon: Int = 0, val input: ((String) -> Unit)? = null, val image: (() -> android.graphics.Bitmap?)? = null)
 
-    private fun header(t: String) = Row('H', t)
+    /** A card inside a group (kind S): its title, then the rows that follow it up to the next card. */
+    private fun card(title: String) = Row('S', title)
+
+    /** A group of the left list: its name, the line under the page title, its icon, and whether a divider line comes before it. */
+    private fun header(t: String, subtitle: String = "", icon: Int = 0, divider: Boolean = false) = Row('H', t, subtitle, on = { divider }, icon = icon)
+    private class Group(val name: String, val subtitle: String, val icon: Int, val divider: Boolean, val rows: List<Row>)
+    /** Text typed in the page itself (kind E): [value] is the hint, [input] gets the text, the button says [label]. */
+    private fun field(label: String, hint: String, submit: (String) -> Unit) = Row('E', label, value = { hint }, input = submit)
     private fun toggle(label: String, desc: String, get: () -> Boolean, set: (Boolean) -> Unit) = Row('T', label, desc, on = get, act = { set(!get()) })
     private fun <T> choice(label: String, desc: String, opts: List<T>, get: () -> T, set: (T) -> Unit, show: (T) -> String = { it.toString() }) =
         Row('C', label, desc, value = { show(get()) }, act = { d -> set(opts[(opts.indexOf(get()).coerceAtLeast(0) + d + opts.size) % opts.size]) })
-    private fun action(label: String, desc: String = "", run: () -> Unit) = Row('A', label, desc, act = { run() })
+    private fun action(label: String, desc: String = "", icon: Int = 0, value: () -> String = { "" }, run: () -> Unit) = Row('A', label, desc, value = value, act = { run() }, icon = icon)
     private fun info(label: String, value: String) = Row('I', label, value = { value })
 
     private lateinit var rail: LinearLayout
@@ -39,7 +47,18 @@ class SettingsActivity : Activity() {
     private var cat = 0
     /** True while the rows are rebuilt: the focus that Android moves to the first group meanwhile must not switch the page. */
     private var rebuilding = false
-    private var groups: List<Pair<String, List<Row>>> = emptyList()
+    private var groups: List<Group> = emptyList()
+    private val railItems = ArrayList<View>()
+    private lateinit var colScroll: ScrollView
+    /** The pages opened inside the open group (the Addons list, one addon), newest last. Back closes the newest. */
+    private val subStack = ArrayList<String>()
+    private var pendingRemove: String? = null
+    private var addonField: EditText? = null
+    private var phone: PhoneServer? = null
+    private var showQr = false
+
+    private fun openSub(id: String) { subStack.add(id); refresh(); focusFirst() }
+    private fun focusFirst() = col.post { col.let { c -> var f: View? = null; fun walk(v: View) { if (f != null) return; if (v.isFocusable && v !is android.widget.EditText) { f = v; return }; if (v is ViewGroup) for (i in 0 until v.childCount) walk(v.getChildAt(i)) }; walk(c); f?.requestFocus() } }
 
     override fun onResume() { super.onResume(); if (::rail.isInitialized) refresh() }
 
@@ -49,18 +68,24 @@ class SettingsActivity : Activity() {
             "Date and time" to Settings.ACTION_DATE_SETTINGS, "Storage" to Settings.ACTION_INTERNAL_STORAGE_SETTINGS)
         android.app.AlertDialog.Builder(this).setTitle("Android settings").setItems(pages.map { it.first }.toTypedArray()) { _, i ->
             try { startActivity(Intent(pages[i].second)) } catch (_: Exception) {
-                try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) { Toast.makeText(this, "This TV does not open its settings from apps.", Toast.LENGTH_LONG).show() }
+                try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(this, "This TV does not open its settings from apps.", true) }
             }
         }.show()
     }
 
     private fun testSources() {
         if (StreamResolver.providers("movie", "tt0816692").isEmpty()) { android.app.AlertDialog.Builder(this).setTitle("Test my sources").setMessage("No stream addon is installed. Add one under Addons.").setPositiveButton("OK", null).show(); return }
-        Toast.makeText(this, "Testing\u2026", Toast.LENGTH_SHORT).show()
+        tv.myliststv.launcher.ui.Pop.toast(this, "Testing\u2026")
         StreamResolver.resolve("movie", "tt0816692", StreamResolver.DEFAULT_TIMEOUT_MS, StreamResolver.Session(onUpdate = { _, _ -> }, onDone = { _, st ->
             val lines = st.joinToString("\n\n") { (if (it.ok && it.count > 0) "\u2713 " else "\u2717 ") + it.name + ": " + (if (it.ok && it.count > 0) "${it.count} sources in ${"%.1f".format(it.millis / 1000.0)} s" else (it.note ?: "gave nothing")) }
             android.app.AlertDialog.Builder(this).setTitle("Test my sources").setMessage(lines.ifEmpty { "No answers." }).setPositiveButton("OK", null).show()
         }))
+    }
+
+    /** Turns the Home button fallback on, or opens the system accessibility page when this app may not do it itself. */
+    private fun turnOnFallback() {
+        if (HomeSetup.enableFallback(this)) refresh()
+        else try { tv.myliststv.launcher.ui.Pop.toast(this, "Turn on My Lists TV Home button", true); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
     }
 
     private fun profileMenu() {
@@ -81,7 +106,7 @@ class SettingsActivity : Activity() {
         val me = Profiles.activeId
         val others = Profiles.all().filter { it.id != me && Profiles.addonSource(it.id) == null }
         val items = others.map { "Use ${it.name}'s addons" } + if (Profiles.addonSource() != null) listOf("Stop sharing (keep a copy)") else emptyList()
-        if (items.isEmpty()) { Toast.makeText(this, "No other profile can be shared from.", Toast.LENGTH_SHORT).show(); return }
+        if (items.isEmpty()) { tv.myliststv.launcher.ui.Pop.toast(this, "No other profile can be shared from."); return }
         android.app.AlertDialog.Builder(this).setTitle("Share addons").setItems(items.toTypedArray()) { _, i ->
             if (i < others.size) Profiles.shareAddons(me, others[i].id) else AddonStore.stopSharing(me)
             AddonStore.needsRefresh = true; refresh()
@@ -95,9 +120,9 @@ class SettingsActivity : Activity() {
     private fun backupNow() {
         val first = Prefs.backupCode.isEmpty()
         val code = Backup.codeForThisBox()
-        Toast.makeText(this, "Backing up\u2026", Toast.LENGTH_SHORT).show()
+        tv.myliststv.launcher.ui.Pop.toast(this, "Backing up\u2026")
         Backup.upload(code) { msg ->
-            if (first) showCode(code, msg) else Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+            if (first) showCode(code, msg) else tv.myliststv.launcher.ui.Pop.toast(this, msg, true)
             refresh()
         }
     }
@@ -108,14 +133,14 @@ class SettingsActivity : Activity() {
 
     private fun restoreDialog() = Ui.askText(this, "Restore a backup", "XXXX-XXXX-XXXX-XXXX", "Restore", "Enter the recovery code from your backup. This replaces the addons and Library of the profile in use.", caps = true) { raw ->
         val code = Backup.clean(raw)
-        if (!Backup.isCode(code)) Toast.makeText(this, "That does not look like a recovery code.", Toast.LENGTH_LONG).show()
-        else { Toast.makeText(this, "Restoring\u2026", Toast.LENGTH_SHORT).show(); Backup.restore(this, code) { msg -> Toast.makeText(this, msg, Toast.LENGTH_LONG).show(); refresh() } }
+        if (!Backup.isCode(code)) tv.myliststv.launcher.ui.Pop.toast(this, "That does not look like a recovery code.", true)
+        else { tv.myliststv.launcher.ui.Pop.toast(this, "Restoring\u2026"); Backup.restore(this, code) { msg -> tv.myliststv.launcher.ui.Pop.toast(this, msg, true); refresh() } }
     }
 
     private fun lastBackupText() = Prefs.lastBackup.let { if (it == 0L) "Never" else android.text.format.DateFormat.format("MMM d, h:mm a", it).toString() }
 
     private fun signIn() {
-        Toast.makeText(this, "Getting a code\u2026", Toast.LENGTH_SHORT).show()
+        tv.myliststv.launcher.ui.Pop.toast(this, "Getting a code\u2026")
         Pairing.start { s, why ->
             if (s == null) { android.app.AlertDialog.Builder(this).setTitle("Could not sign in").setMessage(why ?: "Could not reach My Lists.").setPositiveButton("OK", null).show(); return@start }
             // Scan the code with a phone camera, or type the link by hand.
@@ -128,8 +153,8 @@ class SettingsActivity : Activity() {
                 .setNegativeButton("Cancel") { _, _ -> Pairing.cancel() }.show()
             Pairing.poll(s) { link, name ->
                 dlg.dismiss()
-                if (link == null) Toast.makeText(this, "The code expired. Try again.", Toast.LENGTH_LONG).show()
-                else { Pairing.signIn(link, name); Toast.makeText(this, "Signed in as ${name.ifEmpty { "your account" }}. Your lists replace the defaults.", Toast.LENGTH_LONG).show() }
+                if (link == null) tv.myliststv.launcher.ui.Pop.toast(this, "The code expired. Try again.", true)
+                else { Pairing.signIn(link, name); tv.myliststv.launcher.ui.Pop.toast(this, "Signed in as ${name.ifEmpty { "your account" }}. Your lists replace the defaults.", true) }
                 refresh()
             }
         }
@@ -140,20 +165,40 @@ class SettingsActivity : Activity() {
         .setPositiveButton("Keep signed in", null).setNegativeButton("Sign out") { _, _ -> Pairing.signOut(); refresh() }.show()
 
     private fun rows(): List<Row> = buildList {
-        add(header("Addons"))
-        add(action("Manage addons", "Catalog and stream addons, order, on and off. You can paste links from your phone.") { startActivity(Intent(this@SettingsActivity, AddonsActivity::class.java)) })
-        add(action("Test my sources", "Asks every stream addon for a well-known movie and says which answered, how fast, and why not if one did not.") { testSources() })
-        add(header("General"))
+        val me = this@SettingsActivity
+        add(header("Account", "Account and sync status", R.drawable.ic_person))
+        add(card(""))
         if (Prefs.accountLink.isEmpty()) add(action("Sign in with My Lists", "For ${Profiles.active().name}: replaces the default catalogs with your own lists, and syncs the Library. Takes 30 seconds with your phone.") { signIn() })
         else { add(info("Signed in as", Prefs.accountName.ifEmpty { "your account" })); add(action("Sign out", "Goes back to the default catalogs. Your other addons stay.") { signOut() }) }
-        add(action("Switch profile", "Now: ${Profiles.active().name}${if (Profiles.active().kids) " (kids)" else ""}. Each profile keeps its own account, addons, Library and history.") { profileMenu() })
-        add(action("Android settings", "Wi-Fi, display, sound, Bluetooth, apps and the rest of the TV's own settings.") { androidSettings() })
-        if (Profiles.all().size > 1) add(action("Share addons", "Now: ${Profiles.addonSource()?.let { s -> "using ${Profiles.all().first { it.id == s }.name}'s addons" } ?: "not shared"}. A profile can use another profile's addons, so a kids profile needs no account of its own. History and Library stay separate.") { shareMenu() })
-        add(toggle("Advanced settings", "Shows more options in each group.", { Prefs.advanced }, { Prefs.advanced = it }))
-        add(header("Playback"))
+        add(card("Backup"))
+        add(action("Back up my setup", "An offline copy of ${Profiles.active().name}'s addons and Library, encrypted with a recovery code (the first profile also saves the profile list and settings). Signed in, these also follow the account. Last backup: ${lastBackupText()}.") { backupNow() })
+        add(action("Restore a backup", "Use your recovery code. You can also paste it on the phone page in Settings, then Addons.") { restoreDialog() })
+        if (Prefs.backupCode.isNotEmpty()) add(action("Show recovery code", "The code that opens your backup.") { showCode(Prefs.backupCode) })
+        add(header("Profiles", "Who is watching. Each profile keeps its own account, addons, Library and history.", R.drawable.ic_people))
+        addAll(profileRows())
+        add(header("Layout", "How Home looks and which rows it shows", R.drawable.ic_layout, divider = true))
+        add(card("Look"))
+        add(toggle("Show cast, logos and episodes from Cinemeta", "Asks Cinemeta, the standard Stremio metadata addon, for details your catalog addon lacks.", { Prefs.extraDetails }, { Prefs.extraDetails = it }))
+        add(toggle("Wide posters", "Show catalog items as wide pictures instead of tall posters.", { Prefs.horizontalPosters }, { Prefs.horizontalPosters = it }))
+        add(choice("Navigation", "Where Home, Movies, Series and the other pages are listed. Hidden opens with Left.", listOf(0, 1, 2), { Prefs.navStyle }, { Prefs.navStyle = it }, { listOf("Top bar", "Side bar", "Hidden side bar")[it] }))
+        add(choice("Card size", "Posters, wide cards and app tiles grow or shrink together.", listOf(-1, 0, 1, 2, 3), { Prefs.cardSize }, { Prefs.cardSize = it }, { listOf("Extra small", "Small", "Medium", "Large", "Extra large")[it + 1] }))
+        add(card("Home rows"))
+        add(action("Arrange Home rows", "Move lists and the apps row up or down, or hide them from Home.") { arrange("rows") })
+        add(action("Arrange apps row", "Reorder the apps on Home or hide some. The Apps tab still shows all of them.") { arrange("apps") })
+        add(toggle("Show Airing next", "The next episode of the shows you follow on My Lists, soonest first.", { Prefs.showAiring }, { Prefs.showAiring = it }))
+        add(toggle("Show Continue watching", "", { Prefs.showContinue }, { Prefs.showContinue = it }))
+        add(toggle("Show apps row", "", { Prefs.showAppsRow }, { Prefs.showAppsRow = it }))
+        add(header("Content & Discovery", "Addons, catalogs, and discovery sources", R.drawable.ic_compass))
+        add(card(""))
+        add(action("Addons", "Manage addons, catalog order, and what each one provides", icon = R.drawable.ic_puzzle) { openSub("addons") })
+        add(action("Test my sources", "Asks every stream addon for a well-known movie and says which answered, how fast, and why not if one did not.") { testSources() })
+        add(header("Playback", "How video starts and plays", R.drawable.ic_play))
+        add(card("Starting playback"))
         add(toggle("Auto-pick the best source", "Play starts at once. Off shows the source list first.", { Prefs.autoPick }, { Prefs.autoPick = it }))
         add(choice("Maximum resolution", "Auto keeps weak boxes at 1080p.", listOf(0, 2160, 1080, 720), { Prefs.maxResolution }, { Prefs.maxResolution = it }, { if (it == 0) "Auto" else "${it}p" }))
+        add(card("Subtitles"))
         add(choice("Subtitle language", "Used when a file or a subtitle addon has it.", listOf("en", "es", "fr", "de", "off"), { Prefs.subtitleLang }, { Prefs.subtitleLang = it }, { if (it == "off") "Off" else it.uppercase() }))
+        add(card("While watching"))
         add(toggle("Play next episode automatically", "When an episode ends, the next one starts by itself with the same kind of source.", { Prefs.autoplayNext }, { Prefs.autoplayNext = it }))
         add(choice("Sources to try", "If a source will not play, how many others to try before giving up.", listOf(1, 2, 3, 4, 5, 6, 8, 10), { Prefs.fallbackTries }, { Prefs.fallbackTries = it }))
         add(toggle("Show Skip intro", "A button appears during intros and recaps. Times come from IntroDB.", { Prefs.skipIntro }, { Prefs.skipIntro = it }))
@@ -161,67 +206,199 @@ class SettingsActivity : Activity() {
             add(toggle("Try the next source if one fails", "Switches by itself when a source does not start.", { Prefs.fallbackOn }, { Prefs.fallbackOn = it }))
             add(choice("Source start timeout", "How long to wait for the first picture.", listOf(6, 10, 15), { Prefs.startupTimeoutSec }, { Prefs.startupTimeoutSec = it }, { "$it s" }))
         }
-        add(header("Layout"))
-        add(toggle("Show cast, logos and episodes from Cinemeta", "Asks Cinemeta, the standard Stremio metadata addon, for details your catalog addon lacks.", { Prefs.extraDetails }, { Prefs.extraDetails = it }))
-        add(toggle("Wide posters", "Show catalog items as wide pictures instead of tall posters.", { Prefs.horizontalPosters }, { Prefs.horizontalPosters = it }))
-        add(choice("Navigation", "Where Home, Movies, Series and the other pages are listed. Hidden opens with Left.", listOf(0, 1, 2), { Prefs.navStyle }, { Prefs.navStyle = it }, { listOf("Top bar", "Side bar", "Hidden side bar")[it] }))
-        add(choice("Card size", "Posters, wide cards and app tiles grow or shrink together.", listOf(0, 1, 2), { Prefs.cardSize }, { Prefs.cardSize = it }, { listOf("Small", "Medium", "Large")[it] }))
-        add(action("Arrange Home rows", "Move lists and the apps row up or down, or hide them from Home.") { arrange("rows") })
-        add(action("Arrange apps row", "Reorder the apps on Home or hide some. The Apps tab still shows all of them.") { arrange("apps") })
-        add(toggle("Show Airing next", "The next episode of the shows you follow on My Lists, soonest first.", { Prefs.showAiring }, { Prefs.showAiring = it }))
-        add(toggle("Show Continue watching", "", { Prefs.showContinue }, { Prefs.showContinue = it }))
-        add(toggle("Show apps row", "", { Prefs.showAppsRow }, { Prefs.showAppsRow = it }))
-        add(header("Backup"))
-        add(action("Back up my setup", "An offline copy of ${Profiles.active().name}'s addons and Library, encrypted with a recovery code (the first profile also saves the profile list and settings). Signed in, these also follow the account. Last backup: ${lastBackupText()}.") { backupNow() })
-        add(action("Restore a backup", "Use your recovery code. You can also paste it on the phone page in Settings, then Addons.") { restoreDialog() })
-        if (Prefs.backupCode.isNotEmpty()) add(action("Show recovery code", "The code that opens your backup.") { showCode(Prefs.backupCode) })
-        add(header("Performance"))
-        add(choice("Lite mode", "Less motion and memory. Auto turns on for weak boxes.", listOf("Auto", "On", "Off"), { Prefs.liteMode }, { Prefs.liteMode = it }))
-        add(action("Clear caches", "Frees stored images and catalog data (${Http.cacheBytes() / 1_048_576} MB now).") { Http.clear(); ImageLoader.clearDisk(); Toast.makeText(this@SettingsActivity, "Caches cleared", Toast.LENGTH_SHORT).show() })
-        add(header("Default launcher"))
+        add(header("Default Launcher", "Make My Lists TV your Home screen, and set up the Home button", R.drawable.ic_home, divider = true))
+        add(card("Home app"))
         add(info("Home app", if (HomeSetup.isHome(this@SettingsActivity)) "This launcher" else "Another launcher"))
-        add(action("Make this my Home app", "Opens the system choice. Pick My Lists TV and choose Always.") { if (HomeSetup.isHome(this@SettingsActivity)) Toast.makeText(this@SettingsActivity, "My Lists TV is already your Home app.", Toast.LENGTH_SHORT).show() else HomeSetup.requestHome(this@SettingsActivity) })
+        add(action("Make this my Home app", "Opens the system choice. Pick My Lists TV and choose Always.") { if (HomeSetup.isHome(this@SettingsActivity)) tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "My Lists TV is already your Home app.") else HomeSetup.requestHome(this@SettingsActivity) })
+        add(card("Home button"))
         add(info("Home button fallback", if (HomeSetup.fallbackOn(this@SettingsActivity)) "On" else "Off"))
         add(action("Turn on the Home button fallback", "For TVs that keep their own launcher as Home. Opens the system accessibility page if needed. It only sees which app came forward.") {
-            if (HomeSetup.fallbackOn(this@SettingsActivity)) Toast.makeText(this@SettingsActivity, "The Home button fallback is already on.", Toast.LENGTH_SHORT).show()
+            if (HomeSetup.fallbackOn(this@SettingsActivity)) tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "The Home button fallback is already on.")
             else if (HomeSetup.enableFallback(this@SettingsActivity)) refresh()
-            else try { Toast.makeText(this@SettingsActivity, "Turn on My Lists TV Home button", Toast.LENGTH_LONG).show(); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
+            else try { tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "Turn on My Lists TV Home button", true); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
         })
+        add(card("Notifications"))
         add(info("Notifications bell", if (Notices.allowed(this@SettingsActivity)) "On" else "Off"))
         add(action("Turn on notifications", "Shows your TV's notifications in the bell at the top right of Home. Opens the system Notification access page.") {
-            if (Notices.allowed(this@SettingsActivity)) Toast.makeText(this@SettingsActivity, "Notifications are already on.", Toast.LENGTH_SHORT).show()
-            else try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Toast.makeText(this@SettingsActivity, "This TV has no such setting. Use the phone or computer steps.", Toast.LENGTH_LONG).show() }
+            if (Notices.allowed(this@SettingsActivity)) tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "Notifications are already on.")
+            else try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "This TV has no such setting. Use the phone or computer steps.", true) }
         })
+        add(card("More"))
         add(action("Screensaver", "Pick My Lists TV backdrops as the screensaver in Android's settings.") {
-            try { startActivity(Intent(Settings.ACTION_DREAM_SETTINGS)) } catch (_: Exception) { try { startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS)) } catch (_: Exception) { Toast.makeText(this@SettingsActivity, "This TV keeps its screensaver setting somewhere else.", Toast.LENGTH_LONG).show() } } })
+            try { startActivity(Intent(Settings.ACTION_DREAM_SETTINGS)) } catch (_: Exception) { try { startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "This TV keeps its screensaver setting somewhere else.", true) } } })
         add(action("Set up from a phone or computer", "Shows an address with the exact steps and commands for TVs that block the buttons above.") { HomeSetup.phoneSteps(this@SettingsActivity) })
-        add(header("Remote & Buttons"))
+        add(header("Remote & Buttons", "Customize remote buttons, Home actions, and app shortcuts in My Lists TV and globally.", R.drawable.ic_remote))
+        add(card("Button Mapper"))
         add(toggle("Enable Button Mapper", "Intercept and run custom actions for configured remote buttons.", { Prefs.mapperOn }, { Prefs.mapperOn = it }))
-        add(toggle("Customize Home Button", "When off, Home uses its factory jobs (single click: Home, double click: profile switcher).", { Prefs.homeCustom }, { Prefs.homeCustom = it }))
-        add(info("Global button interception (Accessibility)", if (HomeSetup.fallbackOn(this@SettingsActivity)) "Active" else "Not active. Turn on the Home button fallback (Launcher setup) for buttons to work in every app."))
-        add(action("Add Button Mapping", "Press a remote button to detect it and assign single, double or long-press jobs.") { MapperDialogs.add(this@SettingsActivity) { refresh() } })
-        if (Prefs.homeCustom) add(action("Home", "Single click: ${ButtonMap.actionName(this@SettingsActivity, ButtonMap.homeAction("single") ?: "home")}.  Double click: ${ButtonMap.actionName(this@SettingsActivity, ButtonMap.homeAction("double") ?: "profiles")}.") { MapperDialogs.edit(this@SettingsActivity, ButtonMap.HOME) { refresh() } })
-        ButtonMap.rules().filter { it.key != ButtonMap.HOME }.groupBy { it.key }.forEach { (key, rs) ->
-            val jobs = ButtonMap.PRESSES.mapNotNull { (p, label) -> rs.firstOrNull { it.press == p }?.let { "$label: ${ButtonMap.actionName(this@SettingsActivity, it.action)}" } }.joinToString("  ·  ")
-            add(action(ButtonMap.keyName(key), "$jobs. ${ButtonMap.status(this@SettingsActivity, key)}.") { MapperDialogs.edit(this@SettingsActivity, key) { refresh() } })
+        add(toggle("Customize Home Button", "When disabled, Home uses factory defaults (Single: Go to Top of Home, Double: Profile Switcher).", { Prefs.homeCustom }, { Prefs.homeCustom = it }))
+        val globalOn = HomeSetup.fallbackOn(this@SettingsActivity)
+        add(action(if (globalOn) "Global button interception active (Accessibility)" else "Global button interception inactive (Accessibility)",
+            if (globalOn) "Configured global button mappings work both inside My Lists TV and while other apps are open when Android exposes the key."
+            else "While the Home button fallback is off, button mappings work inside My Lists TV. Select to turn it on for global support.",
+            value = { if (globalOn) "Active" else "Configure" }) { if (!globalOn) turnOnFallback() })
+        add(action("Add Button Mapping", "Press a remote button to detect it and assign single, double, or long-press actions.", icon = R.drawable.ic_add) { MapperDialogs.add(this@SettingsActivity) { refresh() } })
+        add(card("Configured Remote Buttons"))
+        (listOf(ButtonMap.HOME) + ButtonMap.rules().map { it.key }.distinct().filter { it != ButtonMap.HOME }).forEach { key ->
+            val me = this@SettingsActivity
+            add(action(ButtonMap.keyName(key), "Single: ${ButtonMap.pressLabel(me, key, "single")} \u2022 Double: ${ButtonMap.pressLabel(me, key, "double")} \u2022 Long: ${ButtonMap.pressLabel(me, key, "long")}",
+                icon = MapperDialogs.iconFor(key), value = { ButtonMap.badge(me, key) }) { MapperDialogs.edit(me, key) { refresh() } })
         }
-        add(header("About"))
+        add(card("Maintenance"))
+        if (Prefs.homeCustom || ButtonMap.rules().any { it.key == ButtonMap.HOME }) add(action("Restore Home Defaults", "Reset Home to Single: Go to Top of Home, Double: Profile Switcher, Long: Not Assigned.", icon = R.drawable.ic_restore) {
+            ButtonMap.removeKey(ButtonMap.HOME); Prefs.homeCustom = false; refresh() })
+        add(action("Reset to Defaults", "Restore default Home button behavior and remove custom button mappings.", icon = R.drawable.ic_restore) {
+            MapperDialogs.confirm(this@SettingsActivity, "Reset Button Mapper?", "Home goes back to its factory jobs and every custom button mapping is removed.", "Reset to Defaults") { ButtonMap.clearAll(); Prefs.homeCustom = false; refresh() } })
+        add(header("Advanced", "Performance, cache, and the TV's own settings", R.drawable.ic_wrench))
+        add(card(""))
+        add(toggle("Advanced settings", "Shows more options in each group.", { Prefs.advanced }, { Prefs.advanced = it }))
+        add(card("Performance"))
+        add(choice("Lite mode", "Less motion and memory. Auto turns on for weak boxes.", listOf("Auto", "On", "Off"), { Prefs.liteMode }, { Prefs.liteMode = it }))
+        add(action("Clear caches", "Frees stored images and catalog data (${Http.cacheBytes() / 1_048_576} MB now).") { Http.clear(); ImageLoader.clearDisk(); tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "Caches cleared") })
+        add(card("System"))
+        add(action("Android settings", "Wi-Fi, display, sound, Bluetooth, apps and the rest of the TV's own settings.") { androidSettings() })
+        add(header("About", "Version, updates, and privacy", R.drawable.ic_info))
+        add(card(""))
         add(action("Check for updates", "Version 0.1.${Updater.installedBuild(this@SettingsActivity)} installed.") { checkUpdate() })
         add(info("Make this your home screen", "adb shell cmd package set-home-activity tv.myliststv.launcher/.MainActivity"))
         add(info("Privacy", "No analytics, no tracking. Signed in, your watch progress goes to your My Lists account. Skip-intro times from IntroDB (introdb.app)."))
     }
 
+    // ---------------------------------------------------------------- Pages inside a group (no pop-ups)
+
+    private fun subPage(): Triple<String, String, List<Row>>? {
+        val id = subStack.lastOrNull() ?: return null
+        return when {
+            id == "addons" -> Triple("Addons", "Manage addons, catalog order, and what each one provides", addonsRows())
+            id.startsWith("addon:") -> { val url = id.removePrefix("addon:"); Triple(addonName(url), url.removePrefix("https://").removePrefix("http://").substringBefore('/'), addonRows(url)) }
+            else -> null
+        }
+    }
+
+    /** Manage from phone: a bare pop-up over the dimmed page with a code to scan, its address and Close. */
+    private fun showPhonePopup(addr: String) {
+        val me = this
+        val d = android.app.Dialog(me)
+        d.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
+        val body = Ui.vbox(me).apply { gravity = Gravity.CENTER_HORIZONTAL; minimumWidth = Ui.dp(me, 480); setPadding(Ui.dp(me, 24), Ui.dp(me, 12), Ui.dp(me, 24), Ui.dp(me, 12)) }
+        body.addView(Ui.text(me, "Scan with your phone to add addons", 16f, Ui.TEXT2).apply { gravity = Gravity.CENTER })
+        body.addView(android.widget.ImageView(me).apply { setImageBitmap(Qr.bitmap(addr, Ui.dp(me, 190))); setPadding(Ui.dp(me, 12), Ui.dp(me, 12), Ui.dp(me, 12), Ui.dp(me, 12)); background = Ui.rounded(me, Ui.QR_LIGHT, Ui.R_DIALOG) },
+            LinearLayout.LayoutParams(Ui.dp(me, 214), Ui.dp(me, 214)).apply { topMargin = Ui.dp(me, 14) })
+        body.addView(Ui.text(me, addr, 14f, Ui.DIM), Ui.wrap().apply { topMargin = Ui.dp(me, 10) })
+        val close = Ui.hbox(me, 8).apply {
+            gravity = Gravity.CENTER; setPadding(Ui.dp(me, 26), Ui.dp(me, 10), Ui.dp(me, 26), Ui.dp(me, 10))
+            background = Ui.pillBg(me, Ui.FILL, Ui.FOCUS_FILL); isFocusable = true; isClickable = true; setOnClickListener { d.dismiss() }
+            addView(android.widget.ImageView(me).apply { setImageResource(R.drawable.ic_close); setColorFilter(Ui.TEXT) }, LinearLayout.LayoutParams(Ui.dp(me, 18), Ui.dp(me, 18)))
+            addView(Ui.text(me, "Close", 16f, Ui.TEXT, true))
+        }
+        body.addView(close, Ui.wrap().apply { topMargin = Ui.dp(me, 16) })
+        d.setContentView(body)
+        d.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Ui.CLEAR))
+        d.window?.setDimAmount(0.85f)
+        d.show(); close.requestFocus()
+    }
+
+    private fun addonName(url: String) = AddonStore.loaded.firstOrNull { it.manifestUrl == url }?.name ?: url.removePrefix("https://").removePrefix("http://").substringBefore('/')
+
+    private fun provides(a: Addon): String {
+        val p = ArrayList<String>()
+        if (a.manifest.catalogs.any { !it.searchRequired }) p += "Catalogs"
+        if (a.manifest.catalogs.any { it.supportsSearch }) p += "Search"
+        if (a.manifest.provides("meta")) p += "Details"
+        if (a.manifest.provides("stream")) p += "Streams"
+        if (a.manifest.provides("subtitles")) p += "Subtitles"
+        return p.joinToString(", ").ifEmpty { "Nothing we use" }
+    }
+
+    /** Reloads the addons, tells Home to reload, and redraws this page. */
+    private fun addonsChanged() = AddonStore.load { AddonStore.needsRefresh = true; runOnUiThread { refresh() } }
+
+    private fun installAddon(link: String) {
+        if (link.isBlank()) { tv.myliststv.launcher.ui.Pop.toast(this, "Type or paste an addon link first."); return }
+        tv.myliststv.launcher.ui.Pop.toast(this, "Checking…")
+        Links.add(link.trim()) { msg -> runOnUiThread { tv.myliststv.launcher.ui.Pop.toast(this, msg, true); addonField?.setText(""); addonsChanged() } }
+    }
+
+    private fun addonsRows(): List<Row> = buildList {
+        val me = this@SettingsActivity
+        if (AddonStore.sharing()) {
+            add(card(""))
+            add(info("Shared addons", "These addons are shared with ${Profiles.all().firstOrNull { it.id == Profiles.addonSource() }?.name ?: "another profile"}. Change them on that profile, or stop sharing under Profiles."))
+        } else {
+            val server = phone ?: PhoneServer { link, reply -> Links.add(link) { reply(it); addonsChanged() } }.also { it.start(); phone = it }
+            val addr = server.address()
+            add(card("Install addon"))
+            add(field("Install", "https://example.com/manifest.json") { installAddon(it) })
+            add(card(""))
+            add(action("Manage from phone", if (addr != null) "Scan a QR code to add addons from your phone, and see the address" else "Connect the TV to Wi-Fi to add addons from your phone.", icon = R.drawable.ic_layout) { if (addr != null) showPhonePopup(addr) else tv.myliststv.launcher.ui.Pop.toast(me, "Connect the TV to Wi-Fi first.") })
+            add(action("Reorder home catalogs", "Controls catalog row order on Home", icon = R.drawable.ic_list) { arrange("rows") })
+            add(action("Refresh Addons", "Pull the latest addon changes for the current profile", icon = R.drawable.ic_refresh) { tv.myliststv.launcher.ui.Pop.toast(me, "Refreshing…"); addonsChanged() })
+        }
+        add(card("Installed addons"))
+        val loaded = AddonStore.loaded.associateBy { it.manifestUrl }
+        val saved = AddonStore.saved()
+        if (saved.isEmpty()) add(info("No addons yet", "Install one above to get catalogs or streams."))
+        saved.forEach { s ->
+            val a = loaded[s.url]
+            val host = s.url.removePrefix("https://").removePrefix("http://").substringBefore('/')
+            add(action((a?.name ?: "Not loading") + if (a != null && a.manifest.version.isNotEmpty()) "  v${a.manifest.version}" else "",
+                "$host • ${a?.let { provides(it) } ?: "Could not read this addon right now"}", icon = R.drawable.ic_puzzle, value = { if (s.enabled) "On" else "Off" }) { openSub("addon:${s.url}") })
+        }
+    }
+
+    private fun addonRows(url: String): List<Row> = buildList {
+        val s = AddonStore.saved().firstOrNull { it.url == url }
+        if (s == null) { add(card("")); add(info("Removed", "This addon is no longer installed. Press Back.")); return@buildList }
+        val shared = AddonStore.sharing()
+        add(card(""))
+        add(info("Address", url))
+        if (shared) { add(info("Shared", "Change this on the profile the addons come from.")); return@buildList }
+        add(toggle("Enabled", "Off keeps the addon installed but stops using it.", { AddonStore.saved().firstOrNull { it.url == url }?.enabled ?: false }, { AddonStore.setEnabled(url, it); addonsChanged() }))
+        add(action("Move up", "Earlier stream addons win ties.", icon = R.drawable.ic_back) { AddonStore.move(url, -1); addonsChanged() })
+        add(action("Move down", "Later addons are tried after earlier ones.", icon = R.drawable.ic_back) { AddonStore.move(url, 1); addonsChanged() })
+        if (pendingRemove == url) add(action("Confirm: remove ${addonName(url)}", "This cannot be undone. Your other settings stay as they are.", icon = R.drawable.ic_close) {
+            AddonStore.remove(url); pendingRemove = null; subStack.removeAt(subStack.size - 1); addonsChanged(); focusFirst() })
+        else add(action("Remove addon", "Uninstalls it from this profile.", icon = R.drawable.ic_close) { pendingRemove = url; refresh() })
+    }
+
+    private fun profileRows(): List<Row> = buildList {
+        val me = this@SettingsActivity
+        add(card(""))
+        Profiles.all().forEach { p ->
+            val active = p.id == Profiles.activeId
+            add(action(p.name + if (p.kids) " (kids)" else "", if (active) "In use now" else "Switch to this profile", icon = R.drawable.ic_person, value = { if (active) "Active" else "" }) { if (!active) { Profiles.switchTo(me, p.id); refresh() } })
+        }
+        add(card("Manage"))
+        Profiles.all().forEach { p -> add(action("Rename ${p.name}", "Change the name shown for this profile.", icon = R.drawable.ic_person) { Ui.askText(me, "Rename ${p.name}", "Name", "Save", initial = p.name) { Profiles.rename(p.id, it); refresh() } }) }
+        add(action("Add profile", "A separate account, addons, Library and history.", icon = R.drawable.ic_add) { askName(false) })
+        add(action("Add kids profile", "A profile that hides titles that are not for children.", icon = R.drawable.ic_add) { askName(true) })
+        if (Profiles.all().size > 1) {
+            val remove = "profile:${Profiles.activeId}"
+            if (pendingRemove == remove) add(action("Confirm: remove ${Profiles.active().name}", "This cannot be undone. Its addons, Library and history go with it.", icon = R.drawable.ic_close) {
+                pendingRemove = null; Profiles.remove(Profiles.activeId); Profiles.switchTo(me, Profiles.activeId); refresh() })
+            else add(action("Remove ${Profiles.active().name}", "Deletes this profile.", icon = R.drawable.ic_close) { pendingRemove = remove; refresh() })
+            add(card("Share addons"))
+            add(info("Now", Profiles.addonSource()?.let { s -> "Using ${Profiles.all().first { it.id == s }.name}'s addons" } ?: "Not shared. Each profile keeps its own addons."))
+            Profiles.all().filter { it.id != Profiles.activeId && Profiles.addonSource(it.id) == null }.forEach { o ->
+                add(action("Use ${o.name}'s addons", "This profile follows ${o.name}'s addon list.", icon = R.drawable.ic_people) { Profiles.shareAddons(Profiles.activeId, o.id); AddonStore.needsRefresh = true; refresh() })
+            }
+            if (Profiles.addonSource() != null) add(action("Stop sharing (keep a copy)", "This profile keeps its own copy of the addons.", icon = R.drawable.ic_close) { AddonStore.stopSharing(Profiles.activeId); AddonStore.needsRefresh = true; refresh() })
+        }
+    }
+
     private fun checkUpdate() {
-        Toast.makeText(this, "Checking for updates\u2026", Toast.LENGTH_SHORT).show()
+        tv.myliststv.launcher.ui.Pop.toast(this, "Checking for updates\u2026")
         Updater.latest { r ->
             val mine = Updater.installedBuild(this)
-            if (r == null) Toast.makeText(this, "Could not check right now.", Toast.LENGTH_LONG).show()
-            else if (r.build <= mine) Toast.makeText(this, "You have the latest version.", Toast.LENGTH_LONG).show()
+            if (r == null) tv.myliststv.launcher.ui.Pop.toast(this, "Could not check right now.", true)
+            else if (r.build <= mine) tv.myliststv.launcher.ui.Pop.toast(this, "You have the latest version.", true)
             else android.app.AlertDialog.Builder(this).setTitle("Update available").setMessage("${r.tag} is ready. You have 0.1.$mine.")
-                .setPositiveButton("Install") { _, _ -> Updater.install(this, r) { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() } }
+                .setPositiveButton("Install") { _, _ -> Updater.install(this, r) { tv.myliststv.launcher.ui.Pop.toast(this, it) } }
                 .setNegativeButton("Later", null).show()
         }
     }
+
+    /** Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of being cut off against its edge. */
+    private fun fadeEdges(s: ScrollView) { s.isVerticalFadingEdgeEnabled = true; s.setFadingEdgeLength(Ui.dp(this, 30)) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -229,80 +406,150 @@ class SettingsActivity : Activity() {
         // One rounded panel on the black canvas: the groups down the left, the rows of the open group on the right.
         val panel = Ui.hbox(c).apply { background = Ui.rounded(c, Ui.CARD, Ui.R_DIALOG); gravity = Gravity.TOP }
         rail = Ui.vbox(c).apply { setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 8), Ui.dp(c, 16)) }
-        panel.addView(ScrollView(c).apply { addView(rail); isVerticalScrollBarEnabled = false }, LinearLayout.LayoutParams(Ui.dp(c, 270), -1))
+        panel.addView(ScrollView(c).apply { addView(rail); isVerticalScrollBarEnabled = false; fadeEdges(this) }, LinearLayout.LayoutParams(Ui.dp(c, 270), -1))
         col = Ui.vbox(c).apply { setPadding(Ui.dp(c, 16), Ui.dp(c, 20), Ui.dp(c, 24), Ui.dp(c, 20)) }
-        panel.addView(ScrollView(c).apply { addView(col); isVerticalScrollBarEnabled = false; clipToPadding = false }, LinearLayout.LayoutParams(0, -1, 1f))
+        panel.addView(ScrollView(c).apply { addView(col); isVerticalScrollBarEnabled = false; clipToPadding = false; fadeEdges(this); colScroll = this }, LinearLayout.LayoutParams(0, -1, 1f))
         val root = android.widget.FrameLayout(c).apply { setBackgroundColor(Ui.BG); val m = Ui.dp(c, 32); setPadding(m, Ui.dp(c, 24), m, Ui.dp(c, 24)) }
         root.addView(panel, android.widget.FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
-        refresh(focusRail = true)
+        if (intent.getStringExtra("open") == "addons") { refresh(); cat = groups.indexOfFirst { it.name == "Content & Discovery" }.coerceAtLeast(0); openSub("addons") } else refresh(focusRail = true)
     }
 
     /** Rebuilds the group list and the rows of the selected group. [keep] is the row to put focus back on. */
     private fun refresh(keep: Int = -1, focusRail: Boolean = false) {
         // Rebuilding the rows removes the focused row; put focus back where it was so it does not fall to the first group.
-        val focused = col.findFocus()?.let { f -> var v: View = f; while (v.parent != null && v.parent !== col) v = v.parent as View; col.indexOfChild(v) - 1 } ?: -1
+        val focused = col.findFocus()?.let { f -> var v: View? = f; while (v != null && v.tag !is Int) v = v.parent as? View; (v?.tag as? Int) ?: -1 } ?: -1
         val keepRow = if (keep >= 0) keep else focused
         val all = rows()
-        groups = buildList { var name = ""; var cur = ArrayList<Row>(); for (r in all) if (r.kind == 'H') { if (name.isNotEmpty()) add(name to cur); name = r.label; cur = ArrayList() } else cur.add(r); if (name.isNotEmpty()) add(name to cur) }
-        cat = cat.coerceIn(0, groups.size - 1)
-        if (rail.childCount != groups.size + 1) {
-            rail.removeAllViews()
-            rail.addView(Ui.text(this, "Settings", 24f, Ui.TEXT, true), Ui.wrap().apply { leftMargin = Ui.dp(this@SettingsActivity, 14); bottomMargin = Ui.dp(this@SettingsActivity, 14) })
-            groups.forEachIndexed { i, (name, _) -> rail.addView(railItem(name, i), Ui.matchWrap().apply { topMargin = Ui.dp(this@SettingsActivity, 4) }) }
+        groups = buildList {
+            var h: Row? = null; var cur = ArrayList<Row>()
+            for (r in all) if (r.kind == 'H') { h?.let { add(Group(it.label, it.desc, it.icon, it.on(), cur)) }; h = r; cur = ArrayList() } else cur.add(r)
+            h?.let { add(Group(it.label, it.desc, it.icon, it.on(), cur)) }
         }
-        for (i in groups.indices) rail.getChildAt(i + 1).isSelected = i == cat
+        cat = cat.coerceIn(0, groups.size - 1)
+        if (railItems.size != groups.size) {
+            rail.removeAllViews(); railItems.clear()
+            val me = this@SettingsActivity
+            rail.addView(Ui.text(me, "Settings", 24f, Ui.TEXT, true), Ui.wrap().apply { leftMargin = Ui.dp(me, 14); bottomMargin = Ui.dp(me, 10) })
+            groups.forEachIndexed { i, g ->
+                if (g.divider && i > 0) rail.addView(View(me).apply { setBackgroundColor(Ui.FILL) }, Ui.matchWrap().apply { height = Ui.dp(me, 1); topMargin = Ui.dp(me, 10); bottomMargin = Ui.dp(me, 6); leftMargin = Ui.dp(me, 14); rightMargin = Ui.dp(me, 14) })
+                val item = railItem(g, i); railItems.add(item)
+                rail.addView(item, Ui.matchWrap().apply { topMargin = Ui.dp(me, 4) })
+            }
+        }
+        for (i in groups.indices) railItems[i].isSelected = i == cat
         buildPanel(keepRow)
-        if (focusRail) rail.post { rail.getChildAt(cat + 1)?.requestFocus() }
+        if (focusRail) rail.post { railItems.getOrNull(cat)?.requestFocus() }
     }
 
-    private fun railItem(name: String, i: Int): View = Ui.hbox(this).apply {
-        id = View.generateViewId()
-        addView(Ui.text(context, name, 16f, Ui.TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
-        addView(Ui.text(context, "›", 22f, Ui.DIM, true))
-        setPadding(Ui.dp(this@SettingsActivity, 18), Ui.dp(this@SettingsActivity, 8), Ui.dp(this@SettingsActivity, 16), Ui.dp(this@SettingsActivity, 8))
-        background = Ui.pillBg(this@SettingsActivity, Ui.BG); isFocusable = true; isClickable = true
-        setOnFocusChangeListener { _, f -> if (f && cat != i && !rebuilding) { cat = i; for (k in groups.indices) rail.getChildAt(k + 1).isSelected = k == i; buildPanel(-1) } }
-        setOnClickListener { cat = i; buildPanel(-1); col.getChildAt(1)?.requestFocus() }
+    private fun railItem(g: Group, i: Int): View = Ui.hbox(this).apply {
+        val me = this@SettingsActivity
+        id = View.generateViewId(); gravity = Gravity.CENTER_VERTICAL
+        if (g.icon != 0) addView(android.widget.ImageView(me).apply { setImageResource(g.icon); setColorFilter(Ui.TEXT2) }, LinearLayout.LayoutParams(Ui.dp(me, 20), Ui.dp(me, 20)).apply { rightMargin = Ui.dp(me, 14) })
+        addView(Ui.text(context, g.name, 16f, Ui.TEXT, true, 1), LinearLayout.LayoutParams(0, -2, 1f))
+        addView(Ui.text(context, "\u203a", 22f, Ui.DIM, true))
+        setPadding(Ui.dp(me, 18), Ui.dp(me, 8), Ui.dp(me, 16), Ui.dp(me, 8))
+        background = Ui.pillBg(me, Ui.BG); isFocusable = true; isClickable = true
+        setOnFocusChangeListener { _, f -> if (f && cat != i && !rebuilding) { cat = i; closeSubs(); for (k in groups.indices) railItems[k].isSelected = k == i; buildPanel(-1) } }
+        setOnClickListener { cat = i; closeSubs(); buildPanel(-1); focusFirst() }
     }
+
+    private fun closeSubs() { subStack.clear(); pendingRemove = null; phone?.stop(); phone = null; showQr = false }
 
     private fun buildPanel(keep: Int) {
         rebuilding = true; col.postDelayed({ rebuilding = false }, 300)
         // Removing the focused row would hand focus to the first group for a frame (the flash); the groups cannot take it until the row is back.
         rail.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
         col.removeAllViews()
-        val (name, rs) = groups[cat]
-        col.addView(Ui.text(this, name, 24f, Ui.TEXT, true))
-        val railId = rail.getChildAt(cat + 1).id
+        val g = groups[cat]
+        val sub = subPage()
+        val me = this
+        val title = sub?.first ?: if (g.name == "Remote & Buttons") "Remote & Buttons \u2014 Button Mapper" else g.name
+        val subtitle = sub?.second ?: g.subtitle
+        val rs = sub?.third ?: g.rows
+        col.addView(Ui.text(me, title, 24f, Ui.TEXT, true))
+        if (subtitle.isNotEmpty()) col.addView(Ui.text(me, subtitle, 14f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { topMargin = Ui.dp(me, 4) })
+        val railId = railItems[cat].id
         var firstFocusable: View? = null
+        val built = arrayOfNulls<View>(rs.size)
+        val order = ArrayList<View>()
+        val beside = HashMap<View, View>()   // a field and the button next to it share one place in the Up and Down order
+        var into: LinearLayout = col
         rs.forEachIndexed { i, r ->
+            if (r.kind == 'S') {
+                // A card: a titled box that holds the rows after it, up to the next card.
+                val box = Ui.vbox(me).apply { background = Ui.rounded(me, Ui.FILL, Ui.R_PANEL); setPadding(Ui.dp(me, 14), Ui.dp(me, 12), Ui.dp(me, 14), Ui.dp(me, 12)) }
+                if (r.label.isNotEmpty()) box.addView(Ui.text(me, r.label, 16f, Ui.TEXT, true))
+                col.addView(box, Ui.matchWrap().apply { topMargin = Ui.dp(me, 14) })
+                into = box
+                return@forEachIndexed
+            }
             val v = view(r) { refresh(keep = i) }
-            v.id = View.generateViewId()
-            if (v.isFocusable) { v.nextFocusLeftId = railId; if (firstFocusable == null) firstFocusable = v }
-            col.addView(v, Ui.matchWrap().apply { topMargin = Ui.dp(this@SettingsActivity, 8) })
+            v.id = View.generateViewId(); v.tag = i
+            if (r.kind == 'E') { val g = v as ViewGroup; val f = g.getChildAt(0); val b = g.getChildAt(1); f.id = View.generateViewId(); b.id = View.generateViewId(); f.nextFocusLeftId = railId; b.nextFocusLeftId = f.id; f.nextFocusRightId = b.id; if (firstFocusable == null) firstFocusable = f; order += f; beside[f] = b }
+            else if (v.isFocusable) { v.nextFocusLeftId = railId; if (firstFocusable == null) firstFocusable = v; order += v }
+            built[i] = v
+            into.addView(v, Ui.matchWrap().apply { topMargin = Ui.dp(me, 8) })
         }
-        rail.getChildAt(cat + 1).nextFocusRightId = firstFocusable?.id ?: View.NO_ID
+        railItems[cat].nextFocusRightId = firstFocusable?.id ?: View.NO_ID
         // Up and Down go row to row. Left to itself, Down from a row can pick a group on the left that happens to sit a little lower.
-        val order = (1 until col.childCount).map { col.getChildAt(it) }.filter { it.isFocusable }
         order.forEachIndexed { i, v -> v.nextFocusUpId = (order.getOrNull(i - 1) ?: v).id; v.nextFocusDownId = (order.getOrNull(i + 1) ?: v).id }
-        if (keep >= 0) col.getChildAt(keep + 1)?.requestFocus()
+        beside.forEach { (f, b) -> b.nextFocusUpId = f.nextFocusUpId; b.nextFocusDownId = f.nextFocusDownId }
+        // On the first row the page title and first card come into view again after a scroll down and back up.
+        order.firstOrNull()?.setOnFocusChangeListener { _, has -> if (has) colScroll.post { colScroll.smoothScrollTo(0, 0) } }
+        if (keep >= 0) built.getOrNull(keep)?.requestFocus()
         rail.post { rail.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS }
     }
 
     private fun view(r: Row, changed: () -> Unit): View {
         val c = this
-        val row = Ui.hbox(c).apply { setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); Ui.rowStyle(c, this, fill = if (r.kind == 'I') Ui.CARD else Ui.BG) }
+        if (r.kind == 'E') {
+            // The link field with its button beside it: the field takes the width, the button sits at the right.
+            val field = EditText(c).apply {
+                hint = r.value(); setHintTextColor(Ui.DIM); setTextColor(Ui.TEXT); setSingleLine(true); Ui.size(this, 16f)
+                inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
+                imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_DONE
+                setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12))
+                background = Ui.rounded(c, Ui.BG, Ui.R_PANEL, Ui.FILL_STRONG); foreground = Ui.focusBg(c, Ui.R_PANEL, Ui.CLEAR)
+                addonField = this
+                setOnEditorActionListener { _, id, _ -> if (id == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) { r.input?.invoke(text.toString()); true } else false }
+            }
+            val go = Ui.text(c, r.label, 16f, Ui.TEXT, true).apply {
+                gravity = Gravity.CENTER; setPadding(Ui.dp(c, 22), Ui.dp(c, 12), Ui.dp(c, 22), Ui.dp(c, 12))
+                background = Ui.pillBg(c, Ui.FILL, Ui.FOCUS_FILL); isFocusable = true; isClickable = true
+                setOnClickListener { r.input?.invoke(field.text.toString()) }
+            }
+            return Ui.hbox(c, 10).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                addView(field, LinearLayout.LayoutParams(0, -2, 1f)); addView(go, LinearLayout.LayoutParams(-2, -2))
+            }
+        }
+        if (r.kind == 'Q') return Ui.hbox(c, 16).apply {
+            gravity = Gravity.CENTER_VERTICAL; setPadding(Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4), Ui.dp(c, 4))
+            r.image?.invoke()?.let { addView(android.widget.ImageView(c).apply { setImageBitmap(it) }, LinearLayout.LayoutParams(Ui.dp(c, 150), Ui.dp(c, 150))) }
+            addView(Ui.text(c, r.desc, 14f, Ui.TEXT2).apply { setLineSpacing(0f, 1.15f) }, LinearLayout.LayoutParams(0, -2, 1f))
+        }
+        val row = Ui.hbox(c).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); Ui.rowStyle(c, this, fill = if (r.kind == 'I') Ui.CARD else Ui.BG) }
+        if (r.icon != 0) row.addView(android.widget.ImageView(c).apply { setImageResource(r.icon); setColorFilter(Ui.TEXT) }, LinearLayout.LayoutParams(Ui.dp(c, 22), Ui.dp(c, 22)).apply { rightMargin = Ui.dp(c, 14) })
         val mid = Ui.vbox(c)
-        mid.addView(Ui.text(c, r.label, 16f, Ui.TEXT, true, 1))
-        if (r.desc.isNotEmpty()) mid.addView(Ui.text(c, r.desc, 12f, Ui.DIM, false, 2))
+        // A row of the mapper may need its whole sentence; the others stay short.
+        val long = r.icon != 0 || r.kind == 'T' || r.kind == 'A' && r.value().isNotEmpty()
+        mid.addView(Ui.text(c, r.label, 16f, Ui.TEXT, true, if (long) 0 else 1))
+        if (r.desc.isNotEmpty()) mid.addView(Ui.text(c, r.desc, 12f, Ui.DIM, false, if (long) 0 else 2), Ui.matchWrap().apply { topMargin = Ui.dp(c, 2) })
         row.addView(mid, LinearLayout.LayoutParams(0, -2, 1f))
         val gap = Ui.dp(c, 16)
         when (r.kind) {
             'T' -> row.addView(Toggle(c, r.on()), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = gap })
             'C' -> row.addView(Ui.text(c, "\u2039  ${r.value()}  \u203a", 15f, Ui.TEXT, true).apply { setPadding(Ui.dp(c, 14), Ui.dp(c, 6), Ui.dp(c, 14), Ui.dp(c, 6)); background = Ui.pillBg(c, Ui.FILL, Ui.FILL) }, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = gap })
-            'A' -> row.addView(Ui.text(c, "\u203a", 22f, Ui.DIM, true), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = gap })
+            'A' -> {
+                if (r.value().isNotEmpty()) row.addView(Ui.text(c, r.value(), 14f, Ui.TEXT2), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = gap })
+                row.addView(Ui.text(c, "\u203a", 22f, Ui.DIM, true), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = gap })
+            }
             'I' -> { row.isFocusable = false; row.isClickable = false; (mid.getChildAt(0) as TextView).setTextColor(Ui.TEXT2)
-                if (r.value().isNotEmpty()) row.addView(Ui.text(c, r.value(), 12f, Ui.DIM, false, 5).apply { gravity = Gravity.END; maxWidth = Ui.dp(c, 400) }, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = gap }) }
+                val v = r.value()
+                // A long text goes under its title, as wide as the row and in full; a short value sits at the right.
+                if (v.length > 30) mid.addView(Ui.text(c, v, 13f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 4) })
+                else if (v.isNotEmpty()) row.addView(Ui.text(c, v, 13f, Ui.DIM).apply { gravity = Gravity.END }, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = gap }) }
         }
         if (r.kind != 'I') {
             row.isFocusable = true; row.isClickable = true
@@ -314,8 +561,15 @@ class SettingsActivity : Activity() {
         return row
     }
 
-    @Deprecated("Back goes from the rows to the groups, then leaves.")
+    @Deprecated("Back closes a page inside a group, then goes from the rows to the groups, then leaves.")
     override fun onBackPressed() {
-        if (col.hasFocus()) rail.getChildAt(cat + 1)?.requestFocus() else super.onBackPressed()
+        if (subStack.isNotEmpty()) {
+            subStack.removeAt(subStack.size - 1); pendingRemove = null
+            if (subStack.isEmpty()) { phone?.stop(); phone = null; showQr = false }
+            refresh(); focusFirst(); return
+        }
+        if (col.hasFocus()) railItems.getOrNull(cat)?.requestFocus() else super.onBackPressed()
     }
+
+    override fun onDestroy() { phone?.stop(); super.onDestroy() }
 }

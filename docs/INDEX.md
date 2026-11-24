@@ -12,9 +12,9 @@ Start here, then `grep -n <name> docs/MAP.md` for the exact file and line. Rules
 | Title details (buttons, cast, episodes, air dates) | `screens/DetailsActivity.kt`, `data/Json.kt` (parse), `data/Models.kt` |
 | Source list, choosing and ranking sources | `screens/StreamsActivity.kt`, `data/StreamRank.kt`, `data/StreamResolver.kt` |
 | Player, controls, fallback, up next, skip intro | `screens/PlayerActivity.kt`, `ui/PlaySession.kt`, `data/Segments.kt` |
-| Search | `screens/SearchActivity.kt`, `data/Catalogs.kt` (`search`) |
+| Search | `ui/SearchScreen.kt`, `data/Catalogs.kt` (`search`) |
 | A setting (add, rename, group) | `screens/SettingsActivity.kt` (`rows`), store it in `data/Prefs.kt` |
-| Addons list and adding links | `screens/AddonsActivity.kt`, `ui/AddonsScreen.kt`, `data/AddonStore.kt`, `data/Links.kt` |
+| Addons list and adding links | `screens/SettingsActivity.kt` (Content & Discovery, Addons), `data/AddonStore.kt`, `data/Links.kt` |
 | Catalogs, metadata, Cinemeta details | `data/Catalogs.kt`, `data/Json.kt`, `data/Urls.kt` |
 | All network and caching | `data/Http.kt`, `data/ImageLoader.kt` |
 | Sign in, backup, progress, Library and addon sync | `data/Pairing.kt`, `data/Backup.kt`, `data/Progress.kt`, `data/SetupSync.kt`, `data/Library.kt`, `data/Secure.kt` |

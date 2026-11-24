@@ -14,6 +14,12 @@ object Watched {
 
     fun has(metaId: String, videoId: String) = videoId in of(metaId)
 
+
+    fun titleDone(m: Meta) = if (m.type == "movie") of(m.id).isNotEmpty() else "*" in of(m.id)
+
+    /** A whole title marked by hand: a movie is its own "episode", a show gets the flag "*" (its episodes keep their own check marks). */
+    fun setTitle(m: Meta, watched: Boolean) = set(m.id, if (m.type == "movie") m.id else "*", watched)
+
     fun set(metaId: String, videoId: String, watched: Boolean) {
         val now = of(metaId).let { if (watched) it + videoId else it - videoId }
         sp().edit().apply { if (now.isEmpty()) remove(metaId) else putString(metaId, JSONArray(now.toList()).toString()) }.apply()

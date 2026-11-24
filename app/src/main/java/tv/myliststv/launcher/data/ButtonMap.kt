@@ -97,6 +97,24 @@ object ButtonMap {
         }
     }
 
+    /** The short word at the right of a button's row. */
+    fun badge(c: Context, key: Int): String {
+        val scope = scopeOf(key)
+        return when {
+            !Prefs.mapperOn -> "Mapper Disabled"
+            key == HOME && !Prefs.homeCustom -> "Factory Default"
+            key != HOME && !keyOn(key) -> "Disabled"
+            key == HOME -> if (HomeSetup.isHome(c) || HomeSetup.fallbackOn(c)) "Available Globally" else "Needs Home app"
+            scope == "launcher" -> "In My Lists TV only"
+            HomeSetup.fallbackOn(c) -> if (scope == "global") "Outside My Lists TV" else "Available Globally"
+            else -> "In My Lists TV only"
+        }
+    }
+
+    /** What one press of a button does, in words ("Not Assigned" when nothing). */
+    fun pressLabel(c: Context, key: Int, press: String): String =
+        (if (key == HOME) homeAction(press) else rules().firstOrNull { it.key == key && it.press == press }?.action)?.let { actionName(c, it) } ?: "Not Assigned"
+
     fun scopeName(scope: String) = SCOPES.firstOrNull { it.first == scope }?.second ?: scope
     fun keyName(key: Int) = names[key] ?: KeyEvent.keyCodeToString(key).removePrefix("KEYCODE_").replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() }
     fun pressName(p: String) = PRESSES.firstOrNull { it.first == p }?.second ?: p
