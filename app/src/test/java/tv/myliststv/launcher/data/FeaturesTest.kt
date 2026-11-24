@@ -129,6 +129,14 @@ class ProgressTest {
         assertTrue(url.endsWith("/api/nuvio-tv/progress")); assertTrue(body.contains("\"targetId\":\"SECRETTOKEN\"")); assertEquals("your account", Pairing.userOf(link)); assertTrue(body.contains("\"episode\":2")); assertTrue(body.contains("\"positionMs\":25000"))
         assertTrue(Progress.request(link, e("tt1", "series", 95_000))!!.first.endsWith("/api/nuvio-tv/history"))
     }
+    @Test fun markingWatchedByHandGoesToHistoryAndUnmarkingRemovesIt() {
+        val (url, body) = Progress.watchedRequest(link, "tt1", "series", 2, 5, true, 1234L)!!
+        assertTrue(url.endsWith("/api/nuvio-tv/history")); assertTrue(body.contains("\"season\":2") && body.contains("\"episode\":5") && body.contains("\"completed\":true") && body.contains("\"watchedAt\":1234"))
+        val (rm, rmBody) = Progress.watchedRequest(link, "tt1", "series", 2, 5, false, 1234L)!!
+        assertTrue(rm.endsWith("/api/nuvio-tv/history/remove")); assertFalse(rmBody.contains("completed"))
+        assertFalse("a movie has no season", Progress.watchedRequest(link, "tt9", "movie", -1, -1, true, 1L)!!.second.contains("season"))
+        assertNull(Progress.watchedRequest("", "tt1", "movie", -1, -1, true, 1L)); assertNull(Progress.watchedRequest(link, "live:x", "movie", -1, -1, true, 1L))
+    }
     @Test fun nothingIsSentWhenSignedOutOrJustStartedOrNotAnImdbTitle() {
         assertNull(Progress.request("", e("tt1", "movie", 50_000)))
         assertNull(Progress.request(link, e("tt1", "movie", 500)))
@@ -162,6 +170,17 @@ class ButtonMapTest {
         ButtonMap.add(ButtonMap.Rule(183, "single", "live")); ButtonMap.add(ButtonMap.Rule(183, "double", "app:com.x")); ButtonMap.add(ButtonMap.Rule(183, "single", "search"))
         assertEquals(listOf("double" to "app:com.x", "single" to "search").toSet(), ButtonMap.rules().map { it.press to it.action }.toSet())
         assertTrue(ButtonMap.allowed(183)); assertFalse(ButtonMap.allowed(android.view.KeyEvent.KEYCODE_BACK)); assertFalse(ButtonMap.allowed(android.view.KeyEvent.KEYCODE_HOME))
+        Prefs.buttonMap = ""
+    }
+
+    @Test fun aRuleKeepsItsScopeAndAnOlderRuleWorksEverywhere() {
+        Prefs.init(androidx.test.core.app.ApplicationProvider.getApplicationContext())
+        Prefs.buttonMap = "183|single|search"
+        assertEquals("all", ButtonMap.rules().single().scope)
+        ButtonMap.add(ButtonMap.Rule(183, "single", "search", "launcher"))
+        assertEquals("launcher", ButtonMap.rules().single().scope)
+        Prefs.buttonMap = "183|single|search|nonsense"
+        assertEquals("a scope nobody knows falls back to everywhere", "all", ButtonMap.rules().single().scope)
         Prefs.buttonMap = ""
     }
 }

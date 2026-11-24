@@ -14,6 +14,14 @@ object StreamResolver {
         val onDone: (List<StreamItem>, List<AddonStatus>) -> Unit,
     ) { @Volatile var cancelled = false }
 
+    /**
+     * The type to ask stream addons for one video. A list that mixes shows and movies (a My Lists channel such as the complete Arrowverse
+     * timeline) is a "series" whose videos are real titles: an episode is "tt:season:episode", a movie is a bare "tt". Addons answer a bare
+     * id only when it is asked for as a movie, so the list's own type is wrong for those entries.
+     */
+    fun typeFor(metaType: String, metaId: String, videoId: String): String =
+        if (metaType == "series" && videoId != metaId && !videoId.contains(':')) "movie" else metaType
+
     fun providers(type: String, videoId: String): List<Addon> = AddonStore.loaded.filter { a ->
         a.enabled && a.manifest.resources["stream"]?.let { r ->
             (r.types.isEmpty() || type in r.types) && (r.idPrefixes.isEmpty() || r.idPrefixes.any { videoId.startsWith(it) })

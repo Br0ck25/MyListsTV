@@ -24,6 +24,27 @@ object Alerts {
         sp().edit().putString("items", a.toString()).apply()
     }
 
+    private fun followed(): JSONObject = try { JSONObject(sp().getString("followed", "{}")) } catch (_: Exception) { JSONObject() }
+    private fun muted(): Set<String> = sp().getStringSet("muted", emptySet()) ?: emptySet()
+
+    /** Does this show raise alerts: one the viewer turned on, or one in the Library that they have not turned off. */
+    fun isOn(metaId: String) = followed().has(metaId) || (Library.has(metaId) && metaId !in muted())
+
+    /** Turns alerts for one show on or off (the bell button on its page). Turning on takes a first look at once, so only episodes after today's newest raise an alert. */
+    fun setOn(meta: Meta, on: Boolean) {
+        val f = followed(); val m = muted().toMutableSet()
+        if (on) { f.put(meta.id, meta.name); m -= meta.id } else { f.remove(meta.id); m += meta.id }
+        sp().edit().putString("followed", f.toString()).putStringSet("muted", m).apply()
+        if (on) check(force = true) { }
+    }
+
+    /** The shows to look at: the Library's series minus the ones turned off, plus the ones turned on that are not in the Library. */
+    fun watchList(): List<Meta> {
+        val lib = Library.all().filter { it.type == "series" && it.id !in muted() }
+        val f = followed()
+        return (lib + f.keys().asSequence().filter { id -> lib.none { it.id == id } }.map { Meta(it, "series", f.optString(it)) }).take(30).toList()
+    }
+
     fun remove(id: String) = write(all().filter { it.id != id })
     fun clear() = write(emptyList())
 
@@ -40,7 +61,7 @@ object Alerts {
         val last = sp().getLong("checkedAt", 0L); val now = System.currentTimeMillis()
         if (!force && now - last < 6 * 3600_000L) return
         sp().edit().putLong("checkedAt", now).apply()
-        Library.all().filter { it.type == "series" }.take(20).forEach { show ->
+        watchList().forEach { show ->
             Catalogs.meta("series", show.id, show) { m ->
                 val newest = newestAired(m?.videos ?: return@meta)
                 val key = "seen_${show.id}"; val seen = sp().getInt(key, 0)

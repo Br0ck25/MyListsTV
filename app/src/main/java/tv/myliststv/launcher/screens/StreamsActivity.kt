@@ -39,7 +39,7 @@ class StreamsActivity : Activity() {
             onDone = { l, st -> latest = l; show(l, st, true) },
         )
         session = s
-        StreamResolver.resolve(meta.type, videoId, StreamResolver.DEFAULT_TIMEOUT_MS, s)
+        StreamResolver.resolve(StreamResolver.typeFor(meta.type, meta.id, videoId), videoId, StreamResolver.DEFAULT_TIMEOUT_MS, s)
     }
 
     private fun show(streams: List<StreamItem>, st: List<StreamResolver.AddonStatus>, done: Boolean) {
@@ -48,7 +48,7 @@ class StreamsActivity : Activity() {
         val ok = st.count { it.ok }
         status.text = (if (done) "" else "Still looking…  ") + "${ranked.size} sources from $ok of ${st.size} addons" +
             st.filter { !it.ok }.joinToString("") { "   · ${it.name} did not answer" }
-        if (done && ranked.isEmpty()) status.text = if (StreamResolver.providers(meta.type, videoId).isEmpty()) "No stream addon is installed. Add one in Settings, then Addons." else "No playable sources found."
+        if (done && ranked.isEmpty()) status.text = if (StreamResolver.providers(StreamResolver.typeFor(meta.type, meta.id, videoId), videoId).isEmpty()) "No stream addon is installed. Add one in Settings, then Addons." else "No playable sources found."
         val focusedIdx = (0 until list.childCount).firstOrNull { list.getChildAt(it).hasFocus() } ?: -1
         list.removeAllViews()
         ranked.forEachIndexed { i, s ->

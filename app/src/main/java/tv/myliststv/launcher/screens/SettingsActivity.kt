@@ -10,6 +10,7 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -53,32 +54,6 @@ class SettingsActivity : Activity() {
         }.show()
     }
 
-    /** Press a button, say how it is pressed, say what it does. */
-    private fun addButton() {
-        val d = android.app.AlertDialog.Builder(this).setTitle("Press a button on your remote").setMessage("Press the button you want to use.").setNegativeButton("Cancel", null).create()
-        d.setOnKeyListener { _, code, ev ->
-            if (ev.action != KeyEvent.ACTION_DOWN || code == KeyEvent.KEYCODE_BACK) return@setOnKeyListener false
-            if (!ButtonMap.allowed(code)) { Toast.makeText(this, "That button cannot be changed. Try another.", Toast.LENGTH_SHORT).show(); return@setOnKeyListener true }
-            d.dismiss(); pickPress(code); true
-        }
-        d.show()
-    }
-
-    private fun pickPress(key: Int) = android.app.AlertDialog.Builder(this).setTitle("${ButtonMap.keyName(key)}: how is it pressed?")
-        .setItems(ButtonMap.PRESSES.map { it.second }.toTypedArray()) { _, i -> pickAction(key, ButtonMap.PRESSES[i].first) }.show()
-
-    private fun pickAction(key: Int, press: String) {
-        val names = ButtonMap.ACTIONS.map { it.second } + "Open an app\u2026"
-        android.app.AlertDialog.Builder(this).setTitle("What should it do?").setItems(names.toTypedArray()) { _, i ->
-            if (i < ButtonMap.ACTIONS.size) { ButtonMap.add(ButtonMap.Rule(key, press, ButtonMap.ACTIONS[i].first)); refresh() }
-            else Http.background {
-                val apps = AppRepository.load(this)
-                Http.post { android.app.AlertDialog.Builder(this).setTitle("Open which app?").setItems(apps.map { it.label }.toTypedArray()) { _, k -> ButtonMap.add(ButtonMap.Rule(key, press, "app:" + apps[k].component.packageName)); refresh() }.show() }
-            }
-        }.show()
-    }
-
-    /** Asks each stream addon for one well-known title and reports what each did. */
     private fun testSources() {
         if (StreamResolver.providers("movie", "tt0816692").isEmpty()) { android.app.AlertDialog.Builder(this).setTitle("Test my sources").setMessage("No stream addon is installed. Add one under Addons.").setPositiveButton("OK", null).show(); return }
         Toast.makeText(this, "Testing\u2026", Toast.LENGTH_SHORT).show()
@@ -132,39 +107,7 @@ class SettingsActivity : Activity() {
 
     private fun askName(kids: Boolean) = Ui.askText(this, if (kids) "New kids profile" else "New profile", "Name", "Add") { Profiles.add(it, kids); refresh() }
 
-    /**
-     * One dialog for ordering and hiding anything in a list (Home rows, apps). OK on an item opens its menu; the dialog
-     * comes back afterwards so several moves are quick. [save] gets the full order and the hidden ones.
-     */
-    private fun arrange(title: String, keys: List<Pair<String, String>>, hidden: List<String>, at: Int = 0, save: (List<String>, List<String>) -> Unit) {
-        val order = keys.map { it.first }
-        val names = keys.associate { it }
-        android.app.AlertDialog.Builder(this).setTitle(title)
-            .setItems(order.map { names[it] + if (it in hidden) "  (hidden)" else "" }.toTypedArray()) { _, i ->
-                val k = order[i]
-                android.app.AlertDialog.Builder(this).setTitle(names[k]).setItems(arrayOf("Move up", "Move down", if (k in hidden) "Show on Home" else "Hide from Home")) { _, m ->
-                    val o = order.toMutableList(); var h = hidden
-                    when (m) {
-                        0 -> if (i > 0) o.add(i - 1, o.removeAt(i))
-                        1 -> if (i < o.size - 1) o.add(i + 1, o.removeAt(i))
-                        else -> h = if (k in h) h - k else h + k
-                    }
-                    save(o, h)
-                    arrange(title, o.map { it to names[it]!! }, h, if (m == 0) i - 1 else if (m == 1) i + 1 else i, save)
-                }.show()
-            }.setPositiveButton("Done") { _, _ -> refresh() }.setOnCancelListener { refresh() }.create().also { it.listView.setSelection(at.coerceAtLeast(0)); it.show() }
-    }
-
-    private fun arrangeRows() {
-        val titles = listOf("Continue watching", "Airing next") + Catalogs.browseRows(null, 8).map { (_, c) -> Catalogs.rowTitle(null, c) } + "Your apps"
-        arrange("Home rows", titles.distinct().sortedBy { Prefs.homeRank(it) }.map { it to it }, Prefs.homeHidden) { o, h -> Prefs.homeOrder = o; Prefs.homeHidden = h }
-    }
-
-    private fun arrangeApps() = Http.background {
-        val order = Prefs.appOrder
-        val apps = AppRepository.load(this).sortedBy { order.indexOf(it.component.packageName).let { i -> if (i < 0) Int.MAX_VALUE else i } }
-        Http.post { arrange("Apps row", apps.map { it.component.packageName to it.label }, Prefs.appHidden) { o, h -> Prefs.appOrder = o; Prefs.appHidden = h } }
-    }
+    private fun arrange(what: String) = startActivity(Intent(this, ArrangeActivity::class.java).putExtra("what", what))
 
     private fun backupNow() {
         val first = Prefs.backupCode.isEmpty()
@@ -240,8 +183,8 @@ class SettingsActivity : Activity() {
         add(toggle("Wide posters", "Show catalog items as wide pictures instead of tall posters.", { Prefs.horizontalPosters }, { Prefs.horizontalPosters = it }))
         add(choice("Navigation", "Where Home, Movies, Series and the other pages are listed. Hidden opens with Left.", listOf(0, 1, 2), { Prefs.navStyle }, { Prefs.navStyle = it }, { listOf("Top bar", "Side bar", "Hidden side bar")[it] }))
         add(choice("Card size", "Posters, wide cards and app tiles grow or shrink together.", listOf(0, 1, 2), { Prefs.cardSize }, { Prefs.cardSize = it }, { listOf("Small", "Medium", "Large")[it] }))
-        add(action("Arrange Home rows", "Move lists and the apps row up or down, or hide them from Home.") { arrangeRows() })
-        add(action("Arrange apps row", "Reorder the apps on Home or hide some. The Apps tab still shows all of them.") { arrangeApps() })
+        add(action("Arrange Home rows", "Move lists and the apps row up or down, or hide them from Home.") { arrange("rows") })
+        add(action("Arrange apps row", "Reorder the apps on Home or hide some. The Apps tab still shows all of them.") { arrange("apps") })
         add(toggle("Show Airing next", "The next episode of the shows you follow on My Lists, soonest first.", { Prefs.showAiring }, { Prefs.showAiring = it }))
         add(toggle("Show Continue watching", "", { Prefs.showContinue }, { Prefs.showContinue = it }))
         add(toggle("Show apps row", "", { Prefs.showAppsRow }, { Prefs.showAppsRow = it }))
@@ -252,26 +195,33 @@ class SettingsActivity : Activity() {
         add(header("Performance"))
         add(choice("Lite mode", "Less motion and memory. Auto turns on for weak boxes.", listOf("Auto", "On", "Off"), { Prefs.liteMode }, { Prefs.liteMode = it }))
         add(action("Clear caches", "Frees stored images and catalog data (${Http.cacheBytes() / 1_048_576} MB now).") { Http.clear(); ImageLoader.clearDisk(); Toast.makeText(this@SettingsActivity, "Caches cleared", Toast.LENGTH_SHORT).show() })
-        add(header("Remote buttons"))
-        add(info("Button mapper", if (HomeSetup.fallbackOn(this@SettingsActivity)) "On" else "Needs the Home button fallback (Home screen group)"))
-        ButtonMap.rules().forEach { r -> add(action("${ButtonMap.keyName(r.key)}: ${ButtonMap.pressName(r.press)}", "${ButtonMap.actionName(this@SettingsActivity, r.action)}. OK removes it.") {
-            android.app.AlertDialog.Builder(this@SettingsActivity).setTitle("Remove this button setting?").setPositiveButton("Remove") { _, _ -> ButtonMap.save(ButtonMap.rules().filterNot { it == r }); refresh() }.setNegativeButton("Keep", null).show() }) }
-        add(action("Add a button", "Give a remote button (colour keys, app keys) a job on a press, double press or hold. Home, Back, arrows, OK, volume and power cannot be changed.") { addButton() })
-        add(header("Launcher setup"))
+        add(header("Default launcher"))
         add(info("Home app", if (HomeSetup.isHome(this@SettingsActivity)) "This launcher" else "Another launcher"))
-        add(action("Make this my Home app", "Opens the system choice. Pick My Lists TV and choose Always.") { requestHome() })
+        add(action("Make this my Home app", "Opens the system choice. Pick My Lists TV and choose Always.") { if (HomeSetup.isHome(this@SettingsActivity)) Toast.makeText(this@SettingsActivity, "My Lists TV is already your Home app.", Toast.LENGTH_SHORT).show() else requestHome() })
         add(info("Home button fallback", if (HomeSetup.fallbackOn(this@SettingsActivity)) "On" else "Off"))
         add(action("Turn on the Home button fallback", "For TVs that keep their own launcher as Home. Opens the system accessibility page if needed. It only sees which app came forward.") {
-            if (HomeSetup.enableFallback(this@SettingsActivity)) refresh()
+            if (HomeSetup.fallbackOn(this@SettingsActivity)) Toast.makeText(this@SettingsActivity, "The Home button fallback is already on.", Toast.LENGTH_SHORT).show()
+            else if (HomeSetup.enableFallback(this@SettingsActivity)) refresh()
             else try { Toast.makeText(this@SettingsActivity, "Turn on My Lists TV Home button", Toast.LENGTH_LONG).show(); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
         })
         add(info("Notifications bell", if (Notices.allowed(this@SettingsActivity)) "On" else "Off"))
         add(action("Turn on notifications", "Shows your TV's notifications in the bell at the top right of Home. Opens the system Notification access page.") {
-            try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Toast.makeText(this@SettingsActivity, "This TV has no such setting. Use the phone or computer steps.", Toast.LENGTH_LONG).show() }
+            if (Notices.allowed(this@SettingsActivity)) Toast.makeText(this@SettingsActivity, "Notifications are already on.", Toast.LENGTH_SHORT).show()
+            else try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Toast.makeText(this@SettingsActivity, "This TV has no such setting. Use the phone or computer steps.", Toast.LENGTH_LONG).show() }
         })
         add(action("Screensaver", "Pick My Lists TV backdrops as the screensaver in Android's settings.") {
             try { startActivity(Intent(Settings.ACTION_DREAM_SETTINGS)) } catch (_: Exception) { try { startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS)) } catch (_: Exception) { Toast.makeText(this@SettingsActivity, "This TV keeps its screensaver setting somewhere else.", Toast.LENGTH_LONG).show() } } })
         add(action("Set up from a phone or computer", "Shows an address with the exact steps and commands for TVs that block the buttons above.") { setupPage() })
+        add(header("Remote & Buttons"))
+        add(toggle("Enable Button Mapper", "Intercept and run custom actions for configured remote buttons.", { Prefs.mapperOn }, { Prefs.mapperOn = it }))
+        add(toggle("Customize Home Button", "When off, Home uses its factory jobs (single click: Home, double click: profile switcher).", { Prefs.homeCustom }, { Prefs.homeCustom = it }))
+        add(info("Global button interception (Accessibility)", if (HomeSetup.fallbackOn(this@SettingsActivity)) "Active" else "Not active. Turn on the Home button fallback (Launcher setup) for buttons to work in every app."))
+        add(action("Add Button Mapping", "Press a remote button to detect it and assign single, double or long-press jobs.") { MapperDialogs.add(this@SettingsActivity) { refresh() } })
+        if (Prefs.homeCustom) add(action("Home", "Single click: ${ButtonMap.actionName(this@SettingsActivity, ButtonMap.homeAction("single") ?: "home")}.  Double click: ${ButtonMap.actionName(this@SettingsActivity, ButtonMap.homeAction("double") ?: "profiles")}.") { MapperDialogs.edit(this@SettingsActivity, ButtonMap.HOME) { refresh() } })
+        ButtonMap.rules().filter { it.key != ButtonMap.HOME }.groupBy { it.key }.forEach { (key, rs) ->
+            val jobs = ButtonMap.PRESSES.mapNotNull { (p, label) -> rs.firstOrNull { it.press == p }?.let { "$label: ${ButtonMap.actionName(this@SettingsActivity, it.action)}" } }.joinToString("  ·  ")
+            add(action(ButtonMap.keyName(key), "$jobs. ${ButtonMap.status(this@SettingsActivity, key)}.") { MapperDialogs.edit(this@SettingsActivity, key) { refresh() } })
+        }
         add(header("About"))
         add(action("Check for updates", "Version 0.1.${Updater.installedBuild(this@SettingsActivity)} installed.") { checkUpdate() })
         add(info("Make this your home screen", "adb shell cmd package set-home-activity tv.myliststv.launcher/.MainActivity"))
@@ -293,11 +243,14 @@ class SettingsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val c = this
-        val root = Ui.hbox(c).apply { setBackgroundColor(Ui.BG); gravity = Gravity.TOP }
-        rail = Ui.vbox(c).apply { setPadding(Ui.dp(c, 40), Ui.dp(c, 36), Ui.dp(c, 16), Ui.dp(c, 24)) }
-        root.addView(rail, LinearLayout.LayoutParams(Ui.dp(c, 280), -1))
-        col = Ui.vbox(c).apply { setPadding(Ui.dp(c, 24), Ui.dp(c, 36), Ui.dp(c, 56), Ui.dp(c, 32)) }
-        root.addView(ScrollView(c).apply { addView(col); isVerticalScrollBarEnabled = false }, LinearLayout.LayoutParams(0, -1, 1f))
+        // One rounded panel on the black canvas: the groups down the left, the rows of the open group on the right.
+        val panel = Ui.hbox(c).apply { background = Ui.rounded(c, Ui.CARD, Ui.R_DIALOG); gravity = Gravity.TOP }
+        rail = Ui.vbox(c).apply { setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 8), Ui.dp(c, 16)) }
+        panel.addView(ScrollView(c).apply { addView(rail); isVerticalScrollBarEnabled = false }, LinearLayout.LayoutParams(Ui.dp(c, 270), -1))
+        col = Ui.vbox(c).apply { setPadding(Ui.dp(c, 16), Ui.dp(c, 20), Ui.dp(c, 24), Ui.dp(c, 20)) }
+        panel.addView(ScrollView(c).apply { addView(col); isVerticalScrollBarEnabled = false; clipToPadding = false }, LinearLayout.LayoutParams(0, -1, 1f))
+        val root = android.widget.FrameLayout(c).apply { setBackgroundColor(Ui.BG); val m = Ui.dp(c, 32); setPadding(m, Ui.dp(c, 24), m, Ui.dp(c, 24)) }
+        root.addView(panel, android.widget.FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
         refresh(focusRail = true)
     }
@@ -312,7 +265,7 @@ class SettingsActivity : Activity() {
         cat = cat.coerceIn(0, groups.size - 1)
         if (rail.childCount != groups.size + 1) {
             rail.removeAllViews()
-            rail.addView(Ui.text(this, "Settings", 24f, Ui.TEXT, true), Ui.wrap().apply { bottomMargin = Ui.dp(this@SettingsActivity, 16) })
+            rail.addView(Ui.text(this, "Settings", 24f, Ui.TEXT, true), Ui.wrap().apply { leftMargin = Ui.dp(this@SettingsActivity, 14); bottomMargin = Ui.dp(this@SettingsActivity, 14) })
             groups.forEachIndexed { i, (name, _) -> rail.addView(railItem(name, i), Ui.matchWrap().apply { topMargin = Ui.dp(this@SettingsActivity, 4) }) }
         }
         for (i in groups.indices) rail.getChildAt(i + 1).isSelected = i == cat
@@ -320,16 +273,20 @@ class SettingsActivity : Activity() {
         if (focusRail) rail.post { rail.getChildAt(cat + 1)?.requestFocus() }
     }
 
-    private fun railItem(name: String, i: Int): View = Ui.text(this, name, 16f, Ui.TEXT, true).apply {
+    private fun railItem(name: String, i: Int): View = Ui.hbox(this).apply {
         id = View.generateViewId()
-        setPadding(Ui.dp(this@SettingsActivity, 18), Ui.dp(this@SettingsActivity, 11), Ui.dp(this@SettingsActivity, 18), Ui.dp(this@SettingsActivity, 11))
-        background = Ui.pillBg(this@SettingsActivity, Ui.CLEAR); isFocusable = true; isClickable = true
-        setOnFocusChangeListener { v, f -> (v as TextView).setTextColor(if (f) Ui.ON_FOCUS else Ui.TEXT); if (f && cat != i && !rebuilding) { cat = i; for (k in groups.indices) rail.getChildAt(k + 1).isSelected = k == i; buildPanel(-1) } }
+        addView(Ui.text(context, name, 16f, Ui.TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
+        addView(Ui.text(context, "›", 22f, Ui.DIM, true))
+        setPadding(Ui.dp(this@SettingsActivity, 18), Ui.dp(this@SettingsActivity, 8), Ui.dp(this@SettingsActivity, 16), Ui.dp(this@SettingsActivity, 8))
+        background = Ui.pillBg(this@SettingsActivity, Ui.BG); isFocusable = true; isClickable = true
+        setOnFocusChangeListener { _, f -> if (f && cat != i && !rebuilding) { cat = i; for (k in groups.indices) rail.getChildAt(k + 1).isSelected = k == i; buildPanel(-1) } }
         setOnClickListener { cat = i; buildPanel(-1); col.getChildAt(1)?.requestFocus() }
     }
 
     private fun buildPanel(keep: Int) {
         rebuilding = true; col.postDelayed({ rebuilding = false }, 300)
+        // Removing the focused row would hand focus to the first group for a frame (the flash); the groups cannot take it until the row is back.
+        rail.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
         col.removeAllViews()
         val (name, rs) = groups[cat]
         col.addView(Ui.text(this, name, 24f, Ui.TEXT, true))
@@ -342,12 +299,16 @@ class SettingsActivity : Activity() {
             col.addView(v, Ui.matchWrap().apply { topMargin = Ui.dp(this@SettingsActivity, 8) })
         }
         rail.getChildAt(cat + 1).nextFocusRightId = firstFocusable?.id ?: View.NO_ID
-        if (keep >= 0) col.post { col.getChildAt(keep + 1)?.requestFocus() }
+        // Up and Down go row to row. Left to itself, Down from a row can pick a group on the left that happens to sit a little lower.
+        val order = (1 until col.childCount).map { col.getChildAt(it) }.filter { it.isFocusable }
+        order.forEachIndexed { i, v -> v.nextFocusUpId = (order.getOrNull(i - 1) ?: v).id; v.nextFocusDownId = (order.getOrNull(i + 1) ?: v).id }
+        if (keep >= 0) col.getChildAt(keep + 1)?.requestFocus()
+        rail.post { rail.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS }
     }
 
     private fun view(r: Row, changed: () -> Unit): View {
         val c = this
-        val row = Ui.hbox(c).apply { setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); Ui.rowStyle(c, this, fill = if (r.kind == 'I') Ui.BG else Ui.CARD) }
+        val row = Ui.hbox(c).apply { setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); Ui.rowStyle(c, this, fill = if (r.kind == 'I') Ui.CARD else Ui.BG) }
         val mid = Ui.vbox(c)
         mid.addView(Ui.text(c, r.label, 16f, Ui.TEXT, true, 1))
         if (r.desc.isNotEmpty()) mid.addView(Ui.text(c, r.desc, 12f, Ui.DIM, false, 2))
@@ -358,7 +319,7 @@ class SettingsActivity : Activity() {
             'C' -> row.addView(Ui.text(c, "\u2039  ${r.value()}  \u203a", 15f, Ui.TEXT, true).apply { setPadding(Ui.dp(c, 14), Ui.dp(c, 6), Ui.dp(c, 14), Ui.dp(c, 6)); background = Ui.pillBg(c, Ui.FILL, Ui.FILL) }, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = gap })
             'A' -> row.addView(Ui.text(c, "\u203a", 22f, Ui.DIM, true), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = gap })
             'I' -> { row.isFocusable = false; row.isClickable = false; (mid.getChildAt(0) as TextView).setTextColor(Ui.TEXT2)
-                if (r.value().isNotEmpty()) row.addView(Ui.text(c, r.value(), 12f, Ui.DIM, false, 2).apply { gravity = Gravity.END }, LinearLayout.LayoutParams(Ui.dp(c, 320), -2).apply { leftMargin = gap }) }
+                if (r.value().isNotEmpty()) row.addView(Ui.text(c, r.value(), 12f, Ui.DIM, false, 5).apply { gravity = Gravity.END; maxWidth = Ui.dp(c, 400) }, LinearLayout.LayoutParams(-2, -2).apply { leftMargin = gap }) }
         }
         if (r.kind != 'I') {
             row.isFocusable = true; row.isClickable = true

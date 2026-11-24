@@ -40,13 +40,21 @@ object WatchStore {
 
     /** Entries worth showing: started, not finished. */
     /** Entries worth showing: started and not finished, or next-up episodes from the account (no length yet). */
-    fun continueWatching(): List<Entry> = all().filter { it.fraction in 0.02f..0.93f || it.durationMs == 0L }
+    fun continueWatching(): List<Entry> = all().map(::tidy).filter { it.fraction in 0.02f..0.93f || it.durationMs == 0L }
+
+    /** Under 2% in (the point where Resume starts to apply): nothing worth resuming, so it counts as next up. */
+    private fun tidy(e: Entry) = if (e.durationMs > 1L && e.fraction < 0.02f) e.copy(positionMs = 0L, durationMs = 0L) else e
 
     fun forMeta(metaId: String): Entry? = all().firstOrNull { it.metaId == metaId }
 
+    /**
+     * The newest thing watched comes first. A title just opened (under 2% in) is the latest thing watched but has no progress worth
+     * resuming, so it is kept as "next up" at the top; storing it as it is would hide it until it passed 2% and drop its old entry.
+     */
     fun save(e: Entry) {
+        val entry = tidy(e)
         val list = all().filter { it.metaId != e.metaId }.toMutableList()
-        list.add(0, e)
+        list.add(0, entry)
         val a = JSONArray()
         list.take(MAX).forEach { a.put(toJson(it)) }
         sp.edit().putString("items", a.toString()).apply()

@@ -36,4 +36,17 @@ class RowFocusTest {
         val third = rowViews[0].strip.layoutManager!!.findViewByPosition(2)
         assertSame("been on the third card: that one", third, list.focusSearch(below, View.FOCUS_UP))
     }
+
+    @Test fun theRememberedCardBelongsToTheRowNotToItsStripView() {
+        val a = Robolectric.buildActivity(Activity::class.java).setup().get(); a.setTheme(R.style.Theme_MyListsTV)
+        fun row(n: String) = RowModel(n, null, CardKind.POSTER, (0 until 12).map { CardModel("$n$it", null, payload = it) })
+        val rows = listOf(row("a").also { it.lastPos = 3 }, row("b"))
+        val list = RowsList(a, rows, true, { }, { })
+        a.setContentView(list)
+        val v = a.window.decorView
+        repeat(2) { v.measure(View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY)); v.layout(0, 0, 1920, 1080); org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle() }
+        val rowViews = (0 until list.childCount).map { list.getChildAt(it) as RowView }
+        assertEquals("row a remembers its own card", 3, rowViews[0].strip.getTag(R.id.tag_row_pos))
+        assertEquals("row b was never visited", 0, rowViews[1].strip.getTag(R.id.tag_row_pos))
+    }
 }

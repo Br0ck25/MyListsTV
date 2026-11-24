@@ -73,7 +73,23 @@ object Catalogs {
             if (delivered && body == null) return@get
             val m = body?.let { try { Json.parseMeta(it) } catch (_: Exception) { null } }
             if (m != null) { delivered = true; cb(mergeMeta(m, fallback)) }
-            else if (!delivered) { delivered = true; cb(fallback) }
+            else if (!delivered) { delivered = true; channelByName(providers[0].baseUrl, type, id, fallback, cb) }
+        }
+    }
+
+    /**
+     * A My Lists channel's tile in a catalog can carry a different id from the one the addon answers details for, so its details come back
+     * empty. The account's sync list names the channel with the id the addon does answer to: look it up by name and ask again.
+     */
+    private fun channelByName(base: String, type: String, id: String, fallback: Meta?, cb: (Meta?) -> Unit) {
+        val link = Prefs.accountLink
+        if (!id.startsWith("channel_") || fallback == null || link.isEmpty()) { cb(fallback); return }
+        Http.get(ChannelIds.syncUrl(link), 10 * 60_000L) { text, _, _ ->
+            val alt = text?.let { ChannelIds.byName(it, fallback.name) }
+            if (alt == null || alt == id) { cb(fallback); return@get }
+            Http.get(Urls.meta(base, type, alt), META_TTL) { body, _, _ ->
+                body?.let { try { Json.parseMeta(it) } catch (_: Exception) { null } }?.let { cb(mergeMeta(it, fallback)) }
+            }
         }
     }
 

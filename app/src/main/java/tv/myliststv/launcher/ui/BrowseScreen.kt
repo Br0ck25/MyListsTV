@@ -6,6 +6,7 @@ import android.app.Activity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.Toast
 import tv.myliststv.launcher.AppEntry
 import tv.myliststv.launcher.AppRepository
 import tv.myliststv.launcher.data.*
@@ -41,7 +42,10 @@ class BrowseScreen(
         when (val p = model.payload) {
             is AppEntry -> onAppMenu(p)
             is WatchStore.Entry -> android.app.AlertDialog.Builder(c).setTitle(p.name)
-                .setItems(arrayOf("Remove from Continue watching")) { _, _ -> WatchStore.remove(p.metaId); refreshContinue() }.show()
+                .setItems(arrayOf("Mark as watched", "Remove from Continue watching")) { _, i ->
+                    if (i == 0) markWatched(p) else WatchStore.remove(p.metaId)
+                    refreshContinue()
+                }.show()
         }
     })
     val view: View
@@ -73,7 +77,7 @@ class BrowseScreen(
         for ((addon, cat) in defs) {
             val title = Catalogs.rowTitle(type, cat)
             val wide = Prefs.horizontalPosters
-            val row = RowModel(title, "via ${addon.name}", if (wide) CardKind.WIDE else CardKind.POSTER, emptyList(), loaded = false)
+            val row = RowModel(title, "via ${if (addon.name.startsWith("My Lists")) "My Lists" else addon.name}", if (wide) CardKind.WIDE else CardKind.POSTER, emptyList(), loaded = false)
             rows += row
             rows.sortBy { Prefs.homeRank(it.title) }
             Catalogs.load(addon, cat) { metas, _ ->
@@ -103,14 +107,38 @@ class BrowseScreen(
         }
     }
 
+    /** Hold OK on a Continue watching card, Mark as watched: the episode (or movie) is done, here and in the account's watched history. */
+    private fun markWatched(e: WatchStore.Entry) {
+        val episode = e.type == "series" && e.season >= 0
+        if (episode) { Watched.set(e.metaId, e.videoId, true); WatchStore.remove(e.metaId) }
+        else WatchStore.save(e.copy(positionMs = 1L, durationMs = 1L, updated = System.currentTimeMillis()))
+        Progress.markWatched(e.metaId, e.type, e.season, e.episode, true)
+        Toast.makeText(c, if (Prefs.accountLink.isNotEmpty()) "Marked watched, and added to My Lists" else "Marked watched", Toast.LENGTH_SHORT).show()
+    }
+
     private fun addContinue() {
         if (!Prefs.showContinue || "Continue watching" in Prefs.homeHidden) return
         val cw = WatchStore.continueWatching()
         if (cw.isEmpty()) return
-        rows.add(RowModel("Continue watching", "This device", CardKind.WIDE, cw.map { e ->
+        val models = cw.map { e ->
             val sub = if (e.type == "series" && e.season >= 0) "S${e.season} · E${e.episode}" else "Movie"
-            CardModel(e.name, e.background ?: e.poster, if (e.durationMs == 0L) "Next up · $sub" else "$sub · ${(e.fraction * 100).toInt()}% watched", e.fraction, e)
-        }))
+            CardModel(e.name, e.background ?: e.poster, if (e.durationMs == 0L) "Next up · $sub" else "$sub · ${(e.fraction * 100).toInt()}% watched", e.fraction, e, badgeEnd = EpisodesLeft.timeLeft(e))
+        }
+        val row = RowModel("Continue watching", "This device", CardKind.WIDE, models)
+        rows.add(row)
+        // Episodes left needs the show's episode list: ask for it per show and redraw just that card (the row is not rebuilt, so focus stays).
+        cw.forEachIndexed { i, e ->
+            if (e.type != "series") return@forEachIndexed
+            Catalogs.meta("series", e.metaId, Meta(e.metaId, "series", e.name)) { m ->
+                val info = m?.let { EpisodesLeft.compute(it.videos, e, System.currentTimeMillis()) } ?: return@meta
+                val card = models.getOrNull(i) ?: return@meta
+                val left = EpisodesLeft.leftText(info.left)
+                val end = info.airs ?: card.badgeEnd ?: m.runtime
+                if (card.badge == left && card.badgeEnd == end) return@meta
+                card.badge = left; card.badgeEnd = end
+                if (row in rows) row.adapter?.notifyItemChanged(i)
+            }
+        }
     }
 
     /** The next episode of each followed show, soonest first. Tapping one opens the show. */

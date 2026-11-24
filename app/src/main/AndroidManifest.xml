@@ -11,6 +11,11 @@
 
     <!-- Android 11+ hides other apps unless we declare what we look for. -->
     <queries>
+        <!-- The other Home apps (the TV's own launcher has no LAUNCHER entry), which the Home button fallback has to recognise. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
@@ -76,9 +81,14 @@
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/home_button_service" />
         </service>
         <activity android:name=".screens.AddonsActivity"
-            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" android:windowSoftInputMode="stateHidden|adjustPan" />
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" android:windowSoftInputMode="stateHidden|adjustPan" android:theme="@style/Theme.MyListsTV.Modal" />
         <activity android:name=".screens.SettingsActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" />
+        <activity android:name=".screens.TrailerActivity" android:exported="false" android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden|keyboard|smallestScreenSize|screenLayout|uiMode"
+            android:theme="@style/Theme.MyListsTV" />
+        <activity android:name=".screens.ArrangeActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" android:theme="@style/Theme.MyListsTV.Modal" />
         <activity android:name=".screens.PlayerActivity" android:exported="false" android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|keyboardHidden|keyboard|smallestScreenSize|screenLayout|uiMode"
             android:theme="@style/Theme.MyListsTV" />
