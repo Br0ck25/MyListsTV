@@ -382,16 +382,16 @@ Find a symbol with grep on this file, then read only that file around the line n
     73   fun allows(m: Meta)
     75   fun safeForKids(m: Meta)
 
-## data/Progress.kt (95 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
+## data/Progress.kt (96 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
     11 object Progress  - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
     16   fun request(link: String, e: WatchStore.Entry)  - The request for this play, or null when it should not be sent (no account, no IMDb id, a start, or live TV).
     29   class Airing  - The account's Continue Watching as a launcher entry.
     32   fun airing(today: String = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Lo  - The saved Airing Next answer, soonest first, without dates already past.
     40   fun entryFrom(o: JSONObject, index: Int = 0)  - [index] is the place in the account's list: an entry with no date keeps the account's order by getting a date 
     50   fun pull(changed: ()  - Brings the account's Continue Watching in (the website's and the other TVs'), keeping whichever entry for a ti
-    72   fun watchedRequest(link: String, metaId: String, type: String, season: Int, epis  - The request that adds a title or episode to the account's watched history, or removes it, or null when it shou
-    82   fun markWatched(metaId: String, type: String, season: Int, episode: Int, watched  - A title or episode marked watched (or not watched) by hand also goes to the account's watched history, so the 
-    88   fun report(e: WatchStore.Entry, force: Boolean)  - Sends at most once a minute unless [force] (leaving the player, or the end of the title).
+    73   fun watchedRequest(link: String, metaId: String, type: String, season: Int, epis  - The request that adds a title or episode to the account's watched history, or removes it, or null when it shou
+    83   fun markWatched(metaId: String, type: String, season: Int, episode: Int, watched  - A title or episode marked watched (or not watched) by hand also goes to the account's watched history, so the 
+    89   fun report(e: WatchStore.Entry, force: Boolean)  - Sends at most once a minute unless [force] (leaving the player, or the end of the title).
 
 ## data/Secure.kt (56 lines) - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
     18 object Secure  - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
@@ -710,30 +710,31 @@ Find a symbol with grep on this file, then read only that file around the line n
    158   fun refreshContinue()  - Called when coming back from the player, or when the account's lists arrive, so they show without reloading ca
    168   fun hero(m: CardModel)
 
-## ui/Cards.kt (308 lines)
+## ui/Cards.kt (322 lines)
     22 class CardKind
     24 class CardModel
     41 class RowModel
     56 class Card  - One tile.
-   113   fun bind(m: CardModel)
-   139 class CardAdapter  - A horizontal strip of cards.
-   151   class H
-   153   fun set(newItems: List<CardModel>)
-   155   fun payloads()
-   158   fun move(from: Int, to: Int)  - Moves one card to another place (the list is changed in place, so the row's own model stays in step).
-   163   fun onCreateViewHolder(parent: ViewGroup, viewType: Int)
-   169   fun onBindViewHolder(h: H, position: Int)
-   185   fun getItemCount()
-   189 class RowView  - A titled row: heading, optional source label, horizontal strip.
-   215 class RowsList  - A vertical list of [RowView]s over [rows].
-   226   fun requestChildFocus(child: View?, focused: View?)  - Landing on a row shows it whole, title included: the first row goes to the very top, any other row is scrolled
-   235   fun rowOf(v: View)  - The row (a direct child of this list) that holds [v].
-   238   fun cardIn(next: RowView)  - The card to land on in [next]: the one you were last on in that row, or its first card if you have not been th
-   254   fun focusRowAt(target: Int, tries: Int = 0)  - A row that is not on screen yet (it was scrolled away): bring it in, then put the focus on its card.
-   263   fun focusSearch(focused: View, direction: Int)  - Up and down land on the card you last had focus on in the next row (its first card if you have not been there)
-   288   fun changed(i: Int)
-   289   fun changedAll()
-   290   fun inserted(i: Int)
+    75   fun fitBadges(m: CardModel)  - Both corner badges on a wide card must fit its top edge.
+   126   fun bind(m: CardModel)
+   153 class CardAdapter  - A horizontal strip of cards.
+   165   class H
+   167   fun set(newItems: List<CardModel>)
+   169   fun payloads()
+   172   fun move(from: Int, to: Int)  - Moves one card to another place (the list is changed in place, so the row's own model stays in step).
+   177   fun onCreateViewHolder(parent: ViewGroup, viewType: Int)
+   183   fun onBindViewHolder(h: H, position: Int)
+   199   fun getItemCount()
+   203 class RowView  - A titled row: heading, optional source label, horizontal strip.
+   229 class RowsList  - A vertical list of [RowView]s over [rows].
+   240   fun requestChildFocus(child: View?, focused: View?)  - Landing on a row shows it whole, title included: the first row goes to the very top, any other row is scrolled
+   249   fun rowOf(v: View)  - The row (a direct child of this list) that holds [v].
+   252   fun cardIn(next: RowView)  - The card to land on in [next]: the one you were last on in that row, or its first card if you have not been th
+   268   fun focusRowAt(target: Int, tries: Int = 0)  - A row that is not on screen yet (it was scrolled away): bring it in, then put the focus on its card.
+   277   fun focusSearch(focused: View, direction: Int)  - Up and down land on the card you last had focus on in the next row (its first card if you have not been there)
+   302   fun changed(i: Int)
+   303   fun changedAll()
+   304   fun inserted(i: Int)
 
 ## ui/LibraryScreen.kt (53 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     12 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
