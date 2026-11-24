@@ -18,7 +18,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     33   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
     39   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## data\AddonStore.kt (127 lines) - The user's installed addons, kept as a list of manifest URLs.
+## data/AddonStore.kt (127 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
     13   class Saved
     21   fun init(c: Context)
@@ -41,7 +41,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     94   fun load(cb: (List<Addon>)  - Fetches every saved manifest (from cache first), then calls [cb] once on the main thread with those that loade
    116   fun probe(url: String, cb: (Manifest?, String?)  - Fetches a manifest to check it before installing.
 
-## data\Alerts.kt (73 lines) - New-episode alerts for series in the Library, shown in the bell.
+## data/Alerts.kt (73 lines) - New-episode alerts for series in the Library, shown in the bell.
     12 object Alerts  - New-episode alerts for series in the Library, shown in the bell.
     13   class Item
     15   fun sp()
@@ -58,7 +58,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     56   fun compare(meta: Meta, seen: Int, newest: Int)  - Compares one show with what was seen last; returns a new alert or null.
     60   fun check(force: Boolean = false, done: ()  - Looks at the Library's series now and then.
 
-## data\Backup.kt (108 lines) - Encrypted backup of the whole setup.
+## data/Backup.kt (108 lines) - Encrypted backup of the whole setup.
     19 object Backup  - Encrypted backup of the whole setup.
     24   fun isCode(s: String)
     25   fun clean(s: String)
@@ -74,11 +74,11 @@ Find a symbol with grep on this file, then read only that file around the line n
     96   fun restore(c: Context, code: String, reply: (String)
    107   fun auto()  - After a change, refresh the online backup if this box already has a code.
 
-## data\ButtonGestures.kt (34 lines) - Single, double and hold presses of the buttons the owner mapped (see [ButtonMap]).
+## data/ButtonGestures.kt (34 lines) - Single, double and hold presses of the buttons the owner mapped (see [ButtonMap]).
     12 class ButtonGestures  - Single, double and hold presses of the buttons the owner mapped (see [ButtonMap]).
     18   fun onKey(e: KeyEvent)  - True when the key belongs to a mapped button and was used.
 
-## data\ButtonMap.kt (124 lines) - Remote buttons the owner has given a job: a button (the colour keys, a streaming-app key...) plus how it is pr
+## data/ButtonMap.kt (124 lines) - Remote buttons the owner has given a job: a button (the colour keys, a streaming-app key...) plus how it is pr
     18 object ButtonMap  - Remote buttons the owner has given a job: a button (the colour keys, a streaming-app key...) plus how it is pr
     20   class Rule  - [scope] "all": everywhere.
     52   fun homeAction(press: String)  - What the Home button does for a press: the owner's job when Customize Home Button is on, otherwise the factory
@@ -102,7 +102,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    107   fun run(c: Context, action: String)  - Does the action: open an app or a system page, press a media key, or tell the launcher where to go.
    118   fun media(c: Context, action: String)
 
-## data\Catalogs.kt (108 lines) - Catalog, meta and search lookups across installed addons.
+## data/Catalogs.kt (108 lines) - Catalog, meta and search lookups across installed addons.
      4 object Catalogs  - Catalog, meta and search lookups across installed addons.
      8   fun enabled()
     11   fun browseRows(type: String?, limit: Int)  - Browse rows for Home, Movies and Series: catalogs that do not need a search term.
@@ -115,12 +115,12 @@ Find a symbol with grep on this file, then read only that file around the line n
     97   fun fillGaps(base: Meta, extra: Meta)  - Keeps everything [base] has and takes from [extra] only what [base] lacks.
    107   fun mergeMeta(detail: Meta, base: Meta?)  - Detail data wins, but anything missing there (a poster, say) is kept from the catalog item.
 
-## data\ChannelIds.kt (18 lines) - The id a My Lists channel answers to for its details, which can differ from the id on its tile in a catalog.
+## data/ChannelIds.kt (18 lines) - The id a My Lists channel answers to for its details, which can differ from the id on its tile in a catalog.
      6 object ChannelIds  - The id a My Lists channel answers to for its details, which can differ from the id on its tile in a catalog.
     10   fun syncUrl(accountLink: String)  - The account's sync list: its channels, each with the id the addon serves details for.
     13   fun byName(sync: String, name: String)  - The details id of the channel called [name] in a sync answer, or null when it is not there.
 
-## data\CrashGuard.kt (26 lines) - Counts recent crashes.
+## data/CrashGuard.kt (26 lines) - Counts recent crashes.
      6 object CrashGuard  - Counts recent crashes.
     10   fun isSafe(times: List<Long>, now: Long)
     12   fun sp(c: Context)
@@ -129,7 +129,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     24   fun safeMode(c: Context)
     25   fun clear(c: Context)
 
-## data\EpisodesLeft.kt (39 lines) - What a Continue watching card says about where you are: episodes still to watch, time left, or when the next o
+## data/EpisodesLeft.kt (39 lines) - What a Continue watching card says about where you are: episodes still to watch, time left, or when the next o
      7 object EpisodesLeft  - What a Continue watching card says about where you are: episodes still to watch, time left, or when the next o
      9   class Info  - [left]: aired episodes still to watch, counting the one you are on.
     12   fun compute(videos: List<Video>, current: WatchStore.Entry, now: Long, tz: TimeZ  - Null when the episode list does not contain the episode you are on (nothing honest to say).
@@ -137,7 +137,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     31   fun leftText(n: Int)
     34   fun timeLeft(e: WatchStore.Entry)  - "45 min left" or "1h 5m left" for something you have started, null when its length is not known.
 
-## data\HomeSetup.kt (46 lines) - What the Home screen setup page needs: where we stand, how to change it, and the commands for the phone page.
+## data/HomeSetup.kt (46 lines) - What the Home screen setup page needs: where we stand, how to change it, and the commands for the phone page.
     12 object HomeSetup  - What the Home screen setup page needs: where we stand, how to change it, and the commands for the phone page.
     15   fun homeIntent()
     22   fun stockHomeScreens(c: Context)  - The Home screens of every other Home app, as "package/class": what the Home button fallback watches for.
@@ -146,7 +146,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     31   fun enableFallback(c: Context)  - Turns the fallback on straight away if the app was allowed to (the phone page's grant command); false means op
     38   fun commands(ip: String)  - The commands to run from a computer, with this box's address filled in.
 
-## data\Http.kt (159 lines) - Small HTTP layer: HttpURLConnection (built in, no library), a three-thread pool, and a disk cache that answers
+## data/Http.kt (159 lines) - Small HTTP layer: HttpURLConnection (built in, no library), a three-thread pool, and a disk cache that answers
     16 object Http  - Small HTTP layer: HttpURLConnection (built in, no library), a three-thread pool, and a disk cache that answers
     22   fun init(context: Context)
     29   fun get(url: String, ttlMs: Long, cb: (body: String?, fromCache: Boolean, error:  - Calls [cb] on the main thread: first with the cached copy if any, then with a fresh copy if the cache was olde
@@ -164,7 +164,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    147   fun cacheBytes()
    149   fun prune(d: File)
 
-## data\ImageLoader.kt (87 lines) - Loads images at the size they are shown, in RGB_565, into a byte-bounded memory cache and a disk cache.
+## data/ImageLoader.kt (87 lines) - Loads images at the size they are shown, in RGB_565, into a byte-bounded memory cache and a disk cache.
     17 object ImageLoader  - Loads images at the size they are shown, in RGB_565, into a byte-bounded memory cache and a disk cache.
     22   fun init(cacheDir: File, memoryBytes: Int)
     30   fun trim()
@@ -173,7 +173,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     73   fun prune()
     84   fun clearDisk()
 
-## data\Json.kt (201 lines) - Parsing for Stremio addon protocol responses.
+## data/Json.kt (201 lines) - Parsing for Stremio addon protocol responses.
      7 object Json  - Parsing for Stremio addon protocol responses.
      9   fun parseManifest(text: String)
     62   fun parseMetas(text: String)
@@ -189,7 +189,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    188   fun youtubeIds(o: JSONObject)  - Trailers appear as trailerStreams [{ytId}] or trailers [{source, type}]; both carry a YouTube id.
    195   fun strings(a: JSONArray?)
 
-## data\Library.kt (83 lines) - "Library": titles the viewer saved with + on a details page.
+## data/Library.kt (83 lines) - "Library": titles the viewer saved with + on a details page.
      8 object Library  - "Library": titles the viewer saved with + on a details page.
      9   fun sp(profile: String = Profiles.activeId)
     11   fun read(profile: String)
@@ -206,12 +206,12 @@ Find a symbol with grep on this file, then read only that file around the line n
     76   fun export()  - This profile's list, for a backup.
     79   fun import(o: Any?)  - Restores this profile's list from a backup (an array; the first version of backups held an object with every p
 
-## data\Links.kt (16 lines) - One place that decides what a pasted link is: a Stremio addon, or a recovery code from the phone page.
+## data/Links.kt (16 lines) - One place that decides what a pasted link is: a Stremio addon, or a recovery code from the phone page.
      6 object Links  - One place that decides what a pasted link is: a Stremio addon, or a recovery code from the phone page.
      7   fun isAddon(link: String)
      9   fun add(link: String, reply: (String)
 
-## data\Models.kt (99 lines) - A catalog or search item, also the detail record (meta).
+## data/Models.kt (99 lines) - A catalog or search item, also the detail record (meta).
      4 class Meta  - A catalog or search item, also the detail record (meta).
     30 class Video  - An episode of a series.
     41   fun airDate()  - "Nov 19, 2026", or null when the addon gave no usable date.
@@ -222,7 +222,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     70 class Addon  - One installed addon.
     81 class StreamItem  - One playable stream option from an addon.
 
-## data\Pairing.kt (92 lines) - Sign in with a code.
+## data/Pairing.kt (92 lines) - Sign in with a code.
     12 object Pairing  - Sign in with a code.
     14   class Start
     16   fun parseStart(text: String)
@@ -240,12 +240,12 @@ Find a symbol with grep on this file, then read only that file around the line n
     74   fun signIn(manifestUrl: String, name: String = "")
     85   fun signOut()  - Back to the default My Lists catalogs.
 
-## data\People.kt (18 lines) - Cast photos.
+## data/People.kt (18 lines) - Cast photos.
      7 object People  - Cast photos.
     11   fun parsePhoto(text: String)  - The profile photo of the first match, or null.
     16   fun photo(name: String, cb: (String?)  - Cached for a month: a person's photo does not change.
 
-## data\PhoneServer.kt (74 lines) - A tiny web page on the TV so a phone on the same Wi-Fi can paste an addon link instead of typing it with the r
+## data/PhoneServer.kt (74 lines) - A tiny web page on the TV so a phone on the same Wi-Fi can paste an addon link instead of typing it with the r
     12 class PhoneServer  - A tiny web page on the TV so a phone on the same Wi-Fi can paste an addon link instead of typing it with the r
     16   fun address()  - The address to open on the phone, or null when the TV has no local network address.
     18   fun start()
@@ -255,13 +255,13 @@ Find a symbol with grep on this file, then read only that file around the line n
     60   fun setupPage()
     70   fun localIp()
 
-## data\PlayErrors.kt (20 lines) - Plain-language reasons for playback failures, each ending with what to do.
+## data/PlayErrors.kt (20 lines) - Plain-language reasons for playback failures, each ending with what to do.
      4 object PlayErrors  - Plain-language reasons for playback failures, each ending with what to do.
      5   class Kind
      7   fun describe(httpStatus: Int?, kind: Kind)
     19   fun worthTryingAnotherSource(httpStatus: Int?, kind: Kind)  - True when a different source is likely to help, so fallback should run.
 
-## data\Prefs.kt (186 lines) - All user settings in one place.
+## data/Prefs.kt (186 lines) - All user settings in one place.
      8 object Prefs  - All user settings in one place.
     16   fun init(c: Context)
     21   var liteMode
@@ -310,7 +310,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    183   fun effectiveMaxResolution()  - The highest resolution to prefer.
    185   fun memoryCacheBytes()
 
-## data\Profiles.kt (74 lines) - Viewer profiles.
+## data/Profiles.kt (74 lines) - Viewer profiles.
      9 object Profiles  - Viewer profiles.
     10   class P
     16   fun init(c: Context)
@@ -328,7 +328,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     71   fun allows(m: Meta)
     73   fun safeForKids(m: Meta)
 
-## data\Progress.kt (96 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
+## data/Progress.kt (96 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
     11 object Progress  - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
     16   fun request(link: String, e: WatchStore.Entry)  - The request for this play, or null when it should not be sent (no account, no IMDb id, a start, or live TV).
     29   class Airing  - The account's Continue Watching as a launcher entry.
@@ -339,14 +339,14 @@ Find a symbol with grep on this file, then read only that file around the line n
     83   fun markWatched(metaId: String, type: String, season: Int, episode: Int, watched  - A title or episode marked watched (or not watched) by hand also goes to the account's watched history, so the 
     89   fun report(e: WatchStore.Entry, force: Boolean)  - Sends at most once a minute unless [force] (leaving the player, or the end of the title).
 
-## data\Secure.kt (56 lines) - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
+## data/Secure.kt (56 lines) - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
     18 object Secure  - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
     25   fun keystoreKey()
     34   fun wrap(plain: String)  - Encrypts [plain].
     45   fun needsWrap(stored: String?)  - True for a stored value that should be wrapped but is not yet.
     48   fun unwrap(stored: String)  - The original text, or null if a wrapped value cannot be opened (key lost).
 
-## data\Segments.kt (37 lines) - Intro, recap and credits times for a series episode, from IntroDB (introdb.app, free, no key, keyed by IMDb id
+## data/Segments.kt (37 lines) - Intro, recap and credits times for a series episode, from IntroDB (introdb.app, free, no key, keyed by IMDb id
      6 object Segments  - Intro, recap and credits times for a series episode, from IntroDB (introdb.app, free, no key, keyed by IMDb id
      7   class Seg
     10   fun parseVideoId(id: String)  - "tt0944947:1:2" gives show, season and episode; anything else (a movie, a channel) gives null.
@@ -355,7 +355,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     30   fun at(segs: List<Seg>, posMs: Long)  - The segment [posMs] is inside, if any.
     33   fun load(videoId: String, cb: (List<Seg>)  - Cached for a week: these times almost never change.
 
-## data\SetupSync.kt (65 lines) - Keeps a signed-in profile's stream addons on its account, so a new TV only needs the sign-in.
+## data/SetupSync.kt (65 lines) - Keeps a signed-in profile's stream addons on its account, so a new TV only needs the sign-in.
     12 object SetupSync  - Keeps a signed-in profile's stream addons on its account, so a new TV only needs the sign-in.
     17   fun sp()
     18   fun on()
@@ -366,7 +366,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     29   fun push()
     43   fun pull(changed: ()  - Brings the account's lists in.
 
-## data\StreamRank.kt (86 lines) - Reading quality out of addon stream text, ranking, and the next-source choice for fallback.
+## data/StreamRank.kt (86 lines) - Reading quality out of addon stream text, ranking, and the next-source choice for fallback.
      6 object StreamRank  - Reading quality out of addon stream text, ranking, and the next-source choice for fallback.
     10   fun resolution(text: String)
     23   fun sizeBytes(text: String)
@@ -379,7 +379,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     75   fun wasTried(s: StreamItem)
     78   fun next(failed: StreamItem)  - The next stream to try after [failed], or null when none is left or the limit is reached.
 
-## data\StreamResolver.kt (62 lines) - Asks every enabled stream addon for sources and merges the answers as they arrive.
+## data/StreamResolver.kt (62 lines) - Asks every enabled stream addon for sources and merges the answers as they arrive.
      4 object StreamResolver  - Asks every enabled stream addon for sources and merges the answers as they arrive.
      7   class AddonStatus  - [note] says in plain words why an addon gave nothing (no answer, a bad key, only torrent links), or is null wh
     12   class Session
@@ -387,7 +387,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     25   fun providers(type: String, videoId: String)
     31   fun resolve(type: String, videoId: String, timeoutMs: Int, session: Session)
 
-## data\Subs.kt (40 lines)
+## data/Subs.kt (40 lines)
      6 class Sub
      9 object Subs  - Subtitles from subtitle addons (the Stremio "subtitles" resource).
     10   fun parse(text: String)
@@ -395,7 +395,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     23   fun providers(type: String, videoId: String)
     30   fun fetch(type: String, videoId: String, lang: String, cb: (List<Sub>)  - Asks every subtitle addon (3 s each, in parallel).
 
-## data\Updater.kt (57 lines) - Sideload updates: finds the newest GitHub release, downloads its APK, and hands it to the system installer.
+## data/Updater.kt (57 lines) - Sideload updates: finds the newest GitHub release, downloads its APK, and hands it to the system installer.
     11 object Updater  - Sideload updates: finds the newest GitHub release, downloads its APK, and hands it to the system installer.
     14   class Release
     16   fun installedBuild(c: Context)
@@ -403,7 +403,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     28   fun parse(json: String)  - Picks the highest build number among releases that carry an APK.
     43   fun install(c: Context, r: Release, progress: (String)  - Downloads the APK and opens the installer.
 
-## data\Urls.kt (23 lines) - Builds addon resource URLs.
+## data/Urls.kt (23 lines) - Builds addon resource URLs.
      6 object Urls  - Builds addon resource URLs.
      7   fun seg(s: String)
     10   fun catalog(base: String, type: String, id: String, skip: Int = 0, search: Strin
@@ -411,18 +411,18 @@ Find a symbol with grep on this file, then read only that file around the line n
     20   fun stream(base: String, type: String, id: String)
     22   fun subtitles(base: String, type: String, id: String)
 
-## data\Watched.kt (21 lines) - Which episodes of each show this profile has finished (90% or more, or marked by hand).
+## data/Watched.kt (21 lines) - Which episodes of each show this profile has finished (90% or more, or marked by hand).
      8 object Watched  - Which episodes of each show this profile has finished (90% or more, or marked by hand).
      9   fun sp()
     11   fun of(metaId: String)
     15   fun has(metaId: String, videoId: String)
     17   fun set(metaId: String, videoId: String, watched: Boolean)
 
-## data\WatchNext.kt (35 lines) - Puts Continue watching on the system home screen's Watch Next row.
+## data/WatchNext.kt (35 lines) - Puts Continue watching on the system home screen's Watch Next row.
     15 object WatchNext  - Puts Continue watching on the system home screen's Watch Next row.
     16   fun publish(c: Context)
 
-## data\WatchStore.kt (83 lines) - Local watch progress behind Continue watching.
+## data/WatchStore.kt (83 lines) - Local watch progress behind Continue watching.
      9 object WatchStore  - Local watch progress behind Continue watching.
     13   class Entry
     31   fun init(c: Context)  - Each profile has its own history.
@@ -473,12 +473,12 @@ Find a symbol with grep on this file, then read only that file around the line n
    454   fun onDestroy()
    456   fun onTrimMemory(level: Int)
 
-## screens\AddonsActivity.kt (27 lines) - Settings, Addons: the list of addons, in a page of its own.
+## screens/AddonsActivity.kt (27 lines) - Settings, Addons: the list of addons, in a page of its own.
     13 class AddonsActivity  - Settings, Addons: the list of addons, in a page of its own.
     16   fun onCreate(savedInstanceState: Bundle?)
     26   fun onDestroy()
 
-## screens\ArrangeActivity.kt (81 lines) - Orders and hides the Home rows or the apps row.
+## screens/ArrangeActivity.kt (81 lines) - Orders and hides the Home rows or the apps row.
     19 class ArrangeActivity  - Orders and hides the Home rows or the apps row.
     26   fun onCreate(savedInstanceState: Bundle?)
     48   fun fill(keys: List<Pair<String, String>>, hidden: List<String>, onSave: (List<S
@@ -486,7 +486,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     70   fun move(row: View, d: Int)  - Swaps the row with its neighbour and puts focus back on the button that was pressed.
     80   fun persist()
 
-## screens\DetailsActivity.kt (368 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
+## screens/DetailsActivity.kt (368 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     26 class DetailsActivity  - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     48   fun onCreate(savedInstanceState: Bundle?)
     89   fun render()
@@ -517,7 +517,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    335   fun onResume()  - Coming back from the player: the tick and the Next button move on.
    337   fun onDestroy()
 
-## screens\PlayerActivity.kt (673 lines) - Full-screen player.
+## screens/PlayerActivity.kt (673 lines) - Full-screen player.
     35 class PlayerActivity  - Full-screen player.
     82   fun onCreate(savedInstanceState: Bundle?)
     97   fun buildUi()
@@ -572,11 +572,11 @@ Find a symbol with grep on this file, then read only that file around the line n
    659   fun onStop()
    666   fun onDestroy()
 
-## screens\SearchActivity.kt (65 lines) - Search across the catalog addons.
+## screens/SearchActivity.kt (65 lines) - Search across the catalog addons.
     20 class SearchActivity  - Search across the catalog addons.
     24   fun onCreate(savedInstanceState: Bundle?)
 
-## screens\SettingsActivity.kt (338 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
+## screens/SettingsActivity.kt (338 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     26 class SettingsActivity  - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     30   fun header(t: String)
     31   fun toggle(label: String, desc: String, get: ()
@@ -607,7 +607,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    309   fun view(r: Row, changed: ()
    335   fun onBackPressed()
 
-## screens\StreamsActivity.kt (97 lines) - The stream picker: every source from every stream addon, best first.
+## screens/StreamsActivity.kt (97 lines) - The stream picker: every source from every stream addon, best first.
     15 class StreamsActivity  - The stream picker: every source from every stream addon, best first.
     23   fun onCreate(savedInstanceState: Bundle?)
     45   fun show(streams: List<StreamItem>, st: List<StreamResolver.AddonStatus>, done: 
@@ -616,7 +616,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     83   fun choose(ranked: List<StreamItem>, s: StreamItem)
     96   fun onDestroy()
 
-## screens\TrailerActivity.kt (110 lines) - Plays a title's trailer inside the app, with YouTube's own embedded player (the only place a trailer's picture
+## screens/TrailerActivity.kt (110 lines) - Plays a title's trailer inside the app, with YouTube's own embedded player (the only place a trailer's picture
     29 class TrailerActivity  - Plays a title's trailer inside the app, with YouTube's own embedded player (the only place a trailer's picture
     44   fun onCreate(savedInstanceState: Bundle?)
     70   fun page(id: String)
@@ -627,20 +627,20 @@ Find a symbol with grep on this file, then read only that file around the line n
    102   fun onResume()
    104   fun onDestroy()
 
-## services\BackdropDream.kt (49 lines) - Screensaver: the backdrops of what is on Home, one every 12 seconds, with the title.
+## services/BackdropDream.kt (49 lines) - Screensaver: the backdrops of what is on Home, one every 12 seconds, with the title.
     15 class BackdropDream  - Screensaver: the backdrops of what is on Home, one every 12 seconds, with the title.
     22   fun onAttachedToWindow()
     40   fun next()
     48   fun onDetachedFromWindow()
 
-## services\HomeButtonService.kt (41 lines) - For boxes whose system keeps its own launcher as Home: when the original launcher's Home screen comes to the f
+## services/HomeButtonService.kt (41 lines) - For boxes whose system keeps its own launcher as Home: when the original launcher's Home screen comes to the f
     18 class HomeButtonService  - For boxes whose system keeps its own launcher as Home: when the original launcher's Home screen comes to the f
     21   fun onServiceConnected()
     26   fun onAccessibilityEvent(e: AccessibilityEvent)
     38   fun onKeyEvent(e: KeyEvent)  - The button mapper outside the launcher: the rules that work everywhere, or only outside My Lists TV.
     40   fun onInterrupt()
 
-## services\NotificationsService.kt (53 lines) - The bell at the top right of Home.
+## services/NotificationsService.kt (53 lines) - The bell at the top right of Home.
     17 class NotificationsService  - The bell at the top right of Home.
     18   fun onListenerConnected()
     19   fun onListenerDisconnected()
@@ -655,7 +655,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     51   fun dismissAll()
     52   fun component(c: Context)
 
-## ui\AddonsScreen.kt (125 lines) - Installed addons: what each provides, on or off, order, remove, and a way to add one.
+## ui/AddonsScreen.kt (125 lines) - Installed addons: what each provides, on or off, order, remove, and a way to add one.
     16 class AddonsScreen  - Installed addons: what each provides, on or off, order, remove, and a way to add one.
     22   fun stop()
     30   fun start()
@@ -668,18 +668,18 @@ Find a symbol with grep on this file, then read only that file around the line n
    119   fun install(raw: String)
    124   fun reload()
 
-## ui\AppGridAdapter.kt (49 lines) - The apps of the Apps panel: a banner (or the icon on a dark tile) with the app's name under it.
+## ui/AppGridAdapter.kt (49 lines) - The apps of the Apps panel: a banner (or the icon on a dark tile) with the app's name under it.
     14 class AppGridAdapter  - The apps of the Apps panel: a banner (or the icon on a dark tile) with the app's name under it.
     20   class H
     22   fun getItemCount()
     24   fun onCreateViewHolder(parent: ViewGroup, viewType: Int)
     39   fun onBindViewHolder(h: H, position: Int)
 
-## ui\AppsScreen.kt (38 lines) - Every installed app in a grid.
+## ui/AppsScreen.kt (38 lines) - Every installed app in a grid.
     15 class AppsScreen  - Every installed app in a grid.
     27   fun start()
 
-## ui\BrowseScreen.kt (204 lines) - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
+## ui/BrowseScreen.kt (204 lines) - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
     18 class BrowseScreen  - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
     63   fun start()
    111   fun markWatched(e: WatchStore.Entry)  - Hold OK on a Continue watching card, Mark as watched: the episode (or movie) is done, here and in the account'
@@ -688,7 +688,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    158   fun refreshContinue()  - Called when coming back from the player, or when the account's lists arrive, so they show without reloading ca
    168   fun hero(m: CardModel)
 
-## ui\Cards.kt (268 lines)
+## ui/Cards.kt (268 lines)
     20 class CardKind
     22 class CardModel
     39 class RowModel
@@ -710,22 +710,22 @@ Find a symbol with grep on this file, then read only that file around the line n
    249   fun changedAll()
    250   fun inserted(i: Int)
 
-## ui\LibraryScreen.kt (55 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
+## ui/LibraryScreen.kt (55 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     12 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     34   fun start()
     44   fun show()
 
-## ui\MapperDialogs.kt (113 lines) - The Button Mapper's dialogs, opened from Settings, Remote & Buttons: "Add Button Mapping" (press a button, or 
+## ui/MapperDialogs.kt (113 lines) - The Button Mapper's dialogs, opened from Settings, Remote & Buttons: "Add Button Mapping" (press a button, or 
     19 object MapperDialogs  - The Button Mapper's dialogs, opened from Settings, Remote & Buttons: "Add Button Mapping" (press a button, or 
     21   fun add(act: Activity, changed: ()  - Press a button on the remote, or choose it from a list when the remote does not report it.
     32   fun chooseFromList(act: Activity, changed: ()
     40   fun edit(act: Activity, key: Int, changed: ()  - One button: what its presses do, on or off, where it works, delete.
     95   fun pickAction(act: Activity, key: Int, press: String, done: ()  - Kind of job first, then the job.
 
-## ui\PlaySession.kt (19 lines) - What the player needs, handed over in memory because a stream list is too big and too short-lived for an inten
+## ui/PlaySession.kt (19 lines) - What the player needs, handed over in memory because a stream list is too big and too short-lived for an inten
      7 object PlaySession  - What the player needs, handed over in memory because a stream list is too big and too short-lived for an inten
 
-## ui\Qr.kt (122 lines) - A small QR code maker for short links (byte mode, error correction L, versions 1 to 5, so up to 106 bytes).
+## ui/Qr.kt (122 lines) - A small QR code maker for short links (byte mode, error correction L, versions 1 to 5, so up to 106 bytes).
      8 object Qr  - A small QR code maker for short links (byte mode, error correction L, versions 1 to 5, so up to 106 bytes).
     13   fun matrix(text: String)  - The code as rows of modules, true = dark.
     58   fun bitmap(text: String, px: Int)  - Draws the code black on white with the quiet zone the standard asks for, [px] pixels square.
@@ -738,7 +738,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    102   fun remainder(data: ByteArray, div: IntArray)
    109   fun penalty(m: Array<BooleanArray>)  - A simple badness score (long runs, 2x2 blocks, dark share) to pick the mask that scans best.
 
-## ui\SidePanel.kt (95 lines) - A tall rounded panel on the right edge over a dimmed screen.
+## ui/SidePanel.kt (95 lines) - A tall rounded panel on the right edge over a dimmed screen.
     20 class SidePanel  - A tall rounded panel on the right edge over a dimmed screen.
     42   fun show(page: View)
     50   fun push(page: View)
@@ -749,12 +749,12 @@ Find a symbol with grep on this file, then read only that file around the line n
     69   fun focusIndex(page: View)
     70   fun focusFirst(page: View, at: Int = 0)
 
-## ui\Toggle.kt (21 lines) - An on/off switch: a pill with a white knob, brand blue when on.
+## ui/Toggle.kt (21 lines) - An on/off switch: a pill with a white knob, brand blue when on.
      9 class Toggle  - An on/off switch: a pill with a white knob, brand blue when on.
     12   fun onMeasure(w: Int, h: Int)
     14   fun onDraw(canvas: Canvas)
 
-## ui\Ui.kt (178 lines) - Colors and small view builders.
+## ui/Ui.kt (178 lines) - Colors and small view builders.
     20 object Ui  - Colors and small view builders.
     51   fun fade(o: GradientDrawable.Orientation, vararg colors: Int)  - The three dark fades laid over artwork so text stays readable: from the left, from the bottom, from the top, a
     52   fun scrimLeft()
@@ -782,26 +782,26 @@ Find a symbol with grep on this file, then read only that file around the line n
    170   fun focusScale(v: View, lite: Boolean, amount: Float = 1.06f)  - Scale-up on focus unless the box is in lite mode.
 
 ## Resources and manifest
-  res\drawable\banner.xml
-  res\drawable\dialog_bg.xml
-  res\drawable\dialog_button.xml
-  res\drawable\dialog_item.xml
-  res\drawable\ic_add.xml
-  res\drawable\ic_apps.xml
-  res\drawable\ic_bell.xml
-  res\drawable\ic_bookmark.xml
-  res\drawable\ic_check.xml
-  res\drawable\ic_close.xml
-  res\drawable\ic_home.xml
-  res\drawable\ic_launcher.xml
-  res\drawable\ic_list.xml
-  res\drawable\ic_search.xml
-  res\drawable\ic_settings.xml
-  res\drawable\ic_trailer.xml
-  res\values\colors.xml
-  res\values\ids.xml
-  res\values\strings.xml
-  res\values\themes.xml
-  res\xml\file_paths.xml
-  res\xml\home_button_service.xml
+  res/drawable/banner.xml
+  res/drawable/dialog_bg.xml
+  res/drawable/dialog_button.xml
+  res/drawable/dialog_item.xml
+  res/drawable/ic_add.xml
+  res/drawable/ic_apps.xml
+  res/drawable/ic_bell.xml
+  res/drawable/ic_bookmark.xml
+  res/drawable/ic_check.xml
+  res/drawable/ic_close.xml
+  res/drawable/ic_home.xml
+  res/drawable/ic_launcher.xml
+  res/drawable/ic_list.xml
+  res/drawable/ic_search.xml
+  res/drawable/ic_settings.xml
+  res/drawable/ic_trailer.xml
+  res/values/colors.xml
+  res/values/ids.xml
+  res/values/strings.xml
+  res/values/themes.xml
+  res/xml/file_paths.xml
+  res/xml/home_button_service.xml
   manifest components: activity .MainActivity, activity .screens.DetailsActivity, activity .screens.StreamsActivity, activity .screens.SearchActivity, service .services.BackdropDream, service .services.NotificationsService, service .services.HomeButtonService, activity .screens.AddonsActivity, activity .screens.SettingsActivity, activity .screens.TrailerActivity, activity .screens.ArrangeActivity, activity .screens.PlayerActivity

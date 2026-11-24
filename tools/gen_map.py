@@ -46,11 +46,11 @@ def build():
              "Find a symbol with grep on this file, then read only that file around the line number. Task-to-file hints are in docs/INDEX.md.\n"]
     for path in sorted((SRC / "java").rglob("*.kt")):
         n, head, decls = describe(path)
-        rel = path.relative_to(SRC / "java/tv/myliststv/launcher")
+        rel = path.relative_to(SRC / "java/tv/myliststv/launcher").as_posix()
         parts.append(f"\n## {rel} ({n} lines){' - ' + head if head else ''}")
         parts += decls
     parts.append("\n## Resources and manifest")
-    for p in sorted((SRC / "res").rglob("*.xml")): parts.append(f"  {p.relative_to(SRC)}")
+    for p in sorted((SRC / "res").rglob("*.xml")): parts.append(f"  {p.relative_to(SRC).as_posix()}")
     comps = re.findall(r'<(activity|service)[^>]*android:name="([^"]+)"', (SRC / "AndroidManifest.xml").read_text(encoding="utf-8"))
     parts.append("  manifest components: " + ", ".join(f"{k} {n}" for k, n in comps))
     return "\n".join(parts) + "\n"
