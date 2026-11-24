@@ -140,7 +140,8 @@ class PlayerActivity : Activity() {
             setPadding(Ui.dp(c, 22), Ui.dp(c, 11), Ui.dp(c, 22), Ui.dp(c, 11)); visibility = View.GONE
             background = Ui.rounded(c, Ui.ELEVATED, Ui.R_PILL)
         }
-        root.addView(skipBtn, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END).apply { bottomMargin = Ui.dp(c, 150); rightMargin = Ui.dp(c, 48) })
+        root.addView(skipBtn, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END).apply { bottomMargin = Ui.dp(c, 48); rightMargin = Ui.dp(c, 48) })
+        bottom.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> placeSkip() }
 
         slateBg = ImageView(c).apply { scaleType = ImageView.ScaleType.CENTER_CROP; visibility = View.GONE }
         root.addView(slateBg, FrameLayout.LayoutParams(-1, -1))
@@ -233,7 +234,7 @@ class PlayerActivity : Activity() {
         val vid = PlaySession.videoId
         if (subsFor == vid) { startStream(s, pos, msg); return }
         subsFor = vid; segs = emptyList(); showSlate("Finding subtitles…")
-        Subs.fetch(PlaySession.meta!!.type, vid, Prefs.subtitleLang) { found -> if (!isFinishing) { subs = found; startStream(s, pos, msg) } }
+        Subs.fetch(StreamResolver.typeFor(PlaySession.meta!!.type, PlaySession.meta!!.id, vid), vid, Prefs.subtitleLang) { found -> if (!isFinishing) { subs = found; startStream(s, pos, msg) } }
     }
 
     private fun subMime(url: String) = when {
@@ -330,7 +331,7 @@ class PlayerActivity : Activity() {
             }
         })
         resolveSession = s
-        StreamResolver.resolve(PlaySession.meta!!.type, PlaySession.videoId, 8000, s)
+        StreamResolver.resolve(StreamResolver.typeFor(PlaySession.meta!!.type, PlaySession.meta!!.id, PlaySession.videoId), PlaySession.videoId, 8000, s)
     }
 
     private fun onEnded() {
@@ -381,7 +382,7 @@ class PlayerActivity : Activity() {
             begin(pick, 0, "Starting stream via ${pick.addonName}…")
         })
         resolveSession = s
-        StreamResolver.resolve(m.type, next.id, StreamResolver.DEFAULT_TIMEOUT_MS, s)
+        StreamResolver.resolve(StreamResolver.typeFor(m.type, m.id, next.id), next.id, StreamResolver.DEFAULT_TIMEOUT_MS, s)
     }
 
     // ---------------------------------------------------------------- panels
@@ -459,7 +460,7 @@ class PlayerActivity : Activity() {
             if (panelOpen() && panelKind == "Sources") renderSources()
         })
         resolveSession = s
-        StreamResolver.resolve(PlaySession.meta!!.type, PlaySession.videoId, StreamResolver.DEFAULT_TIMEOUT_MS, s)
+        StreamResolver.resolve(StreamResolver.typeFor(PlaySession.meta!!.type, PlaySession.meta!!.id, PlaySession.videoId), PlaySession.videoId, StreamResolver.DEFAULT_TIMEOUT_MS, s)
     }
 
     /** Manual switch: keeps the viewer's place, and the app stops choosing for them. */
@@ -556,8 +557,16 @@ class PlayerActivity : Activity() {
     /** The segment under the playhead, or null; also what the skip button says and does. */
     private fun skipTarget(): Segments.Seg? = if (!Prefs.skipIntro || panelOpen() || errorOpen() || slate.visibility == View.VISIBLE) null else Segments.at(segs, player.currentPosition)
 
+    /** The skip button sits just above the control bar while it shows, and low in the corner while it is hidden. */
+    private fun placeSkip() {
+        val lp = skipBtn.layoutParams as FrameLayout.LayoutParams
+        val want = if (bottom.visibility == View.VISIBLE && bottom.height > 0) bottom.height - titleText.top + Ui.dp(this, 12) else Ui.dp(this, 48)
+        if (lp.bottomMargin != want) { lp.bottomMargin = want; skipBtn.layoutParams = lp }
+    }
+
     private fun updateSkip() {
         val s = skipTarget()
+        placeSkip()
         skipBtn.visibility = if (s == null) View.GONE else View.VISIBLE
         if (s != null) skipBtn.text = when (s.kind) { "intro" -> "Skip intro"; "recap" -> "Skip recap"; else -> if (PlaySession.meta?.type == "series" && Prefs.autoplayNext) "Next episode" else "Skip credits" } + "   \u00b7   OK"
     }

@@ -14,9 +14,14 @@ object HomeSetup {
 
     private fun homeIntent() = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
 
-    /** Packages of every Home app except this one: the original launcher the Home button fallback watches for. */
-    fun stockLaunchers(c: Context): Set<String> =
-        c.packageManager.queryIntentActivities(homeIntent(), 0).map { it.activityInfo.packageName }.filter { it != c.packageName }.toSet()
+    /**
+     * The Home screens of every other Home app, as "package/class": what the Home button fallback watches for. It must be the
+     * Home activity itself and not the whole package, because the system settings app also registers one (FallbackHome) and
+     * every settings page opened from this launcher would otherwise count as "the stock launcher came forward".
+     */
+    fun stockHomeScreens(c: Context): Set<String> =
+        c.packageManager.queryIntentActivities(homeIntent(), 0).map { it.activityInfo }.filter { it.packageName != c.packageName }
+            .flatMap { listOf("${it.packageName}/${it.name}", "${it.packageName}/${it.targetActivity ?: it.name}") }.toSet()
 
     fun isHome(c: Context) = c.packageManager.resolveActivity(homeIntent(), 0)?.activityInfo?.packageName == c.packageName
 

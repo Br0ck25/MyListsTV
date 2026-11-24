@@ -69,6 +69,22 @@ object Progress {
         }
     }
 
+    /** The request that adds a title or episode to the account's watched history, or removes it, or null when it should not be sent (signed out, or no IMDb id). */
+    fun watchedRequest(link: String, metaId: String, type: String, season: Int, episode: Int, watched: Boolean, now: Long): Pair<String, String>? {
+        if (link.isEmpty() || !Regex("tt\\d+").matches(metaId)) return null
+        val series = type == "series" && season >= 0 && episode >= 0
+        val o = JSONObject().put("targetId", Pairing.targetOf(link)).put("type", if (type == "series") "series" else "movie").put("imdbId", metaId)
+        if (series) o.put("season", season).put("episode", episode)
+        if (watched) o.put("completed", true).put("watchedAt", now)
+        return "$ORIGIN/api/nuvio-tv/history${if (watched) "" else "/remove"}" to o.toString()
+    }
+
+    /** A title or episode marked watched (or not watched) by hand also goes to the account's watched history, so the website and other TVs agree. Does nothing signed out. */
+    fun markWatched(metaId: String, type: String, season: Int, episode: Int, watched: Boolean) {
+        val (url, body) = watchedRequest(Prefs.accountLink, metaId, type, season, episode, watched, System.currentTimeMillis()) ?: return
+        Http.background { try { Http.send("POST", url, body) } catch (_: Exception) {} }
+    }
+
     /** Sends at most once a minute unless [force] (leaving the player, or the end of the title). */
     fun report(e: WatchStore.Entry, force: Boolean) {
         val now = System.currentTimeMillis()

@@ -31,8 +31,6 @@ object Ui {
     const val GOOD = 0xFF30D158.toInt()
     const val WARN = 0xFFFF9F0A.toInt()
     const val BAD = 0xFFFF453A.toInt()
-    /** Text on a white (focused) pill. */
-    const val ON_FOCUS = 0xFF000000.toInt()
     const val CLEAR = 0x00000000
     const val FILL = 0x1AFFFFFF                // resting fill of a pill or chip
     const val FILL_STRONG = 0x26FFFFFF         // a chip that sits on artwork
@@ -76,7 +74,7 @@ object Ui {
     /** White ring and soft fill while focused, nothing otherwise. */
     fun focusBg(c: Context, radiusDp: Int = 10, fill: Int = FOCUS_FILL): Drawable {
         val d = GradientDrawable().apply {
-            setColor(fill); setStroke(dp(c, 3), Color.WHITE); cornerRadius = dpf(c, radiusDp.toFloat())
+            setColor(fill); setStroke(dp(c, 2), Color.WHITE); cornerRadius = dpf(c, radiusDp.toFloat())
         }
         return StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_focused), d)
@@ -84,24 +82,23 @@ object Ui {
         }
     }
 
-    /** A pill: white when focused, brand blue when selected (the open tab), otherwise [normal]. */
-    /** A round icon button for the top bar: white circle with a dark icon while focused. */
+    /** A round icon button for the top bar: a white ring while focused. */
     fun iconButton(c: Context, icon: Int, desc: String, onClick: () -> Unit): android.widget.ImageView =
         android.widget.ImageView(c).apply {
             setImageResource(icon); contentDescription = desc; setColorFilter(TEXT)
             val p = dp(c, 9); setPadding(p, p, p, p)
             background = pillBg(c)
             isFocusable = true; isClickable = true
-            setOnFocusChangeListener { v, f -> (v as android.widget.ImageView).setColorFilter(if (f) ON_FOCUS else TEXT) }
             setOnClickListener { onClick() }
         }
 
-    fun pillBg(c: Context, normal: Int = FILL, focusedFill: Int = Color.WHITE): Drawable {
-        val pill = { color: Int -> GradientDrawable().apply { setColor(color); cornerRadius = dpf(c, 40f) } }
+    /** A pill: a white ring on a soft fill when focused (the text stays white), a brand-blue outline on a faint fill when selected (the open tab, never a solid block), otherwise [normal]. */
+    fun pillBg(c: Context, normal: Int = FILL, focusedFill: Int = FOCUS_FILL): Drawable {
+        val pill = { color: Int, ring: Int -> GradientDrawable().apply { setColor(color); cornerRadius = dpf(c, 40f); if (ring != CLEAR) setStroke(dp(c, 2), ring) } }
         return StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_focused), pill(focusedFill))
-            addState(intArrayOf(android.R.attr.state_selected), pill(BRAND_FILL))
-            addState(intArrayOf(), pill(normal))
+            addState(intArrayOf(android.R.attr.state_focused), pill(focusedFill, Color.WHITE))
+            addState(intArrayOf(android.R.attr.state_selected), pill(FILL_STRONG, BRAND))
+            addState(intArrayOf(), pill(normal, CLEAR))
         }
     }
 
@@ -113,17 +110,36 @@ object Ui {
             includeFontPadding = false
         }
 
-    /** A focusable pill. Dark text on a white pill while focused. */
     /** [primary] is the one main action on a screen: filled brand blue until focused. */
     fun button(c: Context, label: String, primary: Boolean = false, onClick: () -> Unit): TextView =
         TextView(c).apply {
             text = label; size(this, 15f); setTextColor(TEXT); typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
             setPadding(dp(c, 18), dp(c, 9), dp(c, 18), dp(c, 9))
-            background = pillBg(c, if (primary) BRAND_FILL else FILL); isFocusable = true; isClickable = true
-            setOnFocusChangeListener { v, f -> (v as TextView).setTextColor(if (f) 0xFF000000.toInt() else TEXT) }
+            background = if (primary) pillBg(c, BRAND_FILL, BRAND_FILL) else pillBg(c); isFocusable = true; isClickable = true
             setOnClickListener { onClick() }
         }
+
+    /** One button of [dialog]. */
+    class Act(val label: String, val primary: Boolean = false, val run: () -> Unit = {})
+
+    /** A message dialog in the app's own look: title, a sentence or two, and a row of buttons (the first one has the focus). An [image] such as a QR code sits to the left of the words. */
+    fun dialog(a: android.app.Activity, title: String, message: CharSequence, vararg acts: Act, image: android.graphics.Bitmap? = null): android.app.AlertDialog {
+        val d = android.app.AlertDialog.Builder(a).create()
+        val body = vbox(a).apply { minimumWidth = dp(a, 520); setPadding(dp(a, 24), dp(a, 22), dp(a, 24), dp(a, 20)) }
+        val words = vbox(a)
+        words.addView(text(a, title, 24f, TEXT, true))
+        words.addView(text(a, message, 15f, DIM).apply { setLineSpacing(0f, 1.15f); maxWidth = dp(a, 440) }, matchWrap().apply { topMargin = dp(a, 12) })
+        val top = hbox(a, 24).apply { gravity = Gravity.TOP }
+        if (image != null) top.addView(android.widget.ImageView(a).apply { setImageBitmap(image) }, LinearLayout.LayoutParams(dp(a, 190), dp(a, 190)))
+        top.addView(words, LinearLayout.LayoutParams(0, -2, 1f))
+        body.addView(top, matchWrap())
+        val row = hbox(a, 12)
+        acts.forEach { act -> row.addView(button(a, act.label, act.primary) { d.dismiss(); act.run() }) }
+        body.addView(row, matchWrap().apply { topMargin = dp(a, 22) })
+        d.setView(body); d.show(); row.getChildAt(0)?.requestFocus()
+        return d
+    }
 
     /** Asks for one line of text. The keyboard is closed again when the dialog goes away, and Done on the keyboard confirms. */
     fun askText(a: android.app.Activity, title: String, hint: String, ok: String, message: String? = null, caps: Boolean = false, onOk: (String) -> Unit) {

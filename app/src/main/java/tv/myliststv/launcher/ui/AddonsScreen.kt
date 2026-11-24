@@ -106,12 +106,20 @@ class AddonsScreen(private val act: Activity, private val onChanged: () -> Unit)
             .setNegativeButton("Keep", null).show()
     }
 
-    private fun askUrl() = Ui.askText(act, "Add an addon", "Addon link or recovery code", "Install") { install(it) }
+    /** Add from a phone (scan the code, paste the link there) or type the link with the remote. The dialog closes by itself when the phone adds one. */
+    private var adding: AlertDialog? = null
+    private fun askUrl() {
+        val addr = phone.address()
+        adding = Ui.dialog(act, "Add an addon",
+            if (addr != null) "Scan this with your phone, then paste the addon's link (or a recovery code) on the page that opens.\n\n$addr" else "Connect the TV to Wi-Fi to add one from your phone, or type the link here.",
+            Ui.Act("Type it here", true) { Ui.askText(act, "Add an addon", "Addon link or recovery code", "Install") { install(it) } }, Ui.Act("Cancel"),
+            image = addr?.let { Qr.bitmap(it, Ui.dp(act, 190)) })
+    }
 
     private fun install(raw: String) {
         Toast.makeText(act, "Checking\u2026", Toast.LENGTH_SHORT).show()
         tv.myliststv.launcher.data.Links.add(raw) { msg -> Toast.makeText(act, msg, Toast.LENGTH_LONG).show(); focusIndex = AddonStore.saved().size; reload() }
     }
 
-    private fun reload() { AddonStore.load { rebuild(); onChanged() } }
+    private fun reload() { AddonStore.load { adding?.dismiss(); adding = null; rebuild(); onChanged() } }
 }

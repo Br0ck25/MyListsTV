@@ -4,7 +4,7 @@
 > Decision (owner asked, assistant decided): **use the My Lists palette** from the website's design system (`My-Lists-Addon/docs/DESIGN_SYSTEM.md`, dark values), with larger rounded shapes in the spirit of Projectivy and Material "Monet" panels. The site and the TV then look like one product, and every colour pair below was already checked for contrast (5:1 or better against white text).
 
 ## 1. Look in one paragraph
-True-black canvas, soft dark-grey rounded panels, white text, one blue brand colour. Everything focusable is rounded; buttons, tabs and toggles are full pills. Focus is always a white ring (and a small scale-up when not in lite mode). Blue means "on, active or primary". No gradients except the dark fade behind text on artwork. No second accent colour.
+True-black canvas, soft dark-grey rounded panels, white text, one blue brand colour. Everything focusable is rounded; buttons, tabs and toggles are full pills. Focus is always a white ring (and a small scale-up when not in lite mode). Blue means "on, active or primary" and is drawn as an outline for a selection. No gradients except the dark fade behind text on artwork. No second accent colour.
 
 ## 2. Tokens
 All sizes are in design units for a 960-wide screen. `Ui.dp()` scales them by the real screen width, so the same numbers look right on every TV.
@@ -39,7 +39,8 @@ Spacing steps: 4, 8, 12, 16, 24, 32. Row padding 16 × 12. Gap between rows 8. S
 Text sizes (the only ones allowed): 11 caption, 12 and 13 small, 14 body, 15 control, 16 row title, 20 and 22 section, 24 and 26 heading, 30 hero, 34 display. Weights: regular for body, bold for controls, titles and labels.
 
 ## 3. Components
-- **Focus.** White 3-unit ring at the component's own radius, soft white fill (≈13%). Never remove it. Cards also scale 1.06 unless lite mode is on.
+- **Focus.** White 2-unit ring at the component's own radius, soft white fill (≈13%), text stays white. Never a solid white or solid blue block. Never remove it.
+- **Selected (the open tab, the open Settings group, the chosen chip).** A 2-unit brand-blue outline on a faint fill, never a solid blue block. Cards also scale 1.06 unless lite mode is on.
 - **Card (`Card`).** Rounded `R_CARD`, `CARD` fill, artwork fills it, dark fade behind any text on artwork.
 - **Pill button (`Ui.button`).** `1AFFFFFF` fill, `TEXT` label; focused = white fill, black label. Primary action may use `BRAND_FILL`.
 - **Toggle (`Toggle`).** 40 × 22 pill, white knob. Off: `#39393D` track. On: `BRAND` track. Only for on/off. Changes apply immediately.
@@ -57,7 +58,7 @@ Text sizes (the only ones allowed): 11 caption, 12 and 13 small, 14 body, 15 con
 3. One control per row, on the right. Label bold on the left, one line of muted help under it (omit if the label says it all).
 4. Changes apply at once. There is no Save button.
 5. **Back** goes up one level and never loses a change. **Hold OK** on a row or card opens its context menu as a list dialog. The launcher home never closes on Back.
-6. **Settings is a split menu.** The groups (General, Playback, Home, Backup, Performance, About) run down the left; the rows of the group under the focus show on the right and change as focus moves down the list. Right enters the rows, Back returns to the groups. Most used first. Advanced-only rows appear only in Advanced mode, directly under their group.
+6. **Settings is a split menu inside one rounded panel** (groups with chevrons on the left, dark rows on the right). The groups (General, Playback, Home, Backup, Performance, About) run down the left; the rows of the group under the focus show on the right and change as focus moves down the list. Right enters the rows, Back returns to the groups. Most used first. Advanced-only rows appear only in Advanced mode, directly under their group.
    The top bar has no logo or app name: the tabs start at the left edge.
 7. Destructive rows (remove, clear, reset) sit last in their group, and always confirm.
 8. Order of focus is top to bottom, left to right. A screen always puts focus on its first useful control when opened.

@@ -67,7 +67,6 @@ class MainActivity : Activity() {
         profileName = Ui.text(this@MainActivity, "", 14f, Ui.TEXT, true, 1)
         addView(profileAvatar, LinearLayout.LayoutParams(Ui.dp(this@MainActivity, 30), Ui.dp(this@MainActivity, 30)))
         addView(profileName, Ui.wrap())
-        setOnFocusChangeListener { _, f -> profileName.setTextColor(if (f) Ui.ON_FOCUS else Ui.TEXT) }
         setOnClickListener { pickProfile() }
     }
 
@@ -78,46 +77,77 @@ class MainActivity : Activity() {
         }.show()
     }
 
-    /** The bell: new-episode alerts for your Library first, then the TV's own notifications when access is given. Each one opens with OK and has its own Clear button. */
+    /** The bell: a panel down the right edge. New-episode alerts for your Library first, then the TV's own notifications when access is given. */
     private fun showNotices() {
         val c = this
+        val panel = SidePanel(c)
         val list = Ui.vbox(c)
-        val box = Ui.vbox(c).apply { setPadding(Ui.dp(c, 24), Ui.dp(c, 20), Ui.dp(c, 24), Ui.dp(c, 12)) }
-        box.addView(Ui.text(c, "Notifications", 24f, Ui.TEXT, true))
-        box.addView(android.widget.ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false }, LinearLayout.LayoutParams(-1, Ui.dp(c, 300)).apply { topMargin = Ui.dp(c, 12) })
-        val bottom = Ui.hbox(c, 8).apply { gravity = Gravity.END }
-        box.addView(bottom, Ui.matchWrap().apply { topMargin = Ui.dp(c, 12) })
-        val dlg = AlertDialog.Builder(c).setView(box).create()
-        bottom.addView(Ui.button(c, "Clear all") { Alerts.clear(); Notices.dismissAll(); updateBell(); fill(list, bottom, dlg) })
-        bottom.addView(Ui.button(c, "Close") { dlg.dismiss() })
-        fill(list, bottom, dlg)
-        dlg.show()
+        val page = SidePanel.page(c)
+        page.addView(SidePanel.header(c, "Notifications", R.drawable.ic_bell, Ui.button(c, "Clear all") { Alerts.clear(); Notices.dismissAll(); updateBell(); fill(list, panel) }))
+        page.addView(android.widget.ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false; clipToPadding = false }, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = Ui.dp(c, 14) })
+        panel.show(page)
+        fill(list, panel)
     }
 
-    private fun fill(list: LinearLayout, bottom: LinearLayout, dlg: AlertDialog) {
+    private fun fill(list: LinearLayout, panel: SidePanel) {
         val c = this
         list.removeAllViews()
         val allowed = Notices.allowed(c)
         val own = Alerts.all(); val sys = if (allowed) Notices.list(c) else emptyList()
-        fun card(app: String, title: String, text: String, open: () -> Unit, clear: () -> Unit) {
+        fun card(pkg: String, app: String, time: Long, title: String, text: String, open: () -> Unit, clear: () -> Unit) {
             val row = Ui.hbox(c, 10).apply { gravity = Gravity.CENTER_VERTICAL }
             val body = Ui.vbox(c).apply {
-                setPadding(Ui.dp(c, 16), Ui.dp(c, 10), Ui.dp(c, 16), Ui.dp(c, 10)); Ui.rowStyle(c, this); isFocusable = true; isClickable = true
-                setOnClickListener { open(); dlg.dismiss() }
-                addView(Ui.text(c, app, 12f, Ui.DIM, true, 1)); addView(Ui.text(c, title, 16f, Ui.TEXT, true, 1))
+                setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); Ui.rowStyle(c, this, fill = Ui.ELEVATED); isFocusable = true; isClickable = true
+                setOnClickListener { open(); panel.dismiss() }
+                val top = Ui.hbox(c, 8)
+                top.addView(android.widget.ImageView(c).apply { try { setImageDrawable(if (pkg.isEmpty()) getDrawable(R.drawable.ic_launcher) else packageManager.getApplicationIcon(pkg)) } catch (_: Exception) { } }, LinearLayout.LayoutParams(Ui.dp(c, 18), Ui.dp(c, 18)))
+                top.addView(Ui.text(c, app, 12f, Ui.DIM, false, 1), LinearLayout.LayoutParams(0, -2, 1f))
+                if (time > 0) top.addView(Ui.text(c, android.text.format.DateFormat.format("HH:mm", time).toString(), 12f, Ui.DIM))
+                addView(top); addView(Ui.text(c, title, 16f, Ui.TEXT, true, 1), Ui.matchWrap().apply { topMargin = Ui.dp(c, 6) })
                 if (text.isNotEmpty()) addView(Ui.text(c, text, 14f, Ui.TEXT2, false, 2))
             }
             row.addView(body, LinearLayout.LayoutParams(0, -2, 1f))
-            row.addView(Ui.button(c, "Clear") { clear(); updateBell(); fill(list, bottom, dlg) })
-            list.addView(row, Ui.matchWrap().apply { bottomMargin = Ui.dp(c, 8) })
+            row.addView(Ui.iconButton(c, R.drawable.ic_close, "Clear") { clear(); updateBell(); fill(list, panel) }, LinearLayout.LayoutParams(Ui.dp(c, 40), Ui.dp(c, 40)))
+            list.addView(row, Ui.matchWrap().apply { bottomMargin = Ui.dp(c, 10) })
         }
-        own.forEach { a -> card("My Lists TV", a.title, a.text, { openMeta(Library.all().firstOrNull { it.id == a.metaId } ?: Meta(a.metaId, a.type, a.title)) }, { Alerts.remove(a.id) }) }
-        sys.forEach { n -> card(n.app, n.title, n.text, { try { n.open?.send() } catch (_: Exception) {}; Notices.dismiss(n.key) }, { Notices.dismiss(n.key) }) }
+        own.forEach { a -> card("", "My Lists TV", 0L, a.title, a.text, { openMeta(Library.all().firstOrNull { it.id == a.metaId } ?: Meta(a.metaId, a.type, a.title)) }, { Alerts.remove(a.id) }) }
+        sys.forEach { n -> card(n.pkg, n.app, n.time, n.title, n.text, { try { n.open?.send() } catch (_: Exception) {}; Notices.dismiss(n.key) }, { Notices.dismiss(n.key) }) }
         if (own.isEmpty() && sys.isEmpty()) list.addView(Ui.text(c, if (allowed) "Nothing new. New episodes of series in your Library show up here." else "Nothing new yet.", 14f, Ui.DIM, false, 3))
         if (!allowed) list.addView(Ui.button(c, "Show the TV's own notifications too") {
             try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Toast.makeText(c, "This TV has no such setting. See Settings, Launcher setup, for the phone steps.", Toast.LENGTH_LONG).show() }
         }, Ui.wrap().apply { topMargin = Ui.dp(c, 8) })
-        list.post { (0 until list.childCount).map { list.getChildAt(it) }.firstNotNullOfOrNull { v -> (v as? LinearLayout)?.getChildAt(0)?.takeIf { it.isFocusable } ?: v.takeIf { it.isFocusable } }?.requestFocus() ?: bottom.getChildAt(1)?.requestFocus() }
+    }
+
+    /** The gear: Apps, Launcher settings (the full settings) and Android settings, in the same right-hand panel. */
+    private fun showSettingsPanel() {
+        val c = this
+        val panel = SidePanel(c)
+        val page = SidePanel.page(c)
+        page.addView(SidePanel.header(c, "Settings"))
+        fun item(icon: Int, label: String, go: () -> Unit) = page.addView(SidePanel.item(c, icon, label, go), Ui.matchWrap().apply { topMargin = Ui.dp(c, 12) })
+        item(R.drawable.ic_apps, "Apps") { panel.push(appsPage(panel)) }
+        item(R.drawable.ic_home, "Launcher settings") { panel.dismiss(); startActivity(Intent(c, SettingsActivity::class.java)) }
+        item(R.drawable.ic_settings, "Android settings") {
+            panel.dismiss()
+            try { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) } catch (_: Exception) { Toast.makeText(c, "This TV does not open its settings from apps.", Toast.LENGTH_LONG).show() }
+        }
+        panel.show(page)
+    }
+
+    /** Every app as a banner with its name under it, two across; OK opens it, hold OK for its menu. */
+    private fun appsPage(panel: SidePanel): View {
+        val c = this
+        val page = SidePanel.page(c)
+        page.addView(SidePanel.header(c, "Apps"))
+        val grid = androidx.recyclerview.widget.RecyclerView(c).apply {
+            layoutManager = androidx.recyclerview.widget.GridLayoutManager(c, 2); itemAnimator = null; clipToPadding = false; setPadding(0, Ui.dp(c, 4), 0, Ui.dp(c, 8))
+        }
+        page.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = Ui.dp(c, 10) })
+        Http.background {
+            val apps = AppRepository.load(c)
+            Http.post { grid.adapter = AppGridAdapter(c, apps, { panel.dismiss(); launch(it) }, { appMenu(it) }) }
+        }
+        return page
     }
 
     private var backdropJob: Runnable? = null
@@ -162,7 +192,7 @@ class MainActivity : Activity() {
         tabs.forEachIndexed { i, t ->
             val v = tabView(t)
             v.setOnFocusChangeListener { view, f ->
-                (view as TextView).setTextColor(if (f) Ui.ON_FOCUS else if (i == current) Ui.TEXT else Ui.DIM)
+                (view as TextView).setTextColor(if (f || i == current) Ui.TEXT else Ui.DIM)
             }
             v.setOnClickListener { select(i, force = true); if (navStyle == 2) closeSide() }
             tabViews += v
@@ -176,7 +206,7 @@ class MainActivity : Activity() {
             addView(bellBadge, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, Ui.dp(this@MainActivity, 16), Gravity.TOP or Gravity.END))
         }
         searchBtn = Ui.iconButton(this, R.drawable.ic_search, "Search") { startActivity(Intent(this, SearchActivity::class.java)) }
-        settingsBtn = Ui.iconButton(this, R.drawable.ic_settings, "Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }
+        settingsBtn = Ui.iconButton(this, R.drawable.ic_settings, "Settings") { showSettingsPanel() }
         topBar.addView(profileChip(), LinearLayout.LayoutParams(-2, icon).apply { rightMargin = Ui.dp(this@MainActivity, 8) })
         topBar.addView(bellBtn, LinearLayout.LayoutParams(icon, icon)); topBar.addView(searchBtn, LinearLayout.LayoutParams(icon, icon)); topBar.addView(settingsBtn, LinearLayout.LayoutParams(icon, icon))
         updateProfile()
@@ -205,17 +235,20 @@ class MainActivity : Activity() {
             .setMessage("My Lists TV stopped several times in a row, so addons are off for this start.")
             .setPositiveButton("Start normally") { _, _ -> CrashGuard.clear(this); recreate() }
             .setNegativeButton("Reset addons and caches") { _, _ -> AddonStore.reset(); Http.clear(); ImageLoader.clearDisk(); CrashGuard.clear(this); recreate() }.show()
-        else if (!Prefs.setupDone) AlertDialog.Builder(this).setTitle("Welcome to My Lists TV")
-            .setMessage("You are seeing the default My Lists catalogs. To play video, add a stream addon in Settings, then Addons; you can paste its link from your phone. Simple mode hides settings most people never need.")
-            .setPositiveButton("Set up addons") { _, _ -> Prefs.setupDone = true; startActivity(Intent(this, AddonsActivity::class.java)) }
-            .setNeutralButton("Advanced mode") { _, _ -> Prefs.setupDone = true; Prefs.advanced = true }
-            .setNegativeButton("Skip") { _, _ -> Prefs.setupDone = true }.show()
+        else if (!Prefs.setupDone) welcome()
         else if (Profiles.all().size > 1 && !Profiles.askedThisRun) {
             Profiles.askedThisRun = true
             pickProfile()
         }
         Profiles.askedThisRun = true
     }
+
+    /** First run: what you are seeing, and the next step, with the three choices side by side. */
+    private fun welcome() = Ui.dialog(this, "Welcome to My Lists TV",
+        "You are seeing the default My Lists catalogs. To play video, add a stream addon in Settings, then Addons. You can paste its link from your phone.\n\nAdvanced mode shows the settings most people never need.",
+        Ui.Act("Set up addons", true) { Prefs.setupDone = true; startActivity(Intent(this, AddonsActivity::class.java)) },
+        Ui.Act("Advanced mode") { Prefs.setupDone = true; Prefs.advanced = true },
+        Ui.Act("Skip") { Prefs.setupDone = true })
 
     private fun tabView(t: String) = TextView(this).apply {
         text = t; Ui.size(this, if (navStyle != 0) 20f else 15f); setTextColor(Ui.DIM); typeface = android.graphics.Typeface.DEFAULT_BOLD
@@ -318,15 +351,29 @@ class MainActivity : Activity() {
         (screen as? BrowseScreen)?.refreshContinue()
     }
 
+    private var pendingHome: Runnable? = null
+
+    /** One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do. */
+    private fun runHome(action: String) {
+        when (action) {
+            "home" -> { if (current != 0) select(0, force = true); tabViews[0].requestFocus() }
+            "movies", "series", "library", "apps", "search", "settings", "profiles" -> go(action)
+            else -> ButtonMap.run(this, action)
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.hasCategory(Intent.CATEGORY_HOME)) {
             // Home goes to the Home page; pressing it twice quickly asks who is watching.
             val t = System.currentTimeMillis()
-            if (t - lastHome < 450) { lastHome = 0; pickProfile(); return }
+            val double = ButtonMap.homeAction("double")
+            if (double != null && t - lastHome < 700) { lastHome = 0; pendingHome?.let { handler.removeCallbacks(it) }; pendingHome = null; runHome(double); return }
             lastHome = t
-            if (current != 0) select(0, force = true)
-            tabViews[0].requestFocus()
+            val single = ButtonMap.homeAction("single") ?: "home"
+            // Going Home is harmless to repeat, so it happens at once. Any other job waits to see whether a second press makes it a double press.
+            if (single == "home" || double == null) runHome(single)
+            else Runnable { pendingHome = null; runHome(single) }.also { pendingHome = it; handler.postDelayed(it, 700) }
         }
         intent.getStringExtra("go")?.let { go(it) }
     }
@@ -340,10 +387,19 @@ class MainActivity : Activity() {
     }
 
     /** Side bars: Left from the left edge of a page goes to the side bar (and opens it when hidden); Right, or Back, closes a hidden one. While moving an app, Left and Right move it. */
+    /** Mapped buttons inside the launcher: the Only-in-My-Lists-TV rules, plus the Everywhere ones while the fallback service is not there to catch them. */
+    private val launcherKeys = ButtonGestures({ ButtonMap.rules().filter { ButtonMap.active(it) && (it.scope == "launcher" || (it.scope == "all" && !HomeSetup.fallbackOn(this))) } }) { ButtonMap.run(this, it) }
+
     override fun dispatchKeyEvent(e: KeyEvent): Boolean {
+        if (launcherKeys.onKey(e)) return true
         if (e.action == KeyEvent.ACTION_DOWN) {
             val f = currentFocus
             if (moving && f != null && moveApp(e, f)) return true
+            // Up from a page onto the top bar lands on the tab you are on, not on whichever tab lies above the card.
+            if (navStyle == 0 && e.keyCode == KeyEvent.KEYCODE_DPAD_UP && f != null && isInContent(f) && ready) {
+                val up = f.focusSearch(View.FOCUS_UP)
+                if (up != null && isIn(up, topBar)) { tabViews[current.coerceIn(0, tabViews.size - 1)].requestFocus(); return true }
+            }
             if (navStyle != 0 && f != null) {
                 if (e.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
                     if (isInContent(f) && atLeftEdge(f)) { openSide(); return true }

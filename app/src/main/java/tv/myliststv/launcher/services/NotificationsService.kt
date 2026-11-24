@@ -25,7 +25,7 @@ class NotificationsService : NotificationListenerService() {
 }
 
 object Notices {
-    data class Item(val key: String, val app: String, val title: String, val text: String, val open: PendingIntent?)
+    data class Item(val key: String, val app: String, val title: String, val text: String, val open: PendingIntent?, val pkg: String = "", val time: Long = 0L)
 
     /** Called on a background thread when the list changes. */
     @Volatile var onChange: (() -> Unit)? = null
@@ -42,7 +42,7 @@ object Notices {
                     // The notification usually carries its app's name; otherwise the app's label; otherwise the last part of the package name.
                     val app = (e.getParcelable<android.content.pm.ApplicationInfo>("android.appInfo")?.let { ai -> try { ai.loadLabel(c.packageManager).toString() } catch (_: Exception) { null } })
                         ?: try { c.packageManager.getApplicationLabel(c.packageManager.getApplicationInfo(it.packageName, 0)).toString() } catch (_: Exception) { it.packageName.substringAfterLast('.').replaceFirstChar { ch -> ch.uppercase() } }
-                    Item(it.key, app, e.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: "", e.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: "", it.notification.contentIntent)
+                    Item(it.key, app, e.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: "", e.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: "", it.notification.contentIntent, it.packageName, it.postTime)
                 }
         } catch (_: Exception) { emptyList() }
     }

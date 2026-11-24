@@ -94,6 +94,17 @@ object Prefs {
     var buttonMap: String
         get() = sp.getString("buttonMap", "") ?: ""
         set(v) = sp.edit().putString("buttonMap", v).apply()
+    /** The Button Mapper's master switch, and the buttons switched off one by one (key codes). */
+    var mapperOn: Boolean
+        get() = sp.getBoolean("mapperOn", true)
+        set(v) = sp.edit().putBoolean("mapperOn", v).apply()
+    /** "Customize Home Button": when off, Home does its factory jobs (single press: Home, double press: profile switcher). */
+    var homeCustom: Boolean
+        get() = sp.getBoolean("homeCustom", false)
+        set(v) = sp.edit().putBoolean("homeCustom", v).apply()
+    var buttonMapOff: List<String>
+        get() = strings("buttonMapOff")
+        set(v) = putStrings("buttonMapOff", v)
 
     /** The audio and subtitle language the viewer last chose for a title, so the next episode starts the same way. Null when never chosen. */
     fun recallTracks(metaId: String?): Pair<String?, String?> =

@@ -35,6 +35,18 @@ class JsonTest {
         assertEquals("One", m.videos[1].title)
     }
 
+    @Test fun parsesAMixedListOfShowsAndMovies() {
+        // A My Lists channel such as the Arrowverse timeline: one series whose videos are episodes of several shows and movies, in play order.
+        val text = """{"meta":{"id":"channel_channel-arrow","type":"series","name":"Timeline","videos":[
+          {"id":"tt2193021:1:1","title":"Pilot","season":1,"episode":1,"released":"2012-10-10T11:00:00.000Z"},
+          {"id":"tt4532038","title":"A Movie","season":1,"episode":2},
+          {"id":"tt3107288:1:1","title":"Flash Pilot","season":1,"episode":3}]}}"""
+        val m = Json.parseMeta(text)!!
+        assertEquals(listOf("tt2193021:1:1", "tt4532038", "tt3107288:1:1"), m.videos.map { it.id })
+        assertEquals(listOf("series", "movie", "series"), m.videos.map { StreamResolver.typeFor(m.type, m.id, it.id) })
+        assertEquals("https://x.test/i/T/tv/meta/series/channel_channel-arrow.json", Urls.meta("https://x.test/i/T/tv", "series", m.id))
+    }
+
     @Test fun keepsOnlyDirectUrlStreams() {
         val text = """{"streams":[
           {"name":"[RD+] Addon 1080p","title":"Movie.1080p 4.2 GB","url":"https://cdn/x.mkv","behaviorHints":{"filename":"x.mkv","bingeGroup":"g"}},

@@ -16,7 +16,10 @@ class AddonsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         screen = AddonsScreen(this) { AddonStore.needsRefresh = true }
-        setContentView(FrameLayout(this).apply { setBackgroundColor(Ui.BG); addView(screen.view) })
+        // A modal over Settings: a rounded card in a window that only dims what is behind it.
+        setContentView(FrameLayout(this).apply { background = Ui.rounded(this@AddonsActivity, Ui.CARD, Ui.R_DIALOG); clipToOutline = true; addView(screen.view) })
+        window.setGravity(android.view.Gravity.CENTER)
+        window.setLayout(Ui.dp(this, 700), (resources.displayMetrics.heightPixels * 0.9f).toInt())   // after the content: a dialog-themed window resets its size when content is attached
         screen.start()
     }
 

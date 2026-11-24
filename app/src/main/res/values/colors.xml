@@ -6,4 +6,5 @@
     <color name="brand">#FF0A84FF</color>
     <color name="brand_fill">#FF0A64D8</color>
     <color name="focus_fill">#22FFFFFF</color>
+    <color name="fill">#1AFFFFFF</color>
 </resources>
