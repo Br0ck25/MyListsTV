@@ -123,11 +123,11 @@ class HomeLayoutTest {
 
 class ProgressTest {
     private val link = "https://mylistsaddon.com/i/SECRETTOKEN/tv/manifest.json"
-    private fun e(id: String, type: String, pos: Long, dur: Long = 100_000) = WatchStore.Entry(id, type, "Show", "p.jpg", null, "$id:1:2", 1, 2, "Ep Two", pos, dur, 1L)
+    private fun e(id: String, type: String, pos: Long, dur: Long = 1_000_000) = WatchStore.Entry(id, type, "Show", "p.jpg", null, "$id:1:2", 1, 2, "Ep Two", pos, dur, 1L)
     @Test fun partWayGoesToProgressFinishedToHistory() {
-        val (url, body) = Progress.request(link, e("tt1", "series", 25_000))!!
-        assertTrue(url.endsWith("/api/nuvio-tv/progress")); assertTrue(body.contains("\"targetId\":\"SECRETTOKEN\"")); assertEquals("your account", Pairing.userOf(link)); assertTrue(body.contains("\"episode\":2")); assertTrue(body.contains("\"positionMs\":25000"))
-        assertTrue(Progress.request(link, e("tt1", "series", 95_000))!!.first.endsWith("/api/nuvio-tv/history"))
+        val (url, body) = Progress.request(link, e("tt1", "series", 250_000))!!
+        assertTrue(url.endsWith("/api/nuvio-tv/progress")); assertTrue(body.contains("\"targetId\":\"SECRETTOKEN\"")); assertEquals("your account", Pairing.userOf(link)); assertTrue(body.contains("\"episode\":2")); assertTrue(body.contains("\"positionMs\":250000"))
+        assertTrue(Progress.request(link, e("tt1", "series", 950_000))!!.first.endsWith("/api/nuvio-tv/history"))
     }
     @Test fun markingWatchedByHandGoesToHistoryAndUnmarkingRemovesIt() {
         val (url, body) = Progress.watchedRequest(link, "tt1", "series", 2, 5, true, 1234L)!!
@@ -138,9 +138,9 @@ class ProgressTest {
         assertNull(Progress.watchedRequest("", "tt1", "movie", -1, -1, true, 1L)); assertNull(Progress.watchedRequest(link, "live:x", "movie", -1, -1, true, 1L))
     }
     @Test fun nothingIsSentWhenSignedOutOrJustStartedOrNotAnImdbTitle() {
-        assertNull(Progress.request("", e("tt1", "movie", 50_000)))
-        assertNull(Progress.request(link, e("tt1", "movie", 500)))
-        assertNull(Progress.request(link, e("live:abc", "tv", 50_000)))
+        assertNull(Progress.request("", e("tt1", "movie", 500_000)))
+        assertNull(Progress.request(link, e("tt1", "movie", 5_000)))
+        assertNull(Progress.request(link, e("live:abc", "tv", 500_000)))
     }
 }
 

@@ -30,10 +30,7 @@ class SearchScreen(private val act: Activity, private val onMeta: (Meta) -> Unit
     }
     private val status = Ui.text(act, "Trending now", 13f, Ui.DIM)
     private val wide = Prefs.horizontalPosters
-    private val grid = RecyclerView(act).apply {
-        layoutManager = GridLayoutManager(act, Ui.columns(act, if (wide) 208 else 118)); itemAnimator = null; clipToPadding = false
-        setPadding(Ui.dp(act, 42), Ui.dp(act, 6), Ui.dp(act, 42), Ui.dp(act, 24)); visibility = View.GONE
-    }
+    private val grid = RecyclerView(act).apply { CardGrid.apply(this, act, if (Prefs.horizontalPosters) 208 else 118); visibility = View.GONE }
     private val holder = FrameLayout(act)
     private var trending: RowsList? = null
 

@@ -30,13 +30,14 @@ class StreamRankTest {
         assertFalse(StreamRank.looksCached("[RD download]", "x"))
     }
 
-    @Test fun sortsBestFirstWithCachedBeforeUncached() {
+    @Test fun cachedFirstThenTheAddonsOwnOrderNotTheBiggestFile() {
         val a = s("a", "1080p", "x", cached = false, size = 5_000_000_000)
         val b = s("b", "1080p", "y", cached = true, size = 2_000_000_000)
         val c = s("c", "2160p", "z", cached = true, size = 20_000_000_000)
-        val sorted = StreamRank.sorted(listOf(a, b, c), maxResolution = 2160)
-        assertEquals(listOf(c, b, a), sorted)
+        val d = s("d", "720p", "w", cached = true, size = 40_000_000_000)
+        assertEquals(listOf(b, c, d, a), StreamRank.sorted(listOf(a, b, c, d), maxResolution = 2160))
     }
+
 
     @Test fun capPutsTooHighResolutionLastButKeepsIt() {
         val hi = s("a", "2160p", "x", cached = true, size = 30_000_000_000)

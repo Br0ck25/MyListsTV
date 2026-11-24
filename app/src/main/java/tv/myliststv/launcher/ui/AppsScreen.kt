@@ -17,10 +17,7 @@ class AppsScreen(private val act: Activity, private val onApp: (AppEntry) -> Uni
     private val rv = RecyclerView(act)
 
     init {
-        rv.layoutManager = GridLayoutManager(act, Ui.columns(act, 208, 36))
-        rv.clipToPadding = false
-        rv.setPadding(Ui.dp(act, 18), Ui.dp(act, 12), Ui.dp(act, 18), Ui.dp(act, 20))
-        rv.itemAnimator = null
+        CardGrid.apply(rv, act, 208, 12, 20)
         view = rv
     }
 

@@ -40,16 +40,15 @@ object StreamRank {
     }
 
     /**
-     * Best first. Resolutions above [maxResolution] go last, not away, so the viewer can still pick them by hand.
-     * Within a resolution: cached first, then larger files (usually better quality), then addon order is kept.
+     * The order sources are tried in. Like Nuvio, it trusts each addon's own order (a stream addon already sorts its answers, and the
+     * addons are in the order you set): cached files first, resolutions above [maxResolution] last (kept, so they can still be picked
+     * by hand), everything else as the addons gave it. It does not prefer the biggest file: a huge remux is the one that stalls a box.
      */
     fun sorted(streams: List<StreamItem>, maxResolution: Int): List<StreamItem> {
         val cap = if (maxResolution <= 0) Int.MAX_VALUE else maxResolution
         return streams.withIndex().sortedWith(
             compareBy<IndexedValue<StreamItem>> { if (it.value.resolution > cap) 1 else 0 }
-                .thenByDescending { it.value.resolution.let { r -> if (r > cap) 0 else r } }
                 .thenByDescending { it.value.cached }
-                .thenByDescending { it.value.sizeBytes }
                 .thenBy { it.index }
         ).map { it.value }
     }

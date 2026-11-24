@@ -36,6 +36,7 @@ object Ui {
     const val FILL_STRONG = 0x26FFFFFF         // a chip that sits on artwork
     const val FOCUS_FILL = 0x22FFFFFF          // soft fill inside the white focus ring
     const val TRACK = 0x33FFFFFF               // empty part of a progress bar
+    const val TRACK_PLAYER = 0x66FFFFFF        // the empty part of the player's bar, clear against any picture
     const val TOGGLE_OFF = 0xFF39393D.toInt()
     const val SCRIM_SLATE = 0xB3000000.toInt()  // a loading screen over the title's backdrop
     const val QR_DARK = 0xFF000000.toInt()      // a QR code must be black on white to scan, whatever the theme
@@ -69,9 +70,6 @@ object Ui {
      */
     fun scale(c: Context): Float { val m = c.resources.displayMetrics; return maxOf(m.widthPixels, m.heightPixels) / 960f }
     fun dp(c: Context, v: Int): Int = (v * scale(c) + 0.5f).toInt()
-
-    /** How many cards of unit width [bw] (a card kind's width before the size setting) fit across a page, so a larger size never overlaps. */
-    fun columns(c: Context, bw: Int, pad: Int = 84): Int = ((c.resources.displayMetrics.widthPixels - dp(c, pad)) / (dp(c, bw) * tv.myliststv.launcher.data.Prefs.cardScale + dp(c, 12))).toInt().coerceAtLeast(1)
     fun dpf(c: Context, v: Float): Float = v * scale(c)
     fun size(t: TextView, sp: Float) = t.setTextSize(TypedValue.COMPLEX_UNIT_PX, sp * scale(t.context))
 

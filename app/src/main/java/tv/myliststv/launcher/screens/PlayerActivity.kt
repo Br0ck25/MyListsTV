@@ -115,10 +115,10 @@ class PlayerActivity : Activity() {
         titleText = Ui.text(c, "", 26f, Ui.TEXT, true, 1)
         subText = Ui.text(c, "", 13f, Ui.TEXT2, false, 1)
         bottom.addView(titleText); bottom.addView(subText, Ui.wrap().apply { topMargin = Ui.dp(c, 4) })
-        track = FrameLayout(c).apply { background = Ui.rounded(c, Ui.TRACK, Ui.R_PILL); clipToOutline = true }
+        track = FrameLayout(c).apply { background = Ui.rounded(c, Ui.TRACK_PLAYER, Ui.R_PILL); clipToOutline = true }
         fill = View(c).apply { setBackgroundColor(Ui.ACCENT) }
         track.addView(fill, FrameLayout.LayoutParams(0, -1))
-        bottom.addView(track, LinearLayout.LayoutParams(-1, Ui.dp(c, 5)).apply { topMargin = Ui.dp(c, 14) })
+        bottom.addView(track, LinearLayout.LayoutParams(-1, Ui.dp(c, 8)).apply { topMargin = Ui.dp(c, 14) })
         timeText = Ui.text(c, "0:00", 15f, Ui.TEXT2)
         // Nuvio's bar: the round play button, then one icon for each job, and the time at the far right.
         controls = Ui.hbox(c, 12).apply { gravity = Gravity.CENTER_VERTICAL }
@@ -286,6 +286,9 @@ class PlayerActivity : Activity() {
 
     private fun onFirstFrame() {
         if (gotFirstFrame) return
+        // A "file" of a few seconds is a stream addon's error clip (expired link, limit reached), not the title: try the next source.
+        val clipMs = player.duration
+        if (autoSelected && clipMs in 1 until MIN_REAL_MS && PlaySession.meta?.type != "channel") { failed("This source is only ${clipMs / 1000} seconds long, which is an error clip and not the title.", null, PlayErrors.Kind.FORMAT); return }
         gotFirstFrame = true
         handler.removeCallbacks(startupTimeout)
         val vid = PlaySession.videoId

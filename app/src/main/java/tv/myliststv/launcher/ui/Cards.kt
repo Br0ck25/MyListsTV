@@ -117,7 +117,7 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
             }
             if (kind == CardKind.WIDE || ep) {
                 addView(subLabel, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM).apply { setMargins(Ui.dp(c, 8), 0, Ui.dp(c, 8), Ui.dp(c, 8)) })
-                addView(bar, LayoutParams(0, Ui.dp(c, 3), Gravity.BOTTOM or Gravity.START))
+                addView(bar, LayoutParams(0, Ui.dp(c, 5), Gravity.BOTTOM or Gravity.START))
             }
         }
         foreground = Ui.focusBg(c, Ui.R_CARD, Ui.CLEAR)

@@ -14,7 +14,7 @@ object Progress {
 
     /** The request for this play, or null when it should not be sent (no account, no IMDb id, a start, or live TV). */
     fun request(link: String, e: WatchStore.Entry): Pair<String, String>? {
-        if (link.isEmpty() || !Regex("tt\\d+").matches(e.metaId) || e.durationMs <= 0) return null
+        if (link.isEmpty() || !Regex("tt\\d+").matches(e.metaId) || e.durationMs < MIN_REAL_MS) return null
         val series = e.type == "series"
         val o = JSONObject().put("targetId", Pairing.targetOf(link)).put("type", if (series) "series" else "movie").put("imdbId", e.metaId)
         if (series) o.put("season", e.season).put("episode", e.episode)
