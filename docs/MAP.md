@@ -728,7 +728,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    174   fun refreshContinue()  - Called when coming back from the player, or when the account's lists arrive, so they show without reloading ca
    184   fun hero(m: CardModel)
 
-## ui/CardGrid.kt (31 lines) - The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spa
+## ui/CardGrid.kt (33 lines) - The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spa
     13 object CardGrid  - The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spa
     17   fun cell(c: Context, bw: Int)
     20   fun columns(c: Context, bw: Int)  - How many cards of base width [bw] (Cards.kt: 118 poster, 208 wide or app) fit across, at the chosen card size.
