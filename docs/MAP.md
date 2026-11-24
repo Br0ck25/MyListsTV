@@ -18,6 +18,44 @@ Find a symbol with grep on this file, then read only that file around the line n
     33   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
     39   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
+## MainActivity.kt (457 lines) - The home screen.
+    31 class MainActivity  - The home screen.
+    57   fun updateBell()
+    59   fun updateProfile()
+    62   fun profileChip()  - Who is watching: the current profile at the top right; OK switches.
+    73   fun pickProfile()
+    81   fun showNotices()  - The bell: a panel down the right edge.
+    92   fun fill(list: LinearLayout, panel: SidePanel)
+   122   fun showSettingsPanel()  - The gear: Apps, Launcher settings (the full settings) and Android settings, in the same right-hand panel.
+   138   fun appsPage(panel: SidePanel)  - Every app as a banner with its name under it, two across; OK opens it, hold OK for its menu.
+   156   fun setBackdrop(url: String?)  - Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every p
+   162   fun showBackdrop(on: Boolean)
+   168   fun onCreate(savedInstanceState: Bundle?)
+   233   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
+   247   fun welcome()  - First run: what you are seeing, and the next step, with the three choices side by side.
+   253   fun tabView(t: String)
+   260   fun select(i: Int, force: Boolean = false)
+   283   fun reloadAddons()
+   286   fun go(where: String)  - Where a mapped remote button sends the launcher.
+   296   fun openMeta(m: Meta)
+   300   fun resumeEntry(e: WatchStore.Entry)
+   305   fun launch(a: AppEntry)
+   314   fun appMenu(a: AppEntry)
+   334   fun onResume()
+   357   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
+   365   fun onNewIntent(intent: Intent)
+   382   fun onBackPressed()
+   393   fun dispatchKeyEvent(e: KeyEvent)
+   415   fun isIn(v: View, container: View)
+   416   fun isInContent(v: View)
+   419   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
+   425   fun openSide()
+   426   fun closeSide()
+   429   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
+   449   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   454   fun onDestroy()
+   456   fun onTrimMemory(level: Int)
+
 ## data/AddonStore.kt (127 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
     13   class Saved
@@ -411,13 +449,6 @@ Find a symbol with grep on this file, then read only that file around the line n
     20   fun stream(base: String, type: String, id: String)
     22   fun subtitles(base: String, type: String, id: String)
 
-## data/Watched.kt (21 lines) - Which episodes of each show this profile has finished (90% or more, or marked by hand).
-     8 object Watched  - Which episodes of each show this profile has finished (90% or more, or marked by hand).
-     9   fun sp()
-    11   fun of(metaId: String)
-    15   fun has(metaId: String, videoId: String)
-    17   fun set(metaId: String, videoId: String, watched: Boolean)
-
 ## data/WatchNext.kt (35 lines) - Puts Continue watching on the system home screen's Watch Next row.
     15 object WatchNext  - Puts Continue watching on the system home screen's Watch Next row.
     16   fun publish(c: Context)
@@ -435,43 +466,12 @@ Find a symbol with grep on this file, then read only that file around the line n
     69   fun toJson(e: Entry)
     76   fun fromJson(o: JSONObject)
 
-## MainActivity.kt (457 lines) - The home screen.
-    31 class MainActivity  - The home screen.
-    57   fun updateBell()
-    59   fun updateProfile()
-    62   fun profileChip()  - Who is watching: the current profile at the top right; OK switches.
-    73   fun pickProfile()
-    81   fun showNotices()  - The bell: a panel down the right edge.
-    92   fun fill(list: LinearLayout, panel: SidePanel)
-   122   fun showSettingsPanel()  - The gear: Apps, Launcher settings (the full settings) and Android settings, in the same right-hand panel.
-   138   fun appsPage(panel: SidePanel)  - Every app as a banner with its name under it, two across; OK opens it, hold OK for its menu.
-   156   fun setBackdrop(url: String?)  - Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every p
-   162   fun showBackdrop(on: Boolean)
-   168   fun onCreate(savedInstanceState: Bundle?)
-   233   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
-   247   fun welcome()  - First run: what you are seeing, and the next step, with the three choices side by side.
-   253   fun tabView(t: String)
-   260   fun select(i: Int, force: Boolean = false)
-   283   fun reloadAddons()
-   286   fun go(where: String)  - Where a mapped remote button sends the launcher.
-   296   fun openMeta(m: Meta)
-   300   fun resumeEntry(e: WatchStore.Entry)
-   305   fun launch(a: AppEntry)
-   314   fun appMenu(a: AppEntry)
-   334   fun onResume()
-   357   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
-   365   fun onNewIntent(intent: Intent)
-   382   fun onBackPressed()
-   393   fun dispatchKeyEvent(e: KeyEvent)
-   415   fun isIn(v: View, container: View)
-   416   fun isInContent(v: View)
-   419   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
-   425   fun openSide()
-   426   fun closeSide()
-   429   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
-   449   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   454   fun onDestroy()
-   456   fun onTrimMemory(level: Int)
+## data/Watched.kt (21 lines) - Which episodes of each show this profile has finished (90% or more, or marked by hand).
+     8 object Watched  - Which episodes of each show this profile has finished (90% or more, or marked by hand).
+     9   fun sp()
+    11   fun of(metaId: String)
+    15   fun has(metaId: String, videoId: String)
+    17   fun set(metaId: String, videoId: String, watched: Boolean)
 
 ## screens/AddonsActivity.kt (27 lines) - Settings, Addons: the list of addons, in a page of its own.
     13 class AddonsActivity  - Settings, Addons: the list of addons, in a page of its own.
