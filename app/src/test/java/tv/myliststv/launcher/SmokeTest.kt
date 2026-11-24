@@ -40,6 +40,19 @@ class SmokeTest {
         while (System.currentTimeMillis() < end) { shadowOf(Looper.getMainLooper()).idle(); Thread.sleep(100) }
     }
 
+    /** First run: the setup shows one step at a time, each with Skip, and Skip moves on until the closing screen. */
+    @Test fun setupScreensCanBeSkippedOneByOne() {
+        val a = Robolectric.buildActivity(SetupActivity::class.java).setup().get()
+        fun texts() = views(a.window.decorView).filterIsInstance<android.widget.TextView>()
+        assertTrue("a step is shown", texts().any { it.text.toString().startsWith("Step ") })
+        var guard = 0
+        while (guard++ < 6) { texts().firstOrNull { it.text == "Skip this step" }?.performClick() ?: break }
+        assertTrue("closing screen", texts().any { it.text == "Setup finished" || it.text == "You are all set" })
+        texts().first { it.text == "Continue" }.performClick()
+        assertTrue("setup is marked done", Prefs.setupDone)
+        assertTrue(a.isFinishing)
+    }
+
     @Test fun homeLoadsDefaultRowsFromMyLists() {
         assumeAddonReachable()
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()

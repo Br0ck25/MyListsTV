@@ -66,6 +66,8 @@
         <!-- Exported so the system home screen can open it from a Watch Next card. -->
         <activity android:name=".screens.DetailsActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="true" android:screenOrientation="landscape" />
+        <activity android:name=".screens.SetupActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" />
         <activity android:name=".screens.StreamsActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" />
         <activity android:name=".screens.SearchActivity"

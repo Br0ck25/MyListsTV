@@ -243,12 +243,8 @@ class MainActivity : Activity() {
         Profiles.askedThisRun = true
     }
 
-    /** First run: what you are seeing, and the next step, with the three choices side by side. */
-    private fun welcome() = Ui.dialog(this, "Welcome to My Lists TV",
-        "You are seeing the default My Lists catalogs. To play video, add a stream addon in Settings, then Addons. You can paste its link from your phone.\n\nAdvanced mode shows the settings most people never need.",
-        Ui.Act("Set up addons", true) { Prefs.setupDone = true; startActivity(Intent(this, AddonsActivity::class.java)) },
-        Ui.Act("Advanced mode") { Prefs.setupDone = true; Prefs.advanced = true },
-        Ui.Act("Skip") { Prefs.setupDone = true })
+    /** First run: the setup screens (Home app, Home button, notifications, addons), each one skippable. */
+    private fun welcome() = startActivity(Intent(this, SetupActivity::class.java))
 
     private fun tabView(t: String) = TextView(this).apply {
         text = t; Ui.size(this, if (navStyle != 0) 20f else 15f); setTextColor(Ui.DIM); typeface = android.graphics.Typeface.DEFAULT_BOLD

@@ -26,6 +26,7 @@ Start here, then `grep -n <name> docs/MAP.md` for the exact file and line. Rules
 | Notifications bell | `services/NotificationsService.kt` (`Notices`), `MainActivity.kt` (`showNotices`) |
 | Screensaver | `services/BackdropDream.kt` |
 | Watch Next row on the system home | `data/WatchNext.kt` |
+| First-run setup screens (Home app, Home button, notifications, addons) | `screens/SetupActivity.kt`, `data/HomeSetup.kt`, `MainActivity.kt` (`welcome`) |
 | Phone page (paste links, setup steps) | `data/PhoneServer.kt` |
 | Crash safe mode | `data/CrashGuard.kt` |
 | Updates | `data/Updater.kt` |

@@ -18,7 +18,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     33   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
     39   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (457 lines) - The home screen.
+## MainActivity.kt (453 lines) - The home screen.
     31 class MainActivity  - The home screen.
     57   fun updateBell()
     59   fun updateProfile()
@@ -32,29 +32,29 @@ Find a symbol with grep on this file, then read only that file around the line n
    162   fun showBackdrop(on: Boolean)
    168   fun onCreate(savedInstanceState: Bundle?)
    233   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
-   247   fun welcome()  - First run: what you are seeing, and the next step, with the three choices side by side.
-   253   fun tabView(t: String)
-   260   fun select(i: Int, force: Boolean = false)
-   283   fun reloadAddons()
-   286   fun go(where: String)  - Where a mapped remote button sends the launcher.
-   296   fun openMeta(m: Meta)
-   300   fun resumeEntry(e: WatchStore.Entry)
-   305   fun launch(a: AppEntry)
-   314   fun appMenu(a: AppEntry)
-   334   fun onResume()
-   357   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
-   365   fun onNewIntent(intent: Intent)
-   382   fun onBackPressed()
-   393   fun dispatchKeyEvent(e: KeyEvent)
-   415   fun isIn(v: View, container: View)
-   416   fun isInContent(v: View)
-   419   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
-   425   fun openSide()
-   426   fun closeSide()
-   429   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
-   449   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   454   fun onDestroy()
-   456   fun onTrimMemory(level: Int)
+   247   fun welcome()  - First run: the setup screens (Home app, Home button, notifications, addons), each one skippable.
+   249   fun tabView(t: String)
+   256   fun select(i: Int, force: Boolean = false)
+   279   fun reloadAddons()
+   282   fun go(where: String)  - Where a mapped remote button sends the launcher.
+   292   fun openMeta(m: Meta)
+   296   fun resumeEntry(e: WatchStore.Entry)
+   301   fun launch(a: AppEntry)
+   310   fun appMenu(a: AppEntry)
+   330   fun onResume()
+   353   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
+   361   fun onNewIntent(intent: Intent)
+   378   fun onBackPressed()
+   389   fun dispatchKeyEvent(e: KeyEvent)
+   411   fun isIn(v: View, container: View)
+   412   fun isInContent(v: View)
+   415   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
+   421   fun openSide()
+   422   fun closeSide()
+   425   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
+   445   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   450   fun onDestroy()
+   452   fun onTrimMemory(level: Int)
 
 ## data/AddonStore.kt (127 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
@@ -175,14 +175,16 @@ Find a symbol with grep on this file, then read only that file around the line n
     31   fun leftText(n: Int)
     34   fun timeLeft(e: WatchStore.Entry)  - "45 min left" or "1h 5m left" for something you have started, null when its length is not known.
 
-## data/HomeSetup.kt (46 lines) - What the Home screen setup page needs: where we stand, how to change it, and the commands for the phone page.
+## data/HomeSetup.kt (65 lines) - What the Home screen setup page needs: where we stand, how to change it, and the commands for the phone page.
     12 object HomeSetup  - What the Home screen setup page needs: where we stand, how to change it, and the commands for the phone page.
     15   fun homeIntent()
     22   fun stockHomeScreens(c: Context)  - The Home screens of every other Home app, as "package/class": what the Home button fallback watches for.
     26   fun isHome(c: Context)
     28   fun fallbackOn(c: Context)
     31   fun enableFallback(c: Context)  - Turns the fallback on straight away if the app was allowed to (the phone page's grant command); false means op
-    38   fun commands(ip: String)  - The commands to run from a computer, with this box's address filled in.
+    38   fun requestHome(a: android.app.Activity)  - The system's own choice of Home app (Android 10 and up), or its Home settings page on older versions.
+    48   fun phoneSteps(a: android.app.Activity)  - Shows the address of the phone page with the exact steps and commands, for TVs that block the switches on the 
+    57   fun commands(ip: String)  - The commands to run from a computer, with this box's address filled in.
 
 ## data/Http.kt (159 lines) - Small HTTP layer: HttpURLConnection (built in, no library), a three-thread pool, and a disk cache that answers
     16 object Http  - Small HTTP layer: HttpURLConnection (built in, no library), a three-thread pool, and a disk cache that answers
@@ -576,7 +578,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     20 class SearchActivity  - Search across the catalog addons.
     24   fun onCreate(savedInstanceState: Bundle?)
 
-## screens/SettingsActivity.kt (338 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
+## screens/SettingsActivity.kt (321 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     26 class SettingsActivity  - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     30   fun header(t: String)
     31   fun toggle(label: String, desc: String, get: ()
@@ -586,26 +588,33 @@ Find a symbol with grep on this file, then read only that file around the line n
     44   fun onResume()
     46   fun androidSettings()
     57   fun testSources()
-    66   fun requestHome()
-    75   fun setupPage()
-    83   fun profileMenu()
-    97   fun shareMenu()  - Choose another profile whose addons this one uses, or stop sharing.
-   108   fun askName(kids: Boolean)
-   110   fun arrange(what: String)
-   112   fun backupNow()
-   122   fun showCode(code: String, extra: String = "")
-   126   fun restoreDialog()
-   132   fun lastBackupText()
-   134   fun signIn()
-   155   fun signOut()
-   159   fun rows()
-   231   fun checkUpdate()
-   243   fun onCreate(savedInstanceState: Bundle?)
-   259   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
-   276   fun railItem(name: String, i: Int)
-   286   fun buildPanel(keep: Int)
-   309   fun view(r: Row, changed: ()
-   335   fun onBackPressed()
+    66   fun profileMenu()
+    80   fun shareMenu()  - Choose another profile whose addons this one uses, or stop sharing.
+    91   fun askName(kids: Boolean)
+    93   fun arrange(what: String)
+    95   fun backupNow()
+   105   fun showCode(code: String, extra: String = "")
+   109   fun restoreDialog()
+   115   fun lastBackupText()
+   117   fun signIn()
+   138   fun signOut()
+   142   fun rows()
+   214   fun checkUpdate()
+   226   fun onCreate(savedInstanceState: Bundle?)
+   242   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
+   259   fun railItem(name: String, i: Int)
+   269   fun buildPanel(keep: Int)
+   292   fun view(r: Row, changed: ()
+   318   fun onBackPressed()
+
+## screens/SetupActivity.kt (128 lines) - First run: one full screen per step (Home app, Home button, notifications, addons).
+    25 class SetupActivity  - First run: one full screen per step (Home app, Home button, notifications, addons).
+    43   fun onCreate(savedInstanceState: Bundle?)
+    50   fun onResume()
+    51   fun onPause()
+    56   fun finishSetup()
+    58   fun done(s: Step)
+    66   fun render()  - Draws the page again, but only when something changed, so the focus is not taken away each second.
 
 ## screens/StreamsActivity.kt (97 lines) - The stream picker: every source from every stream addon, best first.
     15 class StreamsActivity  - The stream picker: every source from every stream addon, best first.
@@ -804,4 +813,4 @@ Find a symbol with grep on this file, then read only that file around the line n
   res/values/themes.xml
   res/xml/file_paths.xml
   res/xml/home_button_service.xml
-  manifest components: activity .MainActivity, activity .screens.DetailsActivity, activity .screens.StreamsActivity, activity .screens.SearchActivity, service .services.BackdropDream, service .services.NotificationsService, service .services.HomeButtonService, activity .screens.AddonsActivity, activity .screens.SettingsActivity, activity .screens.TrailerActivity, activity .screens.ArrangeActivity, activity .screens.PlayerActivity
+  manifest components: activity .MainActivity, activity .screens.DetailsActivity, activity .screens.SetupActivity, activity .screens.StreamsActivity, activity .screens.SearchActivity, service .services.BackdropDream, service .services.NotificationsService, service .services.HomeButtonService, activity .screens.AddonsActivity, activity .screens.SettingsActivity, activity .screens.TrailerActivity, activity .screens.ArrangeActivity, activity .screens.PlayerActivity
