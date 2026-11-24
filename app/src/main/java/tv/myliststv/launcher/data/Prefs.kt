@@ -43,6 +43,11 @@ object Prefs {
         get() = sp.getInt("startupTimeout", 10)
         set(v) = sp.edit().putInt("startupTimeout", v).apply()
 
+    /** Which releases Settings, About offers: "production" (releases promoted by the owner) or "beta" (every build from main, newest first). */
+    var updateChannel: String
+        get() = sp.getString("updateChannel", "production") ?: "production"
+        set(v) = sp.edit().putString("updateChannel", v).apply()
+
     var subtitleLang: String             // "off" or a two-letter code
         get() = sp.getString("subLang", "en") ?: "en"
         set(v) = sp.edit().putString("subLang", v).apply()
