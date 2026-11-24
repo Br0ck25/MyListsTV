@@ -15,7 +15,7 @@ object TitleMenu {
             tv.myliststv.launcher.ui.Pop.toast(act, if (now) "Added to Library" else "Removed from Library"); changed()
         }
         val done = Watched.titleDone(meta)
-        s.card(if (done) "Mark as unwatched" else "Mark as watched", if (done) "Take off the check mark" else "Adds a check mark (and to My Lists for a movie, when signed in)") {
+        s.card(if (done) "Mark as unwatched" else "Mark as watched", if (done) "Take off the check mark" else "Adds a check mark, and to My Lists when you are signed in") {
             s.dismiss(); setWatched(act, meta, !done); changed()
         }
         s.show(); first.requestFocus()
@@ -25,9 +25,9 @@ object TitleMenu {
     fun setWatched(act: Activity, meta: Meta, watched: Boolean) {
         Watched.setTitle(meta, watched)
         if (watched) WatchStore.remove(meta.id)
-        // The account has no "whole show watched": its history records episodes, so only a movie is sent. A show keeps the check on this TV.
-        val sent = meta.type == "movie"
-        if (sent) Progress.markWatched(meta.id, meta.type, -1, -1, watched)
-        tv.myliststv.launcher.ui.Pop.toast(act, if (!watched) "Marked not watched" else if (sent && Prefs.accountLink.isNotEmpty()) "Marked watched, and added to My Lists" else "Marked watched")
+        val movie = meta.type == "movie"
+        AccountWatched.mark(meta.id, movie, watched)
+        if (movie) Progress.markWatched(meta.id, meta.type, -1, -1, watched) else Progress.markWholeShow(meta.id, watched)
+        tv.myliststv.launcher.ui.Pop.toast(act, if (!watched) "Marked not watched" else if (Prefs.accountLink.isNotEmpty()) "Marked watched, and added to My Lists" else "Marked watched")
     }
 }

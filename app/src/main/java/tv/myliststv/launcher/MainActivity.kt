@@ -382,6 +382,7 @@ class MainActivity : Activity() {
         Library.pull { if (current == 4) select(4, force = true) }
         SetupSync.pull { reloadAddons() }
         Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
+        AccountWatched.pull { (screen as? BrowseScreen)?.refreshChecks(); if (current >= 3) select(current, force = true) }
     }
 
     override fun onResume() {

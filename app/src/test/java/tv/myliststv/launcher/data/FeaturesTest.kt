@@ -129,6 +129,17 @@ class ProgressTest {
         assertTrue(url.endsWith("/api/nuvio-tv/progress")); assertTrue(body.contains("\"targetId\":\"SECRETTOKEN\"")); assertEquals("your account", Pairing.userOf(link)); assertTrue(body.contains("\"episode\":2")); assertTrue(body.contains("\"positionMs\":250000"))
         assertTrue(Progress.request(link, e("tt1", "series", 950_000))!!.first.endsWith("/api/nuvio-tv/history"))
     }
+    @Test fun aWholeShowIsMarkedWithTheWholeFlagAndNoEpisode() {
+        val (url, body) = Progress.wholeShowRequest(link, "tt1", true, 99L)!!
+        assertTrue(url.endsWith("/api/nuvio-tv/history")); assertTrue(body.contains("\"whole\":true") && body.contains("\"type\":\"series\"") && body.contains("\"completed\":true"))
+        assertFalse(body.contains("season") || body.contains("episode"))
+        val (rm, rmBody) = Progress.wholeShowRequest(link, "tt1", false, 99L)!!
+        assertTrue(rm.endsWith("/api/nuvio-tv/history/remove")); assertFalse(rmBody.contains("completed"))
+        assertNull(Progress.wholeShowRequest("", "tt1", true, 1L)); assertNull(Progress.wholeShowRequest(link, "channel_x", true, 1L))
+    }
+    @Test fun aThirtySecondErrorClipIsNeverReportedAsProgress() {
+        assertNull(Progress.request(link, e("tt1", "series", 10_000, dur = 30_000)))
+    }
     @Test fun markingWatchedByHandGoesToHistoryAndUnmarkingRemovesIt() {
         val (url, body) = Progress.watchedRequest(link, "tt1", "series", 2, 5, true, 1234L)!!
         assertTrue(url.endsWith("/api/nuvio-tv/history")); assertTrue(body.contains("\"season\":2") && body.contains("\"episode\":5") && body.contains("\"completed\":true") && body.contains("\"watchedAt\":1234"))

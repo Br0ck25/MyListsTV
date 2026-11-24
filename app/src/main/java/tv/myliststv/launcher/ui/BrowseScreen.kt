@@ -153,6 +153,9 @@ class BrowseScreen(
         }))
     }
 
+    /** The account's watched list arrived: redraw the cards so their check marks show, without reloading any row. */
+    fun refreshChecks() = list.changedAll()
+
     /** Hide from Home: the app leaves the apps row where it is, and the focus moves to its neighbour. Nothing else reloads and the page keeps its place. */
     fun hideApp(pkg: String): Boolean {
         val r = rows.indexOfFirst { it.title == "Your apps" }.takeIf { it >= 0 } ?: return false

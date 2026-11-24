@@ -79,6 +79,19 @@ object Progress {
         return "$ORIGIN/api/nuvio-tv/history${if (watched) "" else "/remove"}" to o.toString()
     }
 
+    /** The request that marks a whole show watched (every aired episode) or takes it all off, or null when signed out or not an IMDb title. */
+    fun wholeShowRequest(link: String, metaId: String, watched: Boolean, now: Long): Pair<String, String>? {
+        if (link.isEmpty() || !Regex("tt\\d+").matches(metaId)) return null
+        val o = JSONObject().put("targetId", Pairing.targetOf(link)).put("type", "series").put("imdbId", metaId).put("whole", true)
+        if (watched) o.put("completed", true).put("watchedAt", now)
+        return "$ORIGIN/api/nuvio-tv/history${if (watched) "" else "/remove"}" to o.toString()
+    }
+
+    fun markWholeShow(metaId: String, watched: Boolean) {
+        val (url, body) = wholeShowRequest(Prefs.accountLink, metaId, watched, System.currentTimeMillis()) ?: return
+        Http.background { try { Http.send("POST", url, body) } catch (_: Exception) {} }
+    }
+
     /** A title or episode marked watched (or not watched) by hand also goes to the account's watched history, so the website and other TVs agree. Does nothing signed out. */
     fun markWatched(metaId: String, type: String, season: Int, episode: Int, watched: Boolean) {
         val (url, body) = watchedRequest(Prefs.accountLink, metaId, type, season, episode, watched, System.currentTimeMillis()) ?: return

@@ -12,10 +12,10 @@ object Watched {
         val a = JSONArray(sp().getString(metaId, "[]")); (0 until a.length()).map { a.getString(it) }.toSet()
     } catch (_: Exception) { emptySet() }
 
-    fun has(metaId: String, videoId: String) = videoId in of(metaId)
+    fun has(metaId: String, videoId: String) = videoId in of(metaId) || AccountWatched.episodeDone(metaId, videoId)
 
 
-    fun titleDone(m: Meta) = if (m.type == "movie") of(m.id).isNotEmpty() else "*" in of(m.id)
+    fun titleDone(m: Meta) = if (m.type == "movie") of(m.id).isNotEmpty() || AccountWatched.movieDone(m.id) else "*" in of(m.id) || AccountWatched.showDone(m.id)
 
     /** A whole title marked by hand: a movie is its own "episode", a show gets the flag "*" (its episodes keep their own check marks). */
     fun setTitle(m: Meta, watched: Boolean) = set(m.id, if (m.type == "movie") m.id else "*", watched)

@@ -137,7 +137,7 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
         label.text = if (kind == CardKind.POSTER && !m.image.isNullOrEmpty()) "" else m.title
         subLabel.text = m.sub ?: ""
         ImageLoader.load(img, m.image, wPx, hPx)
-        tick.visibility = if (m.done) VISIBLE else GONE
+        tick.visibility = if (m.done || (m.payload as? Meta)?.let { Watched.titleDone(it) } == true) VISIBLE else GONE
         badge.text = m.badge ?: ""; badge.visibility = if (m.badge == null) GONE else VISIBLE
         badgeEnd.text = m.badgeEnd ?: ""; badgeEnd.visibility = if (m.badgeEnd == null) GONE else VISIBLE
         fitBadges(m)
