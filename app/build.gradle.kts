@@ -14,7 +14,7 @@ android {
         // CI passes -PbuildNumber=<run number>, so every published build is newer than the last and matches its release tag.
         val build = (project.findProperty("buildNumber") as String?)?.toIntOrNull() ?: 1
         versionCode = build
-        versionName = "0.1.$build"
+        versionName = "0.${1 + build / 100}.${build % 100}"   // 0.1.99, then 0.2.0 (see data/Version.kt)
         // 32-bit first: many cheap boxes run a 32-bit userland on a 64-bit chip.
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }

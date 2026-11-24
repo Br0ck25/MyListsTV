@@ -487,6 +487,11 @@ Find a symbol with grep on this file, then read only that file around the line n
     20   fun stream(base: String, type: String, id: String)
     22   fun subtitles(base: String, type: String, id: String)
 
+## data/Version.kt (19 lines) - How a build number (the CI run number, which is also the Android version code and only ever goes up) is writte
+     8 object Version  - How a build number (the CI run number, which is also the Android version code and only ever goes up) is writte
+     9   fun name(build: Int)
+    12   fun build(tag: String)  - The build number a tag such as "v0.2.5" stands for (205), or null when it is not one of ours.
+
 ## data/WatchNext.kt (35 lines) - Puts Continue Watching on the system home screen's Watch Next row.
     15 object WatchNext  - Puts Continue Watching on the system home screen's Watch Next row.
     16   fun publish(c: Context)

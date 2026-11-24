@@ -231,7 +231,7 @@ class SettingsActivity : Activity() {
         add(action("Android settings", "Wi-Fi, display, sound, Bluetooth, apps and the rest of the TV's own settings.") { androidSettings() })
         add(header("About", "Version, updates, and privacy", R.drawable.ic_info))
         add(card(""))
-        add(action("Check for updates", "Version 0.1.${Updater.installedBuild(this@SettingsActivity)} installed.") { checkUpdate() })
+        add(action("Check for updates", "Version ${Version.name(Updater.installedBuild(this@SettingsActivity))} installed.") { checkUpdate() })
         add(info("Make this your home screen", "adb shell cmd package set-home-activity tv.myliststv.launcher/.MainActivity"))
         add(info("Privacy", "No analytics, no tracking. Signed in, your watch progress goes to your My Lists account. Skip-intro times from IntroDB (introdb.app)."))
     }
@@ -349,7 +349,7 @@ class SettingsActivity : Activity() {
             val mine = Updater.installedBuild(this)
             if (r == null) Pop.toast(this, "Could not check right now.", true)
             else if (r.build <= mine) Pop.toast(this, "You have the latest version.", true)
-            else Sheet.message(this, "Update available", "${r.tag} is ready. You have 0.1.$mine.", Sheet.Act("Later"), Sheet.Act("Install", true) { Updater.install(this, r) { Pop.toast(this, it) } })
+            else Sheet.message(this, "Update available", "${r.tag} is ready. You have ${Version.name(mine)}.", Sheet.Act("Later"), Sheet.Act("Install", true) { Updater.install(this, r) { Pop.toast(this, it) } })
         }
     }
 

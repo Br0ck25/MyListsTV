@@ -31,7 +31,7 @@ object Updater {
         for (i in 0 until a.length()) {
             val o = a.optJSONObject(i) ?: continue
             val tag = o.optString("tag_name")
-            val n = tag.substringAfterLast('.').toIntOrNull() ?: continue
+            val n = Version.build(tag) ?: continue
             val assets = o.optJSONArray("assets") ?: continue
             val apk = (0 until assets.length()).map { assets.getJSONObject(it) }.firstOrNull { it.optString("name").endsWith(".apk") } ?: continue
             if (best == null || n > best.build) best = Release(n, tag, apk.optString("browser_download_url"))
