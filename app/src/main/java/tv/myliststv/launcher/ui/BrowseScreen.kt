@@ -153,6 +153,20 @@ class BrowseScreen(
         }))
     }
 
+    /** Hide from Home: the app leaves the apps row where it is, and the focus moves to its neighbour. Nothing else reloads and the page keeps its place. */
+    fun hideApp(pkg: String): Boolean {
+        val r = rows.indexOfFirst { it.title == "Your apps" }.takeIf { it >= 0 } ?: return false
+        val row = rows[r]
+        val i = row.items.indexOfFirst { (it.payload as? AppEntry)?.component?.packageName == pkg }.takeIf { it >= 0 } ?: return false
+        row.items = row.items.toMutableList().also { it.removeAt(i) }
+        row.adapter?.removeAt(i)
+        val strip = (list.findViewHolderForAdapterPosition(r)?.itemView as? RowView)?.strip ?: return true
+        if (row.items.isEmpty()) { list.changed(r); list.post { list.requestFocus() }; return true }
+        row.lastPos = i.coerceAtMost(row.items.size - 1)
+        strip.post { strip.findViewHolderForAdapterPosition(row.lastPos)?.itemView?.requestFocus() }
+        return true
+    }
+
     /** Called when coming back from the player, or when the account's lists arrive, so they show without reloading catalogs. */
     fun refreshContinue() {
         if (!withContinue) return

@@ -168,6 +168,9 @@ class CardAdapter(
 
     fun payloads(): List<Any?> = items.map { it.payload }
 
+    /** Takes one card out of the strip where it is, so the rest slide along and nothing else reloads. */
+    fun removeAt(i: Int) { if (i !in items.indices) return; items = items.toMutableList().also { it.removeAt(i) }; notifyItemRemoved(i) }
+
     /** Moves one card to another place (the list is changed in place, so the row's own model stays in step). */
     fun move(from: Int, to: Int) {
         val l = items as? MutableList<CardModel> ?: items.toMutableList().also { items = it }

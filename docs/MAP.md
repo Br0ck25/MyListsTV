@@ -701,16 +701,17 @@ Find a symbol with grep on this file, then read only that file around the line n
     15 class AppsScreen  - Every installed app in a grid.
     27   fun start()
 
-## ui/BrowseScreen.kt (203 lines) - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
+## ui/BrowseScreen.kt (217 lines) - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
     18 class BrowseScreen  - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
     62   fun start()
    110   fun markWatched(e: WatchStore.Entry)  - Hold OK on a Continue watching card, Mark as watched: the episode (or movie) is done, here and in the account'
    118   fun addContinue()
    144   fun addAiring()  - The next episode of each followed show, soonest first.
-   157   fun refreshContinue()  - Called when coming back from the player, or when the account's lists arrive, so they show without reloading ca
-   167   fun hero(m: CardModel)
+   157   fun hideApp(pkg: String)  - Hide from Home: the app leaves the apps row where it is, and the focus moves to its neighbour.
+   171   fun refreshContinue()  - Called when coming back from the player, or when the account's lists arrive, so they show without reloading ca
+   181   fun hero(m: CardModel)
 
-## ui/Cards.kt (322 lines)
+## ui/Cards.kt (325 lines)
     22 class CardKind
     24 class CardModel
     41 class RowModel
@@ -721,20 +722,21 @@ Find a symbol with grep on this file, then read only that file around the line n
    165   class H
    167   fun set(newItems: List<CardModel>)
    169   fun payloads()
-   172   fun move(from: Int, to: Int)  - Moves one card to another place (the list is changed in place, so the row's own model stays in step).
-   177   fun onCreateViewHolder(parent: ViewGroup, viewType: Int)
-   183   fun onBindViewHolder(h: H, position: Int)
-   199   fun getItemCount()
-   203 class RowView  - A titled row: heading, optional source label, horizontal strip.
-   229 class RowsList  - A vertical list of [RowView]s over [rows].
-   240   fun requestChildFocus(child: View?, focused: View?)  - Landing on a row shows it whole, title included: the first row goes to the very top, any other row is scrolled
-   249   fun rowOf(v: View)  - The row (a direct child of this list) that holds [v].
-   252   fun cardIn(next: RowView)  - The card to land on in [next]: the one you were last on in that row, or its first card if you have not been th
-   268   fun focusRowAt(target: Int, tries: Int = 0)  - A row that is not on screen yet (it was scrolled away): bring it in, then put the focus on its card.
-   277   fun focusSearch(focused: View, direction: Int)  - Up and down land on the card you last had focus on in the next row (its first card if you have not been there)
-   302   fun changed(i: Int)
-   303   fun changedAll()
-   304   fun inserted(i: Int)
+   172   fun removeAt(i: Int)  - Takes one card out of the strip where it is, so the rest slide along and nothing else reloads.
+   175   fun move(from: Int, to: Int)  - Moves one card to another place (the list is changed in place, so the row's own model stays in step).
+   180   fun onCreateViewHolder(parent: ViewGroup, viewType: Int)
+   186   fun onBindViewHolder(h: H, position: Int)
+   202   fun getItemCount()
+   206 class RowView  - A titled row: heading, optional source label, horizontal strip.
+   232 class RowsList  - A vertical list of [RowView]s over [rows].
+   243   fun requestChildFocus(child: View?, focused: View?)  - Landing on a row shows it whole, title included: the first row goes to the very top, any other row is scrolled
+   252   fun rowOf(v: View)  - The row (a direct child of this list) that holds [v].
+   255   fun cardIn(next: RowView)  - The card to land on in [next]: the one you were last on in that row, or its first card if you have not been th
+   271   fun focusRowAt(target: Int, tries: Int = 0)  - A row that is not on screen yet (it was scrolled away): bring it in, then put the focus on its card.
+   280   fun focusSearch(focused: View, direction: Int)  - Up and down land on the card you last had focus on in the next row (its first card if you have not been there)
+   305   fun changed(i: Int)
+   306   fun changedAll()
+   307   fun inserted(i: Int)
 
 ## ui/LibraryScreen.kt (52 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     11 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
