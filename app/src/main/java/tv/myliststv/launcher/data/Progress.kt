@@ -93,9 +93,23 @@ object Progress {
     }
 
     /** A title or episode marked watched (or not watched) by hand also goes to the account's watched history, so the website and other TVs agree. Does nothing signed out. */
-    fun markWatched(metaId: String, type: String, season: Int, episode: Int, watched: Boolean) {
+    fun markWatched(metaId: String, type: String, season: Int, episode: Int, watched: Boolean, result: ((Boolean, String) -> Unit)? = null) {
         val (url, body) = watchedRequest(Prefs.accountLink, metaId, type, season, episode, watched, System.currentTimeMillis()) ?: return
-        Http.background { try { Http.send("POST", url, body) } catch (_: Exception) {} }
+        send(url, body, result)
+    }
+
+    /** Sends one request to the account and says how it went: [result] gets (accepted, a short reason) on the main thread. The reply is logged (never the token). */
+    private fun send(url: String, body: String, result: ((Boolean, String) -> Unit)?) {
+        Http.background {
+            var ok = false; var why = "no answer"
+            try {
+                val (code, text) = Http.send("POST", url, body)
+                ok = code in 200..299 && (try { JSONObject(text).optBoolean("ok", true) } catch (_: Exception) { true })
+                why = if (ok) "ok" else "HTTP $code ${text.take(120)}"
+                android.util.Log.d("MyListsTV", "${url.substringAfter("/api/")} -> $code ${text.take(160)}")
+            } catch (e: Exception) { why = e.message ?: "network error"; android.util.Log.d("MyListsTV", "${url.substringAfter("/api/")} failed: $why") }
+            if (result != null) Http.post { result(ok, why) }
+        }
     }
 
     /** Sends at most once a minute unless [force] (leaving the player, or the end of the title). */

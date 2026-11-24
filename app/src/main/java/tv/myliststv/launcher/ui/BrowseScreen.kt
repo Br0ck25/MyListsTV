@@ -61,7 +61,7 @@ class BrowseScreen(
 
     fun start() {
         rows.clear()
-        if (withContinue) { addContinue(); addAiring() }
+        if (withContinue) { continueRow()?.let { rows += it }; airingRow()?.let { rows += it } }
         val hidden = Prefs.homeHidden
         val defs = Catalogs.browseRows(type, 8).filter { (_, cat) -> Catalogs.rowTitle(type, cat) !in hidden }
         if (defs.isEmpty() && Catalogs.enabled().isEmpty()) {
@@ -115,16 +115,30 @@ class BrowseScreen(
         tv.myliststv.launcher.ui.Pop.toast(c, if (Prefs.accountLink.isNotEmpty()) "Marked watched, and added to My Lists" else "Marked watched")
     }
 
-    private fun addContinue() {
-        if (!Prefs.showContinue || "Continue Watching" in Prefs.homeHidden) return
+    private var continueSig = ""
+    private var airingSig = ""
+
+    /** What Continue Watching holds: the saved entries, minus the next-up episodes that Airing Next already shows (when that is turned on in Settings). */
+    private fun continueEntries(): List<WatchStore.Entry> {
+        if (!Prefs.showContinue || "Continue Watching" in Prefs.homeHidden) return emptyList()
         val cw = WatchStore.continueWatching()
-        if (cw.isEmpty()) return
+        if (!(Prefs.showAiring && "Airing Next" !in Prefs.homeHidden && Prefs.hideUpcomingContinue)) return cw
+        val upcoming = Progress.airing()
+        return cw.filter { e -> !(e.durationMs == 0L && upcoming.any { it.id == e.metaId && it.season == e.season && it.episode == e.episode }) }
+    }
+
+    private fun continueSignature(l: List<WatchStore.Entry>) = l.joinToString(";") { "${it.metaId}|${it.videoId}|${it.positionMs}|${it.durationMs}" }
+    private fun airingSignature(): String = if (!Prefs.showAiring || "Airing Next" in Prefs.homeHidden) "" else Progress.airing().joinToString(";") { "${it.id}|${it.season}|${it.episode}|${it.airDate}" }
+
+    private fun continueRow(): RowModel? {
+        val cw = continueEntries()
+        continueSig = continueSignature(cw)
+        if (cw.isEmpty()) return null
         val models = cw.map { e ->
             val sub = if (e.type == "series" && e.season >= 0) "S${e.season} · E${e.episode}" else "Movie"
             CardModel(e.name, e.background ?: e.poster, if (e.durationMs == 0L) "Next up · $sub" else "$sub · ${(e.fraction * 100).toInt()}% watched", e.fraction, e, badgeEnd = EpisodesLeft.timeLeft(e))
         }
         val row = RowModel("Continue Watching", "This device", CardKind.WIDE, models)
-        rows.add(row)
         // Episodes left needs the show's episode list: ask for it per show and redraw just that card (the row is not rebuilt, so focus stays).
         cw.forEachIndexed { i, e ->
             if (e.type != "series") return@forEachIndexed
@@ -138,23 +152,24 @@ class BrowseScreen(
                 if (row in rows) row.adapter?.notifyItemChanged(i)
             }
         }
+        return row
     }
 
     /** The next episode of each followed show, soonest first. Tapping one opens the show. */
-    private fun addAiring() {
-        if (!Prefs.showAiring || "Airing Next" in Prefs.homeHidden) return
+    private fun airingRow(): RowModel? {
+        airingSig = airingSignature()
+        if (airingSig.isEmpty()) return null
         val a = Progress.airing()
-        if (a.isEmpty()) return
         val day = java.text.SimpleDateFormat("EEE, MMM d", java.util.Locale.US); val parse = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-        rows.add(RowModel("Airing Next", "From your account", CardKind.WIDE, a.map { s ->
+        return RowModel("Airing Next", "From your account", CardKind.WIDE, a.map { s ->
             val date = try { day.format(parse.parse(s.airDate)!!) } catch (_: Exception) { s.airDate }
             val tag = if (s.premiere) "Season premiere" else if (s.finale) "Season finale" else "S${s.season} \u00b7 E${s.episode}"
             CardModel(s.name, s.still ?: s.poster, "$tag \u00b7 $date", 0f, Meta(s.id, "series", s.name, s.poster, s.still))
-        }))
+        })
     }
 
     /** The account's watched list arrived: redraw the cards so their check marks show, without reloading any row. */
-    fun refreshChecks() = list.changedAll()
+    fun refreshChecks() { rows.forEach { r -> r.adapter?.let { it.notifyItemRangeChanged(0, r.items.size) } } }
 
     /** Down from the tab bar lands on the first row's remembered card. False when the rows are not there yet (the default focus move then applies). */
     fun enter() = list.enter()
@@ -173,14 +188,29 @@ class BrowseScreen(
         return true
     }
 
-    /** Called when coming back from the player, or when the account's lists arrive, so they show without reloading catalogs. */
+    /**
+     * Called when coming back to Home, and when the account's lists arrive. Only a row whose contents really changed is touched, and
+     * only that row is redrawn: every other row (and the focus, and where you were in the page) stays exactly as it is.
+     */
     fun refreshContinue() {
         if (!withContinue) return
-        rows.removeAll { it.title == "Continue Watching" || it.title == "Airing Next" }
-        addContinue(); addAiring()
-        rows.sortBy { Prefs.homeRank(it.title) }
-        list.changedAll()
+        val cw = continueEntries()
+        if (continueSignature(cw) != continueSig) swapRow("Continue Watching", continueRow())
+        if (airingSignature() != airingSig) swapRow("Airing Next", airingRow())
     }
+
+    private fun swapRow(title: String, row: RowModel?) {
+        val at = rows.indexOfFirst { it.title == title }
+        when {
+            at >= 0 && row == null -> { rows.removeAt(at); list.removed(at) }
+            at >= 0 && row != null -> { row.lastPos = rows[at].lastPos.coerceAtMost((row.items.size - 1).coerceAtLeast(0)); rows[at] = row; list.changed(at) }
+            row != null -> { rows.add(row); rows.sortBy { Prefs.homeRank(it.title) }; list.inserted(rows.indexOf(row)) }
+        }
+    }
+
+    /** Back on this page with nothing focused (the page behind a details page, say): the card you were last on. */
+    fun restoreFocus() = list.restoreFocus()
+
 
     private var heroId: String? = null
 

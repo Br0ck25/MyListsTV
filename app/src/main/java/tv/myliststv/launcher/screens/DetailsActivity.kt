@@ -36,6 +36,9 @@ class DetailsActivity : Activity() {
     private lateinit var extras: TextView
     private lateinit var panel: LinearLayout
     private lateinit var scroll: ScrollView
+    private var autoHidden = false
+    private var resumedOnce = false
+    private fun reveal() { if (autoHidden) { autoHidden = false; scroll.visibility = View.VISIBLE; buttons.getChildAt(0)?.requestFocus() } }
     private var episodesView: View? = null
     private var season = -1
     private var buttonsSig = ""
@@ -86,7 +89,7 @@ class DetailsActivity : Activity() {
         render()
         Catalogs.meta(meta.type, meta.id, meta) { m -> if (m != null && !isFinishing) { meta = m; render() } }
         val auto = intent.getStringExtra("play")
-        if (auto != null) frame.post { playVideo(auto) }
+        if (auto != null) { autoHidden = true; scroll.visibility = View.INVISIBLE; frame.post { playVideo(auto) } }   // straight to playing: the page stays out of sight until you come back to it
     }
 
     private fun render() {
@@ -171,17 +174,38 @@ class DetailsActivity : Activity() {
         if (people().isNotEmpty()) panel.addView(castSection())
     }
 
-    /** Redraws just the episodes (another season, a changed tick) and puts focus back on [episode] in the strip, or else on the selected season's chip. */
-    private fun refreshEpisodes(episode: Int = -1) {
-        val old = episodesView ?: return
-        // Swapping the strip must not move the page: hold its height and its scroll place until the new one is laid out.
-        val keepY = scroll.scrollY; panel.minimumHeight = panel.height
-        val at = panel.indexOfChild(old)
-        val fresh = episodesPanel(); episodesView = fresh
-        panel.removeViewAt(at); panel.addView(fresh, at)
-        scroll.post { scroll.scrollTo(0, keepY); panel.minimumHeight = 0 }
-        if (episode >= 0) fresh.findViewWithTag<RecyclerView>("episodes")?.let { rv -> rv.scrollToPosition(episode); rv.post { rv.findViewHolderForAdapterPosition(episode)?.itemView?.requestFocus() } }
-        else fresh.findViewWithTag<LinearLayout>("seasons")?.let { chips -> (0 until chips.childCount).map { chips.getChildAt(it) }.firstOrNull { it.isSelected }?.requestFocus() }
+    private var seasonList: List<Int> = emptyList()
+
+    /** The cards of the season on show. */
+    private fun seasonModels(): List<CardModel> {
+        val resume = WatchStore.forMeta(meta.id)
+        return meta.videos.filter { it.season == season }.map { v ->
+            CardModel(v.title, v.thumbnail, v.overview, if (resume?.videoId == v.id) resume.fraction else 0f, v, badge = episodeBadge(v), done = Watched.has(meta.id, v.id))
+        }
+    }
+
+    private fun episodeAdapter(rv: RecyclerView): CardAdapter {
+        // The page scrolls just enough to show the focused card, which leaves its ring and grow-room under the screen edge: ask for the whole strip plus a margin.
+        val showAll = { rv.requestRectangleOnScreen(android.graphics.Rect(0, 0, rv.width, rv.height + Ui.dp(this, 24)), false); Unit }
+        return CardAdapter(CardKind.EPISODE, seasonModels(), lite, { showAll() }, { m -> (m.payload as? Video)?.let { playVideo(it.id) } }, { m -> (m.payload as? Video)?.let { episodeMenu(it) } })
+    }
+
+    /**
+     * Another season, shown in place: the chips and the strip stay where they are (and so does the page and the focus), only the
+     * selected chip and the cards change. Nothing is rebuilt, so nothing can scroll.
+     */
+    private fun showSeason() {
+        val col = episodesView ?: return
+        col.findViewWithTag<LinearLayout>("seasons")?.let { chips -> for (k in 0 until chips.childCount) chips.getChildAt(k).isSelected = seasonList.getOrNull(k) == season }
+        col.findViewWithTag<RecyclerView>("episodes")?.let { rv -> rv.adapter = episodeAdapter(rv); rv.scrollToPosition(0) }
+    }
+
+    /** One episode's check mark changed: only its card is redrawn. */
+    private fun refreshEpisodeCard(v: Video) {
+        val rv = episodesView?.findViewWithTag<RecyclerView>("episodes") ?: return
+        val ad = rv.adapter as? CardAdapter ?: return
+        val i = meta.videos.filter { it.season == season }.indexOfFirst { it.id == v.id }
+        if (i >= 0) ad.refresh(i) { it.done = Watched.has(meta.id, v.id) }
     }
 
     private fun strip(h: Int): RecyclerView = RecyclerView(this).apply {
@@ -198,12 +222,13 @@ class DetailsActivity : Activity() {
         val c = this
         val col = Ui.vbox(c).apply { clipChildren = false }
         val seasons = meta.videos.map { it.season }.distinct().filter { it > 0 }.ifEmpty { meta.videos.map { it.season }.distinct() }
+        seasonList = seasons
         if (seasons.isEmpty()) return col.apply { addView(Ui.text(c, "No episode list yet. It loads from your catalog addon.", 13f, Ui.DIM)) }
         val resume = WatchStore.forMeta(meta.id)
         if (season !in seasons) season = resume?.season?.takeIf { it in seasons } ?: seasons.first()
         val chipsRow = Ui.hbox(c, 8)
         seasons.forEach { s ->
-            chipsRow.addView(Ui.button(c, if (s == 0) "Specials" else "Season $s") { season = s; refreshEpisodes() }.apply {
+            chipsRow.addView(Ui.button(c, if (s == 0) "Specials" else "Season $s") { season = s; showSeason() }.apply {
                 isSelected = s == season
                 // Focus on a season shows the seasons and the episodes under them whole, not the chips half under the screen's edge.
                 setOnFocusChangeListener { _, f -> if (f) col.requestRectangleOnScreen(android.graphics.Rect(0, 0, col.width, col.height + Ui.dp(c, 24)), false) }
@@ -211,15 +236,7 @@ class DetailsActivity : Activity() {
         }
         chipsRow.tag = "seasons"
         col.addView(HorizontalScrollView(c).apply { isHorizontalScrollBarEnabled = false; addView(chipsRow) })
-        val models = meta.videos.filter { it.season == season }.map { v ->
-            CardModel(v.title, v.thumbnail, v.overview, if (resume?.videoId == v.id) resume.fraction else 0f, v, badge = episodeBadge(v), done = Watched.has(meta.id, v.id))
-        }
-        col.addView(strip(190).apply {
-            tag = "episodes"
-            // The page scrolls just enough to show the focused card, which leaves its ring and grow-room under the screen edge: ask for the whole strip plus a margin.
-            val showAll = { requestRectangleOnScreen(android.graphics.Rect(0, 0, width, height + Ui.dp(c, 24)), false); Unit }
-            adapter = CardAdapter(CardKind.EPISODE, models, lite, { showAll() },{ m -> (m.payload as? Video)?.let { playVideo(it.id) } }, { m -> (m.payload as? Video)?.let { episodeMenu(it) } })
-        })
+        col.addView(strip(190).apply { tag = "episodes"; adapter = episodeAdapter(this) })
         return col
     }
 
@@ -240,14 +257,23 @@ class DetailsActivity : Activity() {
 
     /** Ticks or un-ticks one episode here and in the account, then redraws only what changed: its card, and the Play button (which names the next episode to watch). */
     private fun setEpisodeWatched(v: Video, watched: Boolean) {
-        Watched.set(meta.id, v.id, watched); Progress.markWatched(meta.id, "series", v.season, v.episode, watched)
-        if (!watched) {
-            // "Next" must not stay on a later episode than the one just taken off.
-            val r = WatchStore.forMeta(meta.id)
-            if (r != null && meta.videos.indexOfFirst { it.id == r.videoId } > meta.videos.indexOfFirst { it.id == v.id }) WatchStore.remove(meta.id)
+        Watched.set(meta.id, v.id, watched)
+        Progress.markWatched(meta.id, "series", v.season, v.episode, watched) { ok, why -> if (!ok) tv.myliststv.launcher.ui.Pop.toast(this, "My Lists did not accept that: $why", true) }
+        val r = WatchStore.forMeta(meta.id)
+        val order = meta.videos.filter { it.season > 0 }.ifEmpty { meta.videos }
+        val at = order.indexOfFirst { it.id == v.id }
+        if (r != null && at >= 0) {
+            val rAt = order.indexOfFirst { it.id == r.videoId }
+            if (!watched && rAt > at) WatchStore.remove(meta.id)   // "Next" must not stay on a later episode than the one just taken off
+            if (watched && rAt == at) {
+                // The episode being watched is now done: the next one becomes "next up", or there is nothing left to continue.
+                val next = order.getOrNull(at + 1)
+                if (next == null) WatchStore.remove(meta.id)
+                else WatchStore.save(r.copy(videoId = next.id, season = next.season, episode = next.episode, episodeTitle = next.title, positionMs = 0L, durationMs = 0L, updated = System.currentTimeMillis()))
+            }
         }
         buttonsSig = ""; render()
-        refreshEpisodes(meta.videos.filter { it.season == season }.indexOfFirst { it.id == v.id })
+        refreshEpisodeCard(v)
     }
 
     /** Cast & Crew, labelled, under the episodes (or on its own for a movie). */
@@ -277,7 +303,7 @@ class DetailsActivity : Activity() {
         val episodes = meta.videos.filter { it.season > 0 }.ifEmpty { meta.videos }
         val resume = WatchStore.forMeta(meta.id)
         val cur = resume?.let { r -> episodes.firstOrNull { it.id == r.videoId } }
-        if (cur != null && resume.fraction < 0.93f) return cur
+        if (cur != null && resume.fraction < 0.93f && !Watched.has(meta.id, cur.id)) return cur
         return episodes.firstOrNull { !Watched.has(meta.id, it.id) && (cur == null || episodes.indexOf(it) > episodes.indexOf(cur)) } ?: episodes.firstOrNull { !Watched.has(meta.id, it.id) } ?: episodes.firstOrNull()
     }
 
@@ -288,7 +314,7 @@ class DetailsActivity : Activity() {
 
     /** Finds streams, picks the best, and starts the player. With auto-pick off it opens the stream list instead. */
     private fun playVideo(videoId: String) {
-        if (!Prefs.autoPick) { openSources(videoId); return }
+        if (!Prefs.autoPick) { reveal(); openSources(videoId); return }
         val v = videoFor(videoId)
         showBusy("Finding the best source\u2026")
         var started = false
@@ -334,6 +360,7 @@ class DetailsActivity : Activity() {
 
     /** Says why nothing played and offers the next step: add an addon when there is none, or try again when they answered with nothing. */
     private fun noStreams(videoId: String, statuses: List<StreamResolver.AddonStatus>) {
+        reveal()
         if (statuses.isEmpty()) Sheet.message(this, "Add a stream addon",
             "My Lists TV found your lists, but it needs a stream addon to find something to play. Add one in Settings, then Addons. You can paste its link from your phone.",
             Sheet.Act("Open Addons", true) { startActivity(Intent(this, SettingsActivity::class.java).putExtra("open", "addons")) }, Sheet.Act("Close"))
@@ -343,13 +370,18 @@ class DetailsActivity : Activity() {
 
     private fun showBusy(msg: String) {
         dismissBusy()
-        busy = Sheet.busy(this, msg) { session?.cancelled = true }
+        busy = Sheet.busy(this, msg) { session?.cancelled = true; reveal() }
     }
 
     private fun dismissBusy() { busy?.dismiss(); busy = null }
 
     /** Coming back from the player: the tick and the Next button move on. */
-    override fun onResume() { super.onResume(); if (::meta.isInitialized && ::buttons.isInitialized) { tabsSig = ""; render() } }
+    override fun onResume() {
+        super.onResume()
+        if (resumedOnce) reveal()   // back from the player: now show the details page
+        resumedOnce = true
+        if (::meta.isInitialized && ::buttons.isInitialized) { tabsSig = ""; render() }
+    }
 
     override fun onDestroy() { session?.cancelled = true; dismissBusy(); super.onDestroy() }
 

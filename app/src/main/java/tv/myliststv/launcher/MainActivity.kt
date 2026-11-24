@@ -78,7 +78,7 @@ class MainActivity : Activity() {
         val l = Profiles.all()
         Sheet.menu(this, "Who is watching?", null, l.map { p ->
             (p.name + if (p.kids) " (kids)" else "") to {
-                Profiles.switchTo(this, p.id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }; Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
+                Profiles.switchTo(this, p.id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { dropPages(); select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }; Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
             }
         })
     }
@@ -302,14 +302,18 @@ class MainActivity : Activity() {
         setTextColor(Ui.DIM)
     }
 
-    /** Home, Movies and Series stay built for a few minutes, so going back to one is not a reload (and keeps its place). Anything that changes what they show clears them. */
-    private val pages = HashMap<Int, Pair<BrowseScreen, Long>>()
+    /** Home, Movies, Series and Search stay built for a few minutes, so going back to one is not a reload and keeps its place and its focus. */
+    private class Kept(val screen: Any, val view: View, val at: Long)
+    private val pages = HashMap<Int, Kept>()
     private val PAGE_KEEP_MS = 5 * 60_000L
+
+    /** What the pages show changed (addons, profile, settings): none of the built pages is right any more. */
+    private fun dropPages() = pages.clear()
 
     private fun select(i: Int, force: Boolean = false) {
         if (!ready) return
         if (i == current && !force) return
-        if (force) pages.clear()
+        if (force) pages.remove(i)
         current = i
         tabViews.forEachIndexed { idx, v -> v.isSelected = navStyle != 0 && idx == i; if (!v.isFocused) v.setTextColor(if (idx == i) Ui.TEXT else Ui.DIM) }
         refreshRailTint()
@@ -317,22 +321,24 @@ class MainActivity : Activity() {
         content.removeAllViews()
         screen = null
         showBackdrop(i in 0..4)
+        val kept = pages[i]
+        if (kept != null && System.currentTimeMillis() - kept.at < PAGE_KEEP_MS) {
+            screen = kept.screen; content.addView(kept.view)
+            (kept.screen as? BrowseScreen)?.refreshContinue()   // only what changed while you were away
+            return
+        }
+        fun keep(s: Any, v: View) {
+            pages[i] = Kept(s, v, System.currentTimeMillis())
+            // Only the three newest pages stay built (a small box has little memory to spare).
+            while (pages.size > 3) pages.minByOrNull { it.value.at }?.let { pages.remove(it.key) }
+        }
         when (i) {
             0, 1, 2 -> {
-                val kept = pages[i]
-                if (kept != null && System.currentTimeMillis() - kept.second < PAGE_KEEP_MS) {
-                    screen = kept.first; content.addView(kept.first.view)
-                    if (i == 0) kept.first.refreshContinue()   // what you watched meanwhile
-                    return
-                }
                 val s = BrowseScreen(this, type = when (i) { 1 -> "movie"; 2 -> "series"; else -> null }, withContinue = i == 0, withApps = i == 0,
                     onMeta = ::openMeta, onResume = ::resumeEntry, onApp = ::launch, onAppMenu = ::appMenu, onBackdrop = ::setBackdrop)
-                screen = s; content.addView(s.view); s.start()
-                pages[i] = s to System.currentTimeMillis()
-                // Only the two newest pages stay built (a small box has little memory to spare).
-                while (pages.size > 2) pages.minByOrNull { it.value.second }?.let { pages.remove(it.key) }
+                screen = s; content.addView(s.view); s.start(); keep(s, s.view)
             }
-            3 -> { val s = SearchScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start() }
+            3 -> { val s = SearchScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start(); keep(s, s.view) }
             4 -> { val s = LibraryScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start() }
             5 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
         }
@@ -341,13 +347,13 @@ class MainActivity : Activity() {
     private var lastHome = 0L
     private var lastSync = 0L
 
-    private fun reloadAddons() { AddonStore.needsRefresh = false; AddonStore.load { select(current.coerceAtLeast(0), force = true) } }
+    private fun reloadAddons() { AddonStore.needsRefresh = false; AddonStore.load { dropPages(); select(current.coerceAtLeast(0), force = true) } }
 
     /** Where a mapped remote button sends the launcher. */
     private fun go(where: String) {
         val tab = listOf("home", "movies", "series", "search", "library", "apps").indexOf(where)
         when {
-            tab >= 0 -> { select(tab, force = true); tabViews[tab].requestFocus() }
+            tab >= 0 -> { select(tab); tabViews[tab].requestFocus() }
             where == "settings" -> startActivity(Intent(this, SettingsActivity::class.java))
             where == "profiles" -> pickProfile()
         }
@@ -396,7 +402,7 @@ class MainActivity : Activity() {
         Library.pull { if (current == 4) select(4, force = true) }
         SetupSync.pull { reloadAddons() }
         Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
-        AccountWatched.pull { (screen as? BrowseScreen)?.refreshChecks(); if (current >= 3) select(current, force = true) }
+        AccountWatched.pull { (screen as? BrowseScreen)?.refreshChecks(); if (current >= 4) select(current, force = true) }
     }
 
     override fun onResume() {
@@ -409,9 +415,11 @@ class MainActivity : Activity() {
         }
         if (::bellBadge.isInitialized) updateBell()
         if (::profileName.isInitialized) updateProfile()
-        if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; if (ready && current >= 0) select(current, force = true) }
-        if (AddonStore.needsRefresh) { AddonStore.needsRefresh = false; AddonStore.load { select(current.coerceAtLeast(0), force = true) } }
+        if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; dropPages(); if (ready && current >= 0) select(current, force = true) }
+        if (AddonStore.needsRefresh) { AddonStore.needsRefresh = false; AddonStore.load { dropPages(); select(current.coerceAtLeast(0), force = true) } }
         (screen as? BrowseScreen)?.refreshContinue()
+        // Back from a details page: nothing is focused now, so put the focus where it was (otherwise Down lands on whatever sits under the pointer).
+        content.post { if (ready && currentFocus == null) { if ((screen as? BrowseScreen)?.restoreFocus() != true) tabViews.getOrNull(current)?.requestFocus() } }
     }
 
     private var pendingHome: Runnable? = null

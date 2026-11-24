@@ -18,7 +18,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     33   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
     39   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (576 lines) - The home screen.
+## MainActivity.kt (584 lines) - The home screen.
     31 class MainActivity  - The home screen.
     58   fun updateBell()
     60   fun updateProfile()
@@ -37,34 +37,35 @@ Find a symbol with grep on this file, then read only that file around the line n
    283   fun refreshRailTint()  - While the strip is slim only the icons show: the open page's is blue, the others dim.
    288   fun sideItems()
    292   fun tabView(t: String)
-   309   fun select(i: Int, force: Boolean = false)
-   344   fun reloadAddons()
-   347   fun go(where: String)  - Where a mapped remote button sends the launcher.
-   356   fun openMeta(m: Meta)
-   360   fun resumeEntry(e: WatchStore.Entry)
-   365   fun launch(a: AppEntry)
-   374   fun appMenu(a: AppEntry)
-   389   fun onPause()
-   392   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
-   402   fun onResume()
-   421   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
-   429   fun onNewIntent(intent: Intent)
-   449   fun onBackPressed()
-   472   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
-   479   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
-   490   fun dispatchKeyEvent(e: KeyEvent)
-   520   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
-   526   fun isIn(v: View, container: View)
-   527   fun isInContent(v: View)
-   530   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
-   536   fun openSide()
-   537   fun closeSide()
-   540   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
-   560   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   565   fun onDestroy()
-   567   fun onTrimMemory(level: Int)
-   574   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
-   575   fun setTextColor(color: Int)
+   311   fun dropPages()  - What the pages show changed (addons, profile, settings): none of the built pages is right any more.
+   313   fun select(i: Int, force: Boolean = false)
+   350   fun reloadAddons()
+   353   fun go(where: String)  - Where a mapped remote button sends the launcher.
+   362   fun openMeta(m: Meta)
+   366   fun resumeEntry(e: WatchStore.Entry)
+   371   fun launch(a: AppEntry)
+   380   fun appMenu(a: AppEntry)
+   395   fun onPause()
+   398   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
+   408   fun onResume()
+   429   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
+   437   fun onNewIntent(intent: Intent)
+   457   fun onBackPressed()
+   480   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
+   487   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
+   498   fun dispatchKeyEvent(e: KeyEvent)
+   528   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
+   534   fun isIn(v: View, container: View)
+   535   fun isInContent(v: View)
+   538   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
+   544   fun openSide()
+   545   fun closeSide()
+   548   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
+   568   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   573   fun onDestroy()
+   575   fun onTrimMemory(level: Int)
+   582   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
+   583   fun setTextColor(color: Int)
 
 ## data/AccountWatched.kt (127 lines) - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
     12 object AccountWatched  - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
@@ -330,7 +331,7 @@ Find a symbol with grep on this file, then read only that file around the line n
      7   fun describe(httpStatus: Int?, kind: Kind)
     19   fun worthTryingAnotherSource(httpStatus: Int?, kind: Kind)  - True when a different source is likely to help, so fallback should run.
 
-## data/Prefs.kt (189 lines) - All user settings in one place.
+## data/Prefs.kt (193 lines) - All user settings in one place.
      8 object Prefs  - All user settings in one place.
     16   fun init(c: Context)
     21   var liteMode
@@ -362,23 +363,24 @@ Find a symbol with grep on this file, then read only that file around the line n
    108   var buttonMapOff
    113   fun recallTracks(metaId: String?)  - The audio and subtitle language the viewer last chose for a title, so the next episode starts the same way.
    116   fun rememberTrack(metaId: String?, audio: Boolean, lang: String)
-   123   var showAiring  - The "Airing Next" row on Home: the next episode of shows the account follows, soonest first.
-   128   var airingJson  - The last Airing Next answer for the profile in use (JSON), so Home shows it at once.
-   132   var showContinue
-   137   var backupCode  - Recovery code for this box's online backup.
-   142   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
-   147   var accountName  - The My Lists account name of the profile in use, shown as "Signed in as ...".
-   152   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
-   154   var lastBackup
-   159   fun forget(id: String)  - Forgets what a removed profile kept here.
-   162   fun export()  - Settings as JSON for a backup.
-   164   fun import(o: org.json.JSONObject)
-   170   var setupDone
-   174   var advanced
-   178   fun isLowRamBox()
-   183   fun lite()
-   186   fun effectiveMaxResolution()  - The highest resolution to prefer.
-   188   fun memoryCacheBytes()
+   124   var hideUpcomingContinue  - With Airing Next on: a next-up episode that Airing Next already lists is left out of Continue Watching.
+   127   var showAiring
+   132   var airingJson  - The last Airing Next answer for the profile in use (JSON), so Home shows it at once.
+   136   var showContinue
+   141   var backupCode  - Recovery code for this box's online backup.
+   146   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
+   151   var accountName  - The My Lists account name of the profile in use, shown as "Signed in as ...".
+   156   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
+   158   var lastBackup
+   163   fun forget(id: String)  - Forgets what a removed profile kept here.
+   166   fun export()  - Settings as JSON for a backup.
+   168   fun import(o: org.json.JSONObject)
+   174   var setupDone
+   178   var advanced
+   182   fun isLowRamBox()
+   187   fun lite()
+   190   fun effectiveMaxResolution()  - The highest resolution to prefer.
+   192   fun memoryCacheBytes()
 
 ## data/Profiles.kt (76 lines) - Viewer profiles.
      9 object Profiles  - Viewer profiles.
@@ -399,7 +401,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     73   fun allows(m: Meta)
     75   fun safeForKids(m: Meta)
 
-## data/Progress.kt (109 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
+## data/Progress.kt (123 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
     11 object Progress  - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
     16   fun request(link: String, e: WatchStore.Entry)  - The request for this play, or null when it should not be sent (no account, no IMDb id, a start, or live TV).
     29   class Airing  - The account's Continue Watching as a launcher entry.
@@ -410,7 +412,8 @@ Find a symbol with grep on this file, then read only that file around the line n
     83   fun wholeShowRequest(link: String, metaId: String, watched: Boolean, now: Long)  - The request that marks a whole show watched (every aired episode) or takes it all off, or null when signed out
     90   fun markWholeShow(metaId: String, watched: Boolean)
     96   fun markWatched(metaId: String, type: String, season: Int, episode: Int, watched  - A title or episode marked watched (or not watched) by hand also goes to the account's watched history, so the 
-   102   fun report(e: WatchStore.Entry, force: Boolean)  - Sends at most once a minute unless [force] (leaving the player, or the end of the title).
+   102   fun send(url: String, body: String, result: ((Boolean, String)  - Sends one request to the account and says how it went: [result] gets (accepted, a short reason) on the main th
+   116   fun report(e: WatchStore.Entry, force: Boolean)  - Sends at most once a minute unless [force] (leaving the player, or the end of the title).
 
 ## data/Secure.kt (56 lines) - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
     18 object Secure  - Wraps secrets (addon links that carry debrid keys, the backup recovery code) with a key that lives in the Andr
@@ -520,37 +523,41 @@ Find a symbol with grep on this file, then read only that file around the line n
    112   fun persist()
    115   fun onBackPressed()
 
-## screens/DetailsActivity.kt (385 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
+## screens/DetailsActivity.kt (417 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     25 class DetailsActivity  - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
-    48   fun onCreate(savedInstanceState: Bundle?)
-    92   fun render()
-   146   fun statusLabel()
-   149   fun nextEpisodeLine()  - "Next episode: S4 \u00b7 E6 \u00b7 Friday, Nov 19" for the first episode that has not aired yet.
-   155   fun chip(text: String)
-   161   fun people()  - People shown in Cast & crew: directors first, then writers, then cast, each name once.
-   165   fun renderPanel()  - The episodes (series) with Cast & Crew under them.
-   175   fun refreshEpisodes(episode: Int = -1)  - Redraws just the episodes (another season, a changed tick) and puts focus back on [episode] in the strip, or e
-   187   fun strip(h: Int)
-   197   fun episodesPanel()
-   227   fun episodeBadge(v: Video)  - "EPISODE 6" with its air date: "Nov 12, 2026" once aired, "AIRS Nov 19, 2026" before.
-   234   fun episodeMenu(v: Video)  - Hold OK on an episode: choose a source, or mark it watched or not.
-   242   fun setEpisodeWatched(v: Video, watched: Boolean)  - Ticks or un-ticks one episode here and in the account, then redraws only what changed: its card, and the Play 
-   254   fun castSection()  - Cast & Crew, labelled, under the episodes (or on its own for a movie).
-   260   fun openTrailer(id: String)  - Plays the trailer in the app (TrailerActivity), which hands over to the YouTube app only when YouTube will not
-   262   fun toggleWatched(watched: Boolean)
-   272   fun mainVideoId()  - The episode to play from the main button: where the viewer left off, else the first one.
-   275   fun mainVideo()  - Series: the episode being watched, else the first one not finished yet, else the first.
-   284   fun playMain()
-   285   fun sourcesMain()
-   287   fun videoFor(id: String)
-   290   fun playVideo(videoId: String)  - Finds streams, picks the best, and starts the player.
-   320   fun openSources(videoId: String)
-   324   fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: Stre
-   336   fun noStreams(videoId: String, statuses: List<StreamResolver.AddonStatus>)  - Says why nothing played and offers the next step: add an addon when there is none, or try again when they answ
-   344   fun showBusy(msg: String)
-   349   fun dismissBusy()
-   352   fun onResume()  - Coming back from the player: the tick and the Next button move on.
-   354   fun onDestroy()
+    41   fun reveal()
+    51   fun onCreate(savedInstanceState: Bundle?)
+    95   fun render()
+   149   fun statusLabel()
+   152   fun nextEpisodeLine()  - "Next episode: S4 \u00b7 E6 \u00b7 Friday, Nov 19" for the first episode that has not aired yet.
+   158   fun chip(text: String)
+   164   fun people()  - People shown in Cast & crew: directors first, then writers, then cast, each name once.
+   168   fun renderPanel()  - The episodes (series) with Cast & Crew under them.
+   180   fun seasonModels()  - The cards of the season on show.
+   187   fun episodeAdapter(rv: RecyclerView)
+   197   fun showSeason()  - Another season, shown in place: the chips and the strip stay where they are (and so does the page and the focu
+   204   fun refreshEpisodeCard(v: Video)  - One episode's check mark changed: only its card is redrawn.
+   211   fun strip(h: Int)
+   221   fun episodesPanel()
+   244   fun episodeBadge(v: Video)  - "EPISODE 6" with its air date: "Nov 12, 2026" once aired, "AIRS Nov 19, 2026" before.
+   251   fun episodeMenu(v: Video)  - Hold OK on an episode: choose a source, or mark it watched or not.
+   259   fun setEpisodeWatched(v: Video, watched: Boolean)  - Ticks or un-ticks one episode here and in the account, then redraws only what changed: its card, and the Play 
+   280   fun castSection()  - Cast & Crew, labelled, under the episodes (or on its own for a movie).
+   286   fun openTrailer(id: String)  - Plays the trailer in the app (TrailerActivity), which hands over to the YouTube app only when YouTube will not
+   288   fun toggleWatched(watched: Boolean)
+   298   fun mainVideoId()  - The episode to play from the main button: where the viewer left off, else the first one.
+   301   fun mainVideo()  - Series: the episode being watched, else the first one not finished yet, else the first.
+   310   fun playMain()
+   311   fun sourcesMain()
+   313   fun videoFor(id: String)
+   316   fun playVideo(videoId: String)  - Finds streams, picks the best, and starts the player.
+   346   fun openSources(videoId: String)
+   350   fun startPlayer(videoId: String, v: Video?, ranked: List<StreamItem>, pick: Stre
+   362   fun noStreams(videoId: String, statuses: List<StreamResolver.AddonStatus>)  - Says why nothing played and offers the next step: add an addon when there is none, or try again when they answ
+   371   fun showBusy(msg: String)
+   376   fun dismissBusy()
+   379   fun onResume()  - Coming back from the player: the tick and the Next button move on.
+   386   fun onDestroy()
 
 ## screens/PlayerActivity.kt (722 lines) - Full-screen player.
     36 class PlayerActivity  - Full-screen player.
@@ -609,7 +616,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    708   fun onStop()
    715   fun onDestroy()
 
-## screens/SettingsActivity.kt (530 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
+## screens/SettingsActivity.kt (531 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     27 class SettingsActivity  - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     32   fun card(title: String)  - A card inside a group (kind S): its title, then the rows that follow it up to the next card.
     35   fun header(t: String, subtitle: String = "", icon: Int = 0, divider: Boolean = f  - A group of the left list: its name, the line under the page title, its icon, and whether a divider line comes 
@@ -633,25 +640,25 @@ Find a symbol with grep on this file, then read only that file around the line n
    119   fun signIn()
    137   fun signOut()
    139   fun rows()
-   240   fun subPage()
-   250   fun showPhonePopup(addr: String)  - Manage from phone: a code to scan, with its address, and a way to close.
-   257   fun addonName(url: String)
-   259   fun provides(a: Addon)
-   270   fun addonsChanged()  - Reloads the addons, tells Home to reload, and redraws this page.
-   272   fun installAddon(link: String)
-   278   fun addonsRows()
-   305   fun addonRows(url: String)
-   320   fun profileRows()
-   345   fun checkUpdate()
-   356   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
-   358   fun onCreate(savedInstanceState: Bundle?)
-   374   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
-   400   fun railItem(g: Group, i: Int)
-   412   fun closeSubs()
-   414   fun buildPanel(keep: Int)
-   459   fun view(r: Row, changed: ()
-   520   fun onBackPressed()
-   529   fun onDestroy()
+   241   fun subPage()
+   251   fun showPhonePopup(addr: String)  - Manage from phone: a code to scan, with its address, and a way to close.
+   258   fun addonName(url: String)
+   260   fun provides(a: Addon)
+   271   fun addonsChanged()  - Reloads the addons, tells Home to reload, and redraws this page.
+   273   fun installAddon(link: String)
+   279   fun addonsRows()
+   306   fun addonRows(url: String)
+   321   fun profileRows()
+   346   fun checkUpdate()
+   357   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
+   359   fun onCreate(savedInstanceState: Bundle?)
+   375   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
+   401   fun railItem(g: Group, i: Int)
+   413   fun closeSubs()
+   415   fun buildPanel(keep: Int)
+   460   fun view(r: Row, changed: ()
+   521   fun onBackPressed()
+   530   fun onDestroy()
 
 ## screens/SetupActivity.kt (129 lines) - First run: one full screen per step (Home app, Home button, notifications, addons).
     25 class SetupActivity  - First run: one full screen per step (Home app, Home button, notifications, addons).
@@ -721,17 +728,22 @@ Find a symbol with grep on this file, then read only that file around the line n
     15 class AppsScreen  - Every installed app in a grid.
     24   fun start()
 
-## ui/BrowseScreen.kt (223 lines) - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
+## ui/BrowseScreen.kt (253 lines) - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
     18 class BrowseScreen  - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
     62   fun start()
    110   fun markWatched(e: WatchStore.Entry)  - Hold OK on a Continue Watching card, Mark as watched: the episode (or movie) is done, here and in the account'
-   118   fun addContinue()
-   144   fun addAiring()  - The next episode of each followed show, soonest first.
-   157   fun refreshChecks()  - The account's watched list arrived: redraw the cards so their check marks show, without reloading any row.
-   160   fun enter()  - Down from the tab bar lands on the first row's remembered card.
-   163   fun hideApp(pkg: String)  - Hide from Home: the app leaves the apps row where it is, and the focus moves to its neighbour.
-   177   fun refreshContinue()  - Called when coming back from the player, or when the account's lists arrive, so they show without reloading ca
-   187   fun hero(m: CardModel)
+   122   fun continueEntries()  - What Continue Watching holds: the saved entries, minus the next-up episodes that Airing Next already shows (wh
+   130   fun continueSignature(l: List<WatchStore.Entry>)
+   131   fun airingSignature()
+   133   fun continueRow()
+   159   fun airingRow()  - The next episode of each followed show, soonest first.
+   172   fun refreshChecks()  - The account's watched list arrived: redraw the cards so their check marks show, without reloading any row.
+   175   fun enter()  - Down from the tab bar lands on the first row's remembered card.
+   178   fun hideApp(pkg: String)  - Hide from Home: the app leaves the apps row where it is, and the focus moves to its neighbour.
+   195   fun refreshContinue()  - Called when coming back to Home, and when the account's lists arrive.
+   202   fun swapRow(title: String, row: RowModel?)
+   212   fun restoreFocus()  - Back on this page with nothing focused (the page behind a details page, say): the card you were last on.
+   217   fun hero(m: CardModel)
 
 ## ui/CardGrid.kt (33 lines) - The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spa
     13 object CardGrid  - The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spa
@@ -739,7 +751,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     20   fun columns(c: Context, bw: Int)  - How many cards of base width [bw] (Cards.kt: 118 poster, 208 wide or app) fit across, at the chosen card size.
     24   fun apply(rv: RecyclerView, c: Context, bw: Int, top: Int = 6, bottom: Int = 24)  - Puts [rv] in a grid of [bw]-wide cards, centred, with [top] and [bottom] space (in the same units as [Ui.dp]).
 
-## ui/Cards.kt (328 lines)
+## ui/Cards.kt (338 lines)
     22 class CardKind
     24 class CardModel
     41 class RowModel
@@ -750,22 +762,25 @@ Find a symbol with grep on this file, then read only that file around the line n
    165   class H
    167   fun set(newItems: List<CardModel>)
    169   fun payloads()
-   172   fun removeAt(i: Int)  - Takes one card out of the strip where it is, so the rest slide along and nothing else reloads.
-   175   fun move(from: Int, to: Int)  - Moves one card to another place (the list is changed in place, so the row's own model stays in step).
-   180   fun onCreateViewHolder(parent: ViewGroup, viewType: Int)
-   186   fun onBindViewHolder(h: H, position: Int)
-   202   fun getItemCount()
-   206 class RowView  - A titled row: heading, optional source label, horizontal strip.
-   232 class RowsList  - A vertical list of [RowView]s over [rows].
-   243   fun requestChildFocus(child: View?, focused: View?)  - Landing on a row shows it whole, title included: the first row goes to the very top, any other row is scrolled
-   252   fun rowOf(v: View)  - The row (a direct child of this list) that holds [v].
-   255   fun cardIn(next: RowView)  - The card to land on in [next]: the one you were last on in that row, or its first card if you have not been th
-   271   fun focusRowAt(target: Int, tries: Int = 0)  - A row that is not on screen yet (it was scrolled away): bring it in, then put the focus on its card.
-   280   fun focusSearch(focused: View, direction: Int)  - Up and down land on the card you last had focus on in the next row (its first card if you have not been there)
-   306   fun enter()  - Moving down from the tabs: the first row's remembered card (its first card if none), not whichever card happen
-   308   fun changed(i: Int)
-   309   fun changedAll()
-   310   fun inserted(i: Int)
+   172   fun refresh(i: Int, change: (CardModel)  - Changes one card's model and redraws just it (the card keeps the focus).
+   175   fun removeAt(i: Int)  - Takes one card out of the strip where it is, so the rest slide along and nothing else reloads.
+   178   fun move(from: Int, to: Int)  - Moves one card to another place (the list is changed in place, so the row's own model stays in step).
+   183   fun onCreateViewHolder(parent: ViewGroup, viewType: Int)
+   189   fun onBindViewHolder(h: H, position: Int)
+   205   fun getItemCount()
+   209 class RowView  - A titled row: heading, optional source label, horizontal strip.
+   235 class RowsList  - A vertical list of [RowView]s over [rows].
+   246   fun requestChildFocus(child: View?, focused: View?)  - Landing on a row shows it whole, title included: the first row goes to the very top, any other row is scrolled
+   256   fun rowOf(v: View)  - The row (a direct child of this list) that holds [v].
+   259   fun cardIn(next: RowView)  - The card to land on in [next]: the one you were last on in that row, or its first card if you have not been th
+   275   fun focusRowAt(target: Int, tries: Int = 0)  - A row that is not on screen yet (it was scrolled away): bring it in, then put the focus on its card.
+   284   fun focusSearch(focused: View, direction: Int)  - Up and down land on the card you last had focus on in the next row (its first card if you have not been there)
+   310   fun enter()  - Moving down from the tabs: the first row's remembered card (its first card if none), not whichever card happen
+   312   fun removed(i: Int)
+   316   fun restoreFocus()  - Nothing has the focus (coming back from another page): put it on the card you were last on.
+   318   fun changed(i: Int)
+   319   fun changedAll()
+   320   fun inserted(i: Int)
 
 ## ui/LibraryScreen.kt (49 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     11 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.

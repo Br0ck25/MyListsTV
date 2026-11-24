@@ -120,6 +120,10 @@ object Prefs {
     }
 
     /** The "Airing Next" row on Home: the next episode of shows the account follows, soonest first. */
+    /** With Airing Next on: a next-up episode that Airing Next already lists is left out of Continue Watching. */
+    var hideUpcomingContinue: Boolean
+        get() = sp.getBoolean("hideUpcomingContinue", true)
+        set(v) { sp.edit().putBoolean("hideUpcomingContinue", v).apply(); epoch++ }
     var showAiring: Boolean
         get() = sp.getBoolean("showAiring", true)
         set(v) { sp.edit().putBoolean("showAiring", v).apply(); epoch++ }

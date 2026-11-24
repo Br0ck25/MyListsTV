@@ -168,6 +168,9 @@ class CardAdapter(
 
     fun payloads(): List<Any?> = items.map { it.payload }
 
+    /** Changes one card's model and redraws just it (the card keeps the focus). */
+    fun refresh(i: Int, change: (CardModel) -> Unit) { items.getOrNull(i)?.let { change(it); notifyItemChanged(i) } }
+
     /** Takes one card out of the strip where it is, so the rest slide along and nothing else reloads. */
     fun removeAt(i: Int) { if (i !in items.indices) return; items = items.toMutableList().also { it.removeAt(i) }; notifyItemRemoved(i) }
 
@@ -243,6 +246,7 @@ class RowsList(
     override fun requestChildFocus(child: View?, focused: View?) {
         super.requestChildFocus(child, focused)
         if (child == null) return
+        getChildAdapterPosition(child).takeIf { it >= 0 }?.let { lastRow = it }
         // Only when it is not already in place: scrolling re-requests focus, which would otherwise loop.
         if (getChildAdapterPosition(child) == 0 && computeVerticalScrollOffset() != 0) post { smoothScrollBy(0, -computeVerticalScrollOffset()) }   // the same easing as scrolling down, not a jump
         else if (child.top < 0) post { if (child.isAttachedToWindow && child.top < 0) smoothScrollBy(0, child.top) }
@@ -304,6 +308,12 @@ class RowsList(
 
     /** Moving down from the tabs: the first row's remembered card (its first card if none), not whichever card happens to sit under the tab. */
     fun enter(): Boolean { val first = findViewHolderForAdapterPosition(0)?.itemView as? RowView ?: return false; return cardIn(first)?.requestFocus() == true }
+
+    fun removed(i: Int) = adapter!!.notifyItemRemoved(i)
+
+    private var lastRow = 0
+    /** Nothing has the focus (coming back from another page): put it on the card you were last on. False when something already has it. */
+    fun restoreFocus(): Boolean { if (findFocus() != null || rows.isEmpty()) return false; focusRowAt(lastRow.coerceIn(0, rows.size - 1)); return true }
 
     fun changed(i: Int) = adapter!!.notifyItemChanged(i)
     fun changedAll() = adapter!!.notifyDataSetChanged()
