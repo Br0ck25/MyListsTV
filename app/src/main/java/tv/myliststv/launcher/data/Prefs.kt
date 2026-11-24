@@ -90,6 +90,14 @@ object Prefs {
     var homeHidden: List<String> get() = renamed(strings("homeHidden")); set(v) = putStrings("homeHidden", v)
     var appOrder: List<String> get() = strings("appOrder"); set(v) = putStrings("appOrder", v)
     var appHidden: List<String> get() = strings("appHidden"); set(v) = putStrings("appHidden", v)
+
+    /** The names the owner gave apps, by package. */
+    val appNames: Map<String, String> get() = strings("appNames").mapNotNull { l -> l.split('\t', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] } }.toMap()
+    /** Names an app; a blank name puts its own name back. */
+    fun setAppName(pkg: String, name: String) {
+        val n = name.replace(Regex("\\s+"), " ").trim()
+        putStrings("appNames", appNames.filterKeys { it != pkg }.map { "${it.key}\t${it.value}" } + if (n.isEmpty()) emptyList() else listOf("$pkg\t$n"))
+    }
     /** Sort key for a home row: its place in [homeOrder], else Your Apps first, then Continue Watching and Airing Next, then the catalogs. */
     fun homeRank(title: String): Int = homeOrder.indexOf(title).let { if (it >= 0) it else when (title) { "Your Apps" -> -3; "Continue Watching" -> -2; "Airing Next" -> -1; else -> 5000 } }
 

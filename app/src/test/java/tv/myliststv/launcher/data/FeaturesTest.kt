@@ -107,6 +107,15 @@ class PosterShapeTest {
         assertTrue(Prefs.horizontalPosters); assertTrue("Home is told to rebuild", Prefs.epoch > before)
         Prefs.horizontalPosters = false
     }
+
+    @Test fun appRenamesStickAndBlankPutsTheOwnNameBack() {
+        Prefs.setAppName("com.a", "  Movies \n night ")
+        Prefs.setAppName("com.b", "Kodi")
+        assertEquals(mapOf("com.a" to "Movies night", "com.b" to "Kodi"), Prefs.appNames)
+        Prefs.setAppName("com.a", "Renamed")
+        Prefs.setAppName("com.b", "  ")
+        assertEquals(mapOf("com.a" to "Renamed"), Prefs.appNames)
+    }
 }
 
 @org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
@@ -371,4 +380,5 @@ class QrTest {
         assertEquals(21, tv.myliststv.launcher.ui.Qr.matrix("hi").size)
         assertTrue(try { tv.myliststv.launcher.ui.Qr.matrix("x".repeat(200)); false } catch (_: IllegalArgumentException) { true })
     }
+
 }

@@ -383,6 +383,7 @@ class MainActivity : Activity() {
             items += "Move" to { moving = true; Pop.toast(this, "Move it with Left and Right, then press OK", true) }
             items += "Hide from Home" to { Prefs.appHidden = Prefs.appHidden + pkg; if ((screen as? BrowseScreen)?.hideApp(pkg) != true) select(current, force = true) }
         }
+        items += "Rename" to { Sheet.ask(this, "Rename app", "Name", "Save", "Leave it empty to use the app's own name.", initial = a.label) { Prefs.setAppName(pkg, it); select(current, force = true) } }
         items += "App info" to { system(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg"))) }
         items += "Uninstall" to { system(Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg"))) }
         Sheet.menu(this, a.label, "Installed app", items)

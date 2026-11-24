@@ -11,14 +11,14 @@ Find a symbol with grep on this file, then read only that file around the line n
 ## AppEntry.kt (11 lines) - One launchable app.
      6 class AppEntry  - One launchable app.
 
-## AppRepository.kt (49 lines) - Lists launchable apps.
+## AppRepository.kt (51 lines) - Lists launchable apps.
     14 object AppRepository  - Lists launchable apps.
     15   fun load(context: Context)
-    27   fun forHome(context: Context)  - The apps for the Home row: the owner's order, without the ones they hid.
-    33   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
-    39   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
+    29   fun forHome(context: Context)  - The apps for the Home row: the owner's order, without the ones they hid.
+    35   fun look(pm: PackageManager, c: ComponentName)  - What to draw for an app: its TV banner if it has one (a wide picture), else its icon.
+    41   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (582 lines) - The home screen.
+## MainActivity.kt (583 lines) - The home screen.
     31 class MainActivity  - The home screen.
     58   fun updateBell()
     60   fun updateProfile()
@@ -45,27 +45,27 @@ Find a symbol with grep on this file, then read only that file around the line n
    364   fun resumeEntry(e: WatchStore.Entry)
    369   fun launch(a: AppEntry)
    378   fun appMenu(a: AppEntry)
-   393   fun onPause()
-   396   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
-   406   fun onResume()
-   427   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
-   435   fun onNewIntent(intent: Intent)
-   455   fun onBackPressed()
-   478   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
-   485   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
-   496   fun dispatchKeyEvent(e: KeyEvent)
-   526   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
-   532   fun isIn(v: View, container: View)
-   533   fun isInContent(v: View)
-   536   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
-   542   fun openSide()
-   543   fun closeSide()
-   546   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
-   566   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   571   fun onDestroy()
-   573   fun onTrimMemory(level: Int)
-   580   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
-   581   fun setTextColor(color: Int)
+   394   fun onPause()
+   397   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
+   407   fun onResume()
+   428   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
+   436   fun onNewIntent(intent: Intent)
+   456   fun onBackPressed()
+   479   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
+   486   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
+   497   fun dispatchKeyEvent(e: KeyEvent)
+   527   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
+   533   fun isIn(v: View, container: View)
+   534   fun isInContent(v: View)
+   537   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
+   543   fun openSide()
+   544   fun closeSide()
+   547   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
+   567   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   572   fun onDestroy()
+   574   fun onTrimMemory(level: Int)
+   581   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
+   582   fun setTextColor(color: Int)
 
 ## data/AccountWatched.kt (131 lines) - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
     12 object AccountWatched  - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
@@ -331,7 +331,7 @@ Find a symbol with grep on this file, then read only that file around the line n
      7   fun describe(httpStatus: Int?, kind: Kind)
     19   fun worthTryingAnotherSource(httpStatus: Int?, kind: Kind)  - True when a different source is likely to help, so fallback should run.
 
-## data/Prefs.kt (198 lines) - All user settings in one place.
+## data/Prefs.kt (206 lines) - All user settings in one place.
      8 object Prefs  - All user settings in one place.
     16   fun init(c: Context)
     21   var liteMode
@@ -356,32 +356,34 @@ Find a symbol with grep on this file, then read only that file around the line n
     90   var homeHidden
     91   var appOrder
     92   var appHidden
-    94   fun homeRank(title: String)  - Sort key for a home row: its place in [homeOrder], else Your Apps first, then Continue Watching and Airing Nex
-    97   var navStyle  - Where the pages (Home, Movies...) are listed: 0 across the top, 1 side bar, 2 side bar that stays hidden until
-   102   var buttonMap  - Remote button rules, see ButtonMap.
-   106   var mapperOn  - The Button Mapper's master switch, and the buttons switched off one by one (key codes).
-   110   var homeCustom  - "Customize Home Button": when off, Home does its factory jobs (single press: Home, double press: profile switc
-   113   var buttonMapOff
-   118   fun recallTracks(metaId: String?)  - The audio and subtitle language the viewer last chose for a title, so the next episode starts the same way.
-   121   fun rememberTrack(metaId: String?, audio: Boolean, lang: String)
-   129   var hideUpcomingContinue  - With Airing Next on: a next-up episode that Airing Next already lists is left out of Continue Watching.
-   132   var showAiring
-   137   var airingJson  - The last Airing Next answer for the profile in use (JSON), so Home shows it at once.
-   141   var showContinue
-   146   var backupCode  - Recovery code for this box's online backup.
-   151   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
-   156   var accountName  - The My Lists account name of the profile in use, shown as "Signed in as ...".
-   161   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
-   163   var lastBackup
-   168   fun forget(id: String)  - Forgets what a removed profile kept here.
-   171   fun export()  - Settings as JSON for a backup.
-   173   fun import(o: org.json.JSONObject)
-   179   var setupDone
-   183   var advanced
-   187   fun isLowRamBox()
-   192   fun lite()
-   195   fun effectiveMaxResolution()  - The highest resolution to prefer.
-   197   fun memoryCacheBytes()
+    95   val appNames  - The names the owner gave apps, by package.
+    97   fun setAppName(pkg: String, name: String)  - Names an app; a blank name puts its own name back.
+   102   fun homeRank(title: String)  - Sort key for a home row: its place in [homeOrder], else Your Apps first, then Continue Watching and Airing Nex
+   105   var navStyle  - Where the pages (Home, Movies...) are listed: 0 across the top, 1 side bar, 2 side bar that stays hidden until
+   110   var buttonMap  - Remote button rules, see ButtonMap.
+   114   var mapperOn  - The Button Mapper's master switch, and the buttons switched off one by one (key codes).
+   118   var homeCustom  - "Customize Home Button": when off, Home does its factory jobs (single press: Home, double press: profile switc
+   121   var buttonMapOff
+   126   fun recallTracks(metaId: String?)  - The audio and subtitle language the viewer last chose for a title, so the next episode starts the same way.
+   129   fun rememberTrack(metaId: String?, audio: Boolean, lang: String)
+   137   var hideUpcomingContinue  - With Airing Next on: a next-up episode that Airing Next already lists is left out of Continue Watching.
+   140   var showAiring
+   145   var airingJson  - The last Airing Next answer for the profile in use (JSON), so Home shows it at once.
+   149   var showContinue
+   154   var backupCode  - Recovery code for this box's online backup.
+   159   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
+   164   var accountName  - The My Lists account name of the profile in use, shown as "Signed in as ...".
+   169   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
+   171   var lastBackup
+   176   fun forget(id: String)  - Forgets what a removed profile kept here.
+   179   fun export()  - Settings as JSON for a backup.
+   181   fun import(o: org.json.JSONObject)
+   187   var setupDone
+   191   var advanced
+   195   fun isLowRamBox()
+   200   fun lite()
+   203   fun effectiveMaxResolution()  - The highest resolution to prefer.
+   205   fun memoryCacheBytes()
 
 ## data/Profiles.kt (76 lines) - Viewer profiles.
      9 object Profiles  - Viewer profiles.

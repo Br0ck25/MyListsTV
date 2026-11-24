@@ -18,8 +18,10 @@ object AppRepository {
         val tv = query(pm, Intent.CATEGORY_LEANBACK_LAUNCHER, sideloaded = false)
         val phone = query(pm, Intent.CATEGORY_LAUNCHER, sideloaded = true)
         val seen = HashSet<String>()
+        val names = Prefs.appNames
         return (tv + phone)
             .filter { it.component.packageName != own && seen.add(it.component.packageName) }
+            .map { a -> names[a.component.packageName]?.let { a.copy(label = it) } ?: a }
             .sortedBy { it.label.lowercase() }
     }
 
