@@ -47,13 +47,31 @@ object AccountWatched {
     fun movieDone(id: String): Boolean { load(); return id in movies }
     fun showDone(id: String): Boolean { load(); return shows[id]?.complete == true }
 
-    /** [videoId] is "tt123:1:2". */
+    /**
+     * [videoId] is "tt123:1:2". Only an episode the account lists counts. A show the account calls complete does not tick every episode:
+     * that would also tick the ones that have not aired yet.
+     */
     fun episodeDone(metaId: String, videoId: String): Boolean {
         load()
         val s = shows[metaId] ?: return false
-        if (s.complete) return true
         val p = videoId.split(':')
         return p.size >= 3 && "${p[1]}:${p[2]}" in s.episodes
+    }
+
+    /** An episode marked by hand: the box's copy follows at once. Taking one off also means the show is no longer complete. */
+    fun markEpisode(metaId: String, videoId: String, watched: Boolean) {
+        val p = videoId.split(':'); if (p.size < 3) return
+        load()
+        val key = "${p[1]}:${p[2]}"
+        val old = shows[metaId]
+        val eps = (old?.episodes ?: emptySet()).let { if (watched) it + key else it - key }
+        shows = shows.toMutableMap().also { if (eps.isEmpty() && old?.complete != true && !watched) it.remove(metaId) else it[metaId] = Show(if (watched) old?.complete == true else false, eps) }
+        save()
+    }
+
+    private fun save() {
+        val a = JSONArray(); shows.forEach { (id, s) -> a.put(JSONObject().put("id", id).put("complete", s.complete).put("episodes", JSONArray(s.episodes.toList()))) }
+        sp().edit().putString("data", JSONObject().put("ok", true).put("movies", JSONArray(movies.toList())).put("shows", a).toString()).apply()
     }
 
     /** After a title is marked by hand, the box's copy of the account's list follows at once (the account is told too), so the check mark does not wait for the next fetch. */
@@ -61,9 +79,7 @@ object AccountWatched {
         load()
         if (movie) movies = if (watched) movies + metaId else movies - metaId
         else shows = shows.toMutableMap().also { if (watched) it[metaId] = Show(true, it[metaId]?.episodes ?: emptySet()) else it.remove(metaId) }
-        val o = JSONObject().put("ok", true).put("movies", JSONArray(movies.toList()))
-        val a = JSONArray(); shows.forEach { (id, s) -> a.put(JSONObject().put("id", id).put("complete", s.complete).put("episodes", JSONArray(s.episodes.toList()))) }
-        sp().edit().putString("data", o.put("shows", a).toString()).apply()
+        save()
     }
 
     /** Fetches the account's list. [changed] runs on the main thread only when it differs from what the box already had. */

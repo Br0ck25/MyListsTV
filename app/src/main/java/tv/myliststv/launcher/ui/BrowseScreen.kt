@@ -44,7 +44,7 @@ class BrowseScreen(
             is WatchStore.Entry -> Sheet.menu(c, p.name, if (p.type == "series" && p.season >= 0) "S${p.season} \u00b7 E${p.episode}" else null, listOf(
                 "Go to details" to { onMeta(Meta(p.metaId, p.type, p.name, p.poster, p.background)) },
                 "Mark as watched" to { markWatched(p); refreshContinue() },
-                "Remove from Continue watching" to { WatchStore.remove(p.metaId); refreshContinue() }))
+                "Remove from Continue Watching" to { WatchStore.remove(p.metaId); refreshContinue() }))
         }
     })
     val view: View
@@ -91,11 +91,11 @@ class BrowseScreen(
             }
         }
         list.changedAll()
-        if (withApps && Prefs.showAppsRow && "Your apps" !in hidden) {
+        if (withApps && Prefs.showAppsRow && "Your Apps" !in hidden) {
             Http.background {
                 val apps = AppRepository.forHome(act)
                 Http.post {
-                    val row = RowModel("Your apps", "Installed", CardKind.APP, apps.map { a ->
+                    val row = RowModel("Your Apps", "Installed", CardKind.APP, apps.map { a ->
                         AppRepository.look(act.packageManager, a.component).let { (icon, banner) -> CardModel(a.label, null, payload = a, icon = icon, banner = banner) }
                     })
                     rows += row
@@ -106,7 +106,7 @@ class BrowseScreen(
         }
     }
 
-    /** Hold OK on a Continue watching card, Mark as watched: the episode (or movie) is done, here and in the account's watched history. */
+    /** Hold OK on a Continue Watching card, Mark as watched: the episode (or movie) is done, here and in the account's watched history. */
     private fun markWatched(e: WatchStore.Entry) {
         val episode = e.type == "series" && e.season >= 0
         if (episode) { Watched.set(e.metaId, e.videoId, true); WatchStore.remove(e.metaId) }
@@ -116,14 +116,14 @@ class BrowseScreen(
     }
 
     private fun addContinue() {
-        if (!Prefs.showContinue || "Continue watching" in Prefs.homeHidden) return
+        if (!Prefs.showContinue || "Continue Watching" in Prefs.homeHidden) return
         val cw = WatchStore.continueWatching()
         if (cw.isEmpty()) return
         val models = cw.map { e ->
             val sub = if (e.type == "series" && e.season >= 0) "S${e.season} · E${e.episode}" else "Movie"
             CardModel(e.name, e.background ?: e.poster, if (e.durationMs == 0L) "Next up · $sub" else "$sub · ${(e.fraction * 100).toInt()}% watched", e.fraction, e, badgeEnd = EpisodesLeft.timeLeft(e))
         }
-        val row = RowModel("Continue watching", "This device", CardKind.WIDE, models)
+        val row = RowModel("Continue Watching", "This device", CardKind.WIDE, models)
         rows.add(row)
         // Episodes left needs the show's episode list: ask for it per show and redraw just that card (the row is not rebuilt, so focus stays).
         cw.forEachIndexed { i, e ->
@@ -142,11 +142,11 @@ class BrowseScreen(
 
     /** The next episode of each followed show, soonest first. Tapping one opens the show. */
     private fun addAiring() {
-        if (!Prefs.showAiring || "Airing next" in Prefs.homeHidden) return
+        if (!Prefs.showAiring || "Airing Next" in Prefs.homeHidden) return
         val a = Progress.airing()
         if (a.isEmpty()) return
         val day = java.text.SimpleDateFormat("EEE, MMM d", java.util.Locale.US); val parse = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-        rows.add(RowModel("Airing next", "From your account", CardKind.WIDE, a.map { s ->
+        rows.add(RowModel("Airing Next", "From your account", CardKind.WIDE, a.map { s ->
             val date = try { day.format(parse.parse(s.airDate)!!) } catch (_: Exception) { s.airDate }
             val tag = if (s.premiere) "Season premiere" else if (s.finale) "Season finale" else "S${s.season} \u00b7 E${s.episode}"
             CardModel(s.name, s.still ?: s.poster, "$tag \u00b7 $date", 0f, Meta(s.id, "series", s.name, s.poster, s.still))
@@ -158,7 +158,7 @@ class BrowseScreen(
 
     /** Hide from Home: the app leaves the apps row where it is, and the focus moves to its neighbour. Nothing else reloads and the page keeps its place. */
     fun hideApp(pkg: String): Boolean {
-        val r = rows.indexOfFirst { it.title == "Your apps" }.takeIf { it >= 0 } ?: return false
+        val r = rows.indexOfFirst { it.title == "Your Apps" }.takeIf { it >= 0 } ?: return false
         val row = rows[r]
         val i = row.items.indexOfFirst { (it.payload as? AppEntry)?.component?.packageName == pkg }.takeIf { it >= 0 } ?: return false
         row.items = row.items.toMutableList().also { it.removeAt(i) }
@@ -173,7 +173,7 @@ class BrowseScreen(
     /** Called when coming back from the player, or when the account's lists arrive, so they show without reloading catalogs. */
     fun refreshContinue() {
         if (!withContinue) return
-        rows.removeAll { it.title == "Continue watching" || it.title == "Airing next" }
+        rows.removeAll { it.title == "Continue Watching" || it.title == "Airing Next" }
         addContinue(); addAiring()
         rows.sortBy { Prefs.homeRank(it.title) }
         list.changedAll()
@@ -189,7 +189,7 @@ class BrowseScreen(
                 heroMeta.text = listOfNotNull(p.year, p.rating?.let { "★ $it" }, p.genres.take(3).joinToString(", ").ifEmpty { null }).joinToString("   ")
                 heroDesc.text = p.description ?: ""
                 heroId = p.id
-                // A tile with no story yet (Airing next) asks for the title's details.
+                // A tile with no story yet (Airing Next) asks for the title's details.
                 if (p.description == null && p.id.startsWith("tt")) Catalogs.meta(p.type, p.id, p) { full ->
                     if (full != null && heroId == p.id) {
                         full.background?.let(onBackdrop)

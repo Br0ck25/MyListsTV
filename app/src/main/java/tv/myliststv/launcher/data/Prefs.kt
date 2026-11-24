@@ -79,12 +79,14 @@ object Prefs {
     private fun strings(k: String) = (sp.getString(k, "") ?: "").split('\n').filter { it.isNotEmpty() }
     private fun putStrings(k: String, v: List<String>) { sp.edit().putString(k, v.joinToString("\n")).apply(); epoch++ }
     /** Home rows (by title) and apps in the order the owner chose, and the ones hidden from Home. Unlisted ones go after, in their usual order. */
-    var homeOrder: List<String> get() = strings("homeOrder"); set(v) = putStrings("homeOrder", v)
-    var homeHidden: List<String> get() = strings("homeHidden"); set(v) = putStrings("homeHidden", v)
+    /** The rows were renamed (Your apps, Continue watching, Airing next); what an older version saved still counts under the new names. */
+    private fun renamed(l: List<String>) = l.map { when (it) { "Your apps" -> "Your Apps"; "Continue watching" -> "Continue Watching"; "Airing next" -> "Airing Next"; else -> it } }
+    var homeOrder: List<String> get() = renamed(strings("homeOrder")); set(v) = putStrings("homeOrder", v)
+    var homeHidden: List<String> get() = renamed(strings("homeHidden")); set(v) = putStrings("homeHidden", v)
     var appOrder: List<String> get() = strings("appOrder"); set(v) = putStrings("appOrder", v)
     var appHidden: List<String> get() = strings("appHidden"); set(v) = putStrings("appHidden", v)
-    /** Sort key for a home row: its place in [homeOrder], else Continue watching first, apps last, catalogs between. */
-    fun homeRank(title: String): Int = homeOrder.indexOf(title).let { if (it >= 0) it else when (title) { "Continue watching" -> -2; "Airing next" -> -1; "Your apps" -> 10000; else -> 5000 } }
+    /** Sort key for a home row: its place in [homeOrder], else Your Apps first, then Continue Watching and Airing Next, then the catalogs. */
+    fun homeRank(title: String): Int = homeOrder.indexOf(title).let { if (it >= 0) it else when (title) { "Your Apps" -> -3; "Continue Watching" -> -2; "Airing Next" -> -1; else -> 5000 } }
 
     /** Where the pages (Home, Movies...) are listed: 0 across the top, 1 side bar, 2 side bar that stays hidden until Left is pressed. */
     var navStyle: Int
@@ -117,7 +119,7 @@ object Prefs {
         sp.edit().putString("tr_$metaId", (if (audio) lang else a.orEmpty()) + "|" + (if (audio) s.orEmpty() else lang)).apply()
     }
 
-    /** The "Airing next" row on Home: the next episode of shows the account follows, soonest first. */
+    /** The "Airing Next" row on Home: the next episode of shows the account follows, soonest first. */
     var showAiring: Boolean
         get() = sp.getBoolean("showAiring", true)
         set(v) { sp.edit().putBoolean("showAiring", v).apply(); epoch++ }

@@ -26,7 +26,6 @@ object TitleMenu {
         Watched.setTitle(meta, watched)
         if (watched) WatchStore.remove(meta.id)
         val movie = meta.type == "movie"
-        AccountWatched.mark(meta.id, movie, watched)
         if (movie) Progress.markWatched(meta.id, meta.type, -1, -1, watched) else Progress.markWholeShow(meta.id, watched)
         tv.myliststv.launcher.ui.Pop.toast(act, if (!watched) "Marked not watched" else if (Prefs.accountLink.isNotEmpty()) "Marked watched, and added to My Lists" else "Marked watched")
     }

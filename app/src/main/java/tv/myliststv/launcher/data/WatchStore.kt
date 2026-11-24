@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Local watch progress behind Continue watching. Small and capped so it never grows. */
+/** Local watch progress behind Continue Watching. Small and capped so it never grows. */
 /** Anything shorter than this is not a title (a stream addon's error clip is 10 to 30 seconds): it is never kept as progress and never counts as watched. */
 const val MIN_REAL_MS = 120_000L
 

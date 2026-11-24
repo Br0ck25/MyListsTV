@@ -7,7 +7,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import tv.myliststv.launcher.App
 
-/** Continue watching: the last thing watched is first, the one before it second. */
+/** Continue Watching: the last thing watched is first, the one before it second. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = App::class)
 class WatchOrderTest {

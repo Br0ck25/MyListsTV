@@ -374,7 +374,7 @@ class MainActivity : Activity() {
 
     override fun onPause() { handler.removeCallbacks(clockTick); super.onPause() }
 
-    /** Pulls what the account holds (Library, addons, Continue watching, Airing next) at most every five minutes; also right after the first load, which onResume cannot do as the pages are not ready yet. */
+    /** Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; also right after the first load, which onResume cannot do as the pages are not ready yet. */
     private fun syncAccount() {
         val t = System.currentTimeMillis()
         if (t - lastSync <= 5 * 60_000L) return

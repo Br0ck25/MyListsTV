@@ -26,14 +26,14 @@ Test on the reference box, per Android version:
 Record what works per device here.
 
 ## Build status (keep this current)
-Done: Home (My Lists default rows, Continue watching, apps row), Movies, Series, Apps, Addons (add by phone page or typing), Search, Settings (toggles, choice and action rows, Simple/Advanced), Details with episodes, stream picker, Media3 player (Sources panel, automatic fallback, expired-link refresh, next episode, skip intro/recap/credits from IntroDB for series, subtitles from files and from subtitle addons, audio, speed, info), Watch Next, profiles with a kids filter, crash guard with safe mode, first-run welcome, sign in with a pairing code (uses My Lists' existing TV pairing flow; swaps the default catalogs for the owner's), encrypted online backup and restore (needs /api/tv-backup deployed, branch `tv-backup-endpoint`), Keystore-wrapped secrets, the My Lists theme (docs/DESIGN.md), sideload updater, tests, CI that tests, builds and publishes the APK.
+Done: Home (My Lists default rows, Continue Watching, apps row), Movies, Series, Apps, Addons (add by phone page or typing), Search, Settings (toggles, choice and action rows, Simple/Advanced), Details with episodes, stream picker, Media3 player (Sources panel, automatic fallback, expired-link refresh, next episode, skip intro/recap/credits from IntroDB for series, subtitles from files and from subtitle addons, audio, speed, info), Watch Next, profiles with a kids filter, crash guard with safe mode, first-run welcome, sign in with a pairing code (uses My Lists' existing TV pairing flow; swaps the default catalogs for the owner's), encrypted online backup and restore (needs /api/tv-backup deployed, branch `tv-backup-endpoint`), Keystore-wrapped secrets, the My Lists theme (docs/DESIGN.md), sideload updater, tests, CI that tests, builds and publishes the APK.
 Not done by the owner's choice: PIN lock.
 Not done yet: skip intro for movies (IntroDB has none; TheIntroDB covers few), QR code for sign-in (the code and link are shown as text), watch-history sync from the account.
 Not tested: anything on a real TV box (including the Keystore path and Watch Next). First job after sideloading: confirm the home role (see below) and note per-device results here.
 
 - Progress sync (signed in only): part-watched titles go to My Lists `/api/nuvio-tv/progress` (website Continue Watching), finished ones to `/api/nuvio-tv/history`. Needs the addon branch `tv-backup-endpoint` deployed. Home screen setup (Settings): make Home app, Home-button fallback (HomeButtonService, accessibility, sees only which app came forward), phone/computer steps page. Later, optional: on-TV adb pairing over Wireless debugging (needs an adb library).
 
-- UI: Navigation setting: top bar, side bar, or hidden side bar (Left opens). Details has icon buttons and episode cards. Hold OK on a Continue watching card to remove it.
+- UI: Navigation setting: top bar, side bar, or hidden side bar (Left opens). Details has icon buttons and episode cards. Hold OK on a Continue Watching card to remove it.
 
 - Remote buttons: Settings, Remote buttons. A button (colour keys etc.) plus press / double press / hold gives an action (a page, search, settings, switch profile, or open an app). Works through the Home button fallback (accessibility) service. Home goes to the Home page; Home twice quickly opens the profile picker. Rebuilt from the written description of the owner's earlier launcher; none of its code was read.
 
@@ -51,4 +51,4 @@ Not tested: anything on a real TV box (including the Keystore path and Watch Nex
 
 - Sign-in shows a QR code (`ui/Qr.kt`, own encoder, no library) and the account name; the account's Continue Watching (website and other TVs, `Progress.pull`) joins the Home row, with next-up episodes shown as "Next up". Moving an app: hold OK, Move, then Left/Right, OK to place. Left from the first card of a page goes to the side bar; Up/Down land on the nearest card of the next row.
 
-- Home rows: Continue watching (account order, with the title's details on focus) and Airing next (soonest first, toggle in Settings, Layout). Up/Down land on the card last used in the next row (first card if never visited). The bell is a card list with a Clear button on each notification.
+- Home rows: Continue Watching (account order, with the title's details on focus) and Airing Next (soonest first, toggle in Settings, Layout). Up/Down land on the card last used in the next row (first card if never visited). The bell is a card list with a Clear button on each notification.

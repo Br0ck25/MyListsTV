@@ -7,12 +7,12 @@ import tv.myliststv.launcher.data.Prefs
 
 /**
  * The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spacing and edges as the
- * rows on Home. The columns are as many whole cards as fit; whatever is left over is split between the two sides, so the cells are
- * exactly as wide as the cards and there are no gaps between them.
+ * rows on Home. The columns are as many whole cards as fit, starting at the same left edge as a row on Home; what is left over stays at
+ * the right, and the cells are exactly as wide as the cards, so there are no gaps between them.
  */
 object CardGrid {
     private const val MARGIN = 12   // the space around each card, in the same units as Cards.kt (6 on every side)
-    private const val EDGE = 36     // the least space kept free at each side of the screen
+    private const val EDGE = 42     // the space at each side of the screen, the same as the rows on Home, so the first card lines up with them
 
     private fun cell(c: Context, bw: Int) = Ui.dp(c, bw) * Prefs.cardScale + Ui.dp(c, MARGIN)
 
@@ -23,7 +23,7 @@ object CardGrid {
     /** Puts [rv] in a grid of [bw]-wide cards, centred, with [top] and [bottom] space (in the same units as [Ui.dp]). */
     fun apply(rv: RecyclerView, c: Context, bw: Int, top: Int = 6, bottom: Int = 24) {
         val cols = columns(c, bw)
-        val side = ((c.resources.displayMetrics.widthPixels - cols * cell(c, bw)) / 2f).toInt().coerceAtLeast(0)
+        val side = Ui.dp(c, EDGE)   // left-aligned like a row on Home; what is left over stays at the right
         rv.layoutManager = GridLayoutManager(c, cols)
         rv.clipToPadding = false; rv.itemAnimator = null
         rv.setPadding(side, Ui.dp(c, top), side, Ui.dp(c, bottom))

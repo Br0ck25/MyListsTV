@@ -11,7 +11,7 @@ import androidx.tvprovider.media.tv.TvContractCompat
 import androidx.tvprovider.media.tv.WatchNextProgram
 import tv.myliststv.launcher.screens.DetailsActivity
 
-/** Puts Continue watching on the system home screen's Watch Next row. Silently does nothing on devices without it. */
+/** Puts Continue Watching on the system home screen's Watch Next row. Silently does nothing on devices without it. */
 object WatchNext {
     fun publish(c: Context) = Http.background {
         try {

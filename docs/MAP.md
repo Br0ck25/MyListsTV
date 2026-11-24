@@ -45,7 +45,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    351   fun launch(a: AppEntry)
    360   fun appMenu(a: AppEntry)
    375   fun onPause()
-   378   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue watching, Airing next) at most every five minutes; als
+   378   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
    388   fun onResume()
    407   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
    415   fun onNewIntent(intent: Intent)
@@ -66,16 +66,18 @@ Find a symbol with grep on this file, then read only that file around the line n
    558   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
    559   fun setTextColor(color: Int)
 
-## data/AccountWatched.kt (85 lines) - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
+## data/AccountWatched.kt (101 lines) - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
     12 object AccountWatched  - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
     19   fun sp()
     21   fun load()
     29   fun parse(text: String)  - Reads an answer into memory.
     47   fun movieDone(id: String)
     48   fun showDone(id: String)
-    51   fun episodeDone(metaId: String, videoId: String)  - [videoId] is "tt123:1:2".
-    60   fun mark(metaId: String, movie: Boolean, watched: Boolean)  - After a title is marked by hand, the box's copy of the account's list follows at once (the account is told too
-    70   fun pull(changed: ()  - Fetches the account's list.
+    54   fun episodeDone(metaId: String, videoId: String)  - [videoId] is "tt123:1:2".
+    62   fun markEpisode(metaId: String, videoId: String, watched: Boolean)  - An episode marked by hand: the box's copy follows at once.
+    72   fun save()
+    78   fun mark(metaId: String, movie: Boolean, watched: Boolean)  - After a title is marked by hand, the box's copy of the account's list follows at once (the account is told too
+    86   fun pull(changed: ()  - Fetches the account's list.
 
 ## data/AddonStore.kt (127 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
@@ -190,8 +192,8 @@ Find a symbol with grep on this file, then read only that file around the line n
     24   fun safeMode(c: Context)
     25   fun clear(c: Context)
 
-## data/EpisodesLeft.kt (39 lines) - What a Continue watching card says about where you are: episodes still to watch, time left, or when the next o
-     7 object EpisodesLeft  - What a Continue watching card says about where you are: episodes still to watch, time left, or when the next o
+## data/EpisodesLeft.kt (39 lines) - What a Continue Watching card says about where you are: episodes still to watch, time left, or when the next o
+     7 object EpisodesLeft  - What a Continue Watching card says about where you are: episodes still to watch, time left, or when the next o
      9   class Info  - [left]: aired episodes still to watch, counting the one you are on.
     12   fun compute(videos: List<Video>, current: WatchStore.Entry, now: Long, tz: TimeZ  - Null when the episode list does not contain the episode you are on (nothing honest to say).
     25   fun airsText(airMs: Long, nowMs: Long, tz: TimeZone = TimeZone.getDefault()  - An air date is a calendar date (the addon sends no time of day), so count calendar days from today rather than
@@ -325,7 +327,7 @@ Find a symbol with grep on this file, then read only that file around the line n
      7   fun describe(httpStatus: Int?, kind: Kind)
     19   fun worthTryingAnotherSource(httpStatus: Int?, kind: Kind)  - True when a different source is likely to help, so fallback should run.
 
-## data/Prefs.kt (187 lines) - All user settings in one place.
+## data/Prefs.kt (189 lines) - All user settings in one place.
      8 object Prefs  - All user settings in one place.
     16   fun init(c: Context)
     21   var liteMode
@@ -344,35 +346,36 @@ Find a symbol with grep on this file, then read only that file around the line n
     77   val cardScale  - The card size setting: -1 extra small, 0 small, 1 medium (the default), 2 large, 3 extra large.
     79   fun strings(k: String)
     80   fun putStrings(k: String, v: List<String>)
-    82   var homeOrder  - Home rows (by title) and apps in the order the owner chose, and the ones hidden from Home.
-    83   var homeHidden
-    84   var appOrder
-    85   var appHidden
-    87   fun homeRank(title: String)  - Sort key for a home row: its place in [homeOrder], else Continue watching first, apps last, catalogs between.
-    90   var navStyle  - Where the pages (Home, Movies...) are listed: 0 across the top, 1 side bar, 2 side bar that stays hidden until
-    95   var buttonMap  - Remote button rules, see ButtonMap.
-    99   var mapperOn  - The Button Mapper's master switch, and the buttons switched off one by one (key codes).
-   103   var homeCustom  - "Customize Home Button": when off, Home does its factory jobs (single press: Home, double press: profile switc
-   106   var buttonMapOff
-   111   fun recallTracks(metaId: String?)  - The audio and subtitle language the viewer last chose for a title, so the next episode starts the same way.
-   114   fun rememberTrack(metaId: String?, audio: Boolean, lang: String)
-   121   var showAiring  - The "Airing next" row on Home: the next episode of shows the account follows, soonest first.
-   126   var airingJson  - The last Airing Next answer for the profile in use (JSON), so Home shows it at once.
-   130   var showContinue
-   135   var backupCode  - Recovery code for this box's online backup.
-   140   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
-   145   var accountName  - The My Lists account name of the profile in use, shown as "Signed in as ...".
-   150   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
-   152   var lastBackup
-   157   fun forget(id: String)  - Forgets what a removed profile kept here.
-   160   fun export()  - Settings as JSON for a backup.
-   162   fun import(o: org.json.JSONObject)
-   168   var setupDone
-   172   var advanced
-   176   fun isLowRamBox()
-   181   fun lite()
-   184   fun effectiveMaxResolution()  - The highest resolution to prefer.
-   186   fun memoryCacheBytes()
+    83   fun renamed(l: List<String>)  - The rows were renamed (Your apps, Continue watching, Airing next); what an older version saved still counts un
+    84   var homeOrder
+    85   var homeHidden
+    86   var appOrder
+    87   var appHidden
+    89   fun homeRank(title: String)  - Sort key for a home row: its place in [homeOrder], else Your Apps first, then Continue Watching and Airing Nex
+    92   var navStyle  - Where the pages (Home, Movies...) are listed: 0 across the top, 1 side bar, 2 side bar that stays hidden until
+    97   var buttonMap  - Remote button rules, see ButtonMap.
+   101   var mapperOn  - The Button Mapper's master switch, and the buttons switched off one by one (key codes).
+   105   var homeCustom  - "Customize Home Button": when off, Home does its factory jobs (single press: Home, double press: profile switc
+   108   var buttonMapOff
+   113   fun recallTracks(metaId: String?)  - The audio and subtitle language the viewer last chose for a title, so the next episode starts the same way.
+   116   fun rememberTrack(metaId: String?, audio: Boolean, lang: String)
+   123   var showAiring  - The "Airing Next" row on Home: the next episode of shows the account follows, soonest first.
+   128   var airingJson  - The last Airing Next answer for the profile in use (JSON), so Home shows it at once.
+   132   var showContinue
+   137   var backupCode  - Recovery code for this box's online backup.
+   142   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
+   147   var accountName  - The My Lists account name of the profile in use, shown as "Signed in as ...".
+   152   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
+   154   var lastBackup
+   159   fun forget(id: String)  - Forgets what a removed profile kept here.
+   162   fun export()  - Settings as JSON for a backup.
+   164   fun import(o: org.json.JSONObject)
+   170   var setupDone
+   174   var advanced
+   178   fun isLowRamBox()
+   183   fun lite()
+   186   fun effectiveMaxResolution()  - The highest resolution to prefer.
+   188   fun memoryCacheBytes()
 
 ## data/Profiles.kt (76 lines) - Viewer profiles.
      9 object Profiles  - Viewer profiles.
@@ -478,8 +481,8 @@ Find a symbol with grep on this file, then read only that file around the line n
     20   fun stream(base: String, type: String, id: String)
     22   fun subtitles(base: String, type: String, id: String)
 
-## data/WatchNext.kt (35 lines) - Puts Continue watching on the system home screen's Watch Next row.
-    15 object WatchNext  - Puts Continue watching on the system home screen's Watch Next row.
+## data/WatchNext.kt (35 lines) - Puts Continue Watching on the system home screen's Watch Next row.
+    15 object WatchNext  - Puts Continue Watching on the system home screen's Watch Next row.
     16   fun publish(c: Context)
 
 ## data/WatchStore.kt (87 lines)
@@ -495,7 +498,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     73   fun toJson(e: Entry)
     80   fun fromJson(o: JSONObject)
 
-## data/Watched.kt (27 lines) - Which episodes of each show this profile has finished (90% or more, or marked by hand).
+## data/Watched.kt (29 lines) - Which episodes of each show this profile has finished (90% or more, or marked by hand).
      8 object Watched  - Which episodes of each show this profile has finished (90% or more, or marked by hand).
      9   fun sp()
     11   fun of(metaId: String)
@@ -717,7 +720,7 @@ Find a symbol with grep on this file, then read only that file around the line n
 ## ui/BrowseScreen.kt (220 lines) - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
     18 class BrowseScreen  - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
     62   fun start()
-   110   fun markWatched(e: WatchStore.Entry)  - Hold OK on a Continue watching card, Mark as watched: the episode (or movie) is done, here and in the account'
+   110   fun markWatched(e: WatchStore.Entry)  - Hold OK on a Continue Watching card, Mark as watched: the episode (or movie) is done, here and in the account'
    118   fun addContinue()
    144   fun addAiring()  - The next episode of each followed show, soonest first.
    157   fun refreshChecks()  - The account's watched list arrived: redraw the cards so their check marks show, without reloading any row.
@@ -834,7 +837,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     69   fun focusIndex(page: View)
     70   fun focusFirst(page: View, at: Int = 0)
 
-## ui/TitleMenu.kt (33 lines) - Hold OK on a poster or tile: Go to details, add to or remove from the Library, mark as watched or not.
+## ui/TitleMenu.kt (32 lines) - Hold OK on a poster or tile: Go to details, add to or remove from the Library, mark as watched or not.
      8 object TitleMenu  - Hold OK on a poster or tile: Go to details, add to or remove from the Library, mark as watched or not.
      9   fun show(act: Activity, meta: Meta, open: ()
     25   fun setWatched(act: Activity, meta: Meta, watched: Boolean)  - Marks a whole title watched (or not), here and in the account's watched history.
