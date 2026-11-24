@@ -70,6 +70,7 @@ class SettingsActivity : Activity() {
         items += "Choose a picture" to { pictures.pick { uri ->
             Http.background { val ok = Pictures.save(this, uri, Pictures.wallpaperFile(this), 1280, 720, png = false); Http.post { if (ok) Prefs.bump(); Pop.toast(this, if (ok) "Wallpaper set" else "That file is not a picture this TV can read.", !ok) } }
         } }
+        items += "Send from my phone" to { PhonePicture.receive(this, "Send a wallpaper", Pictures.wallpaperFile(this), 1280, 720, false) { Prefs.bump(); Pop.toast(this, "Wallpaper set") } }
         if (Pictures.wallpaperFile(this).exists()) items += "Remove wallpaper" to { Pictures.wallpaperFile(this).delete(); Prefs.bump(); Pop.toast(this, "Wallpaper removed") }
         Sheet.menu(this, "Wallpaper", "Shown when no movie or show is highlighted.", items)
     }

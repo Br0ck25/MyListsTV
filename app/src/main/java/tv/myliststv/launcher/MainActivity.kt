@@ -414,6 +414,7 @@ class MainActivity : Activity() {
         items += "Choose a picture" to { pictures.pick { uri ->
             Http.background { val ok = Pictures.save(this, uri, file, 480, 270, png = true); Http.post { if (ok) redraw() else Pop.toast(this, "That file is not a picture this TV can read.", true) } }
         } }
+        items += "Send from my phone" to { PhonePicture.receive(this, "Send an icon for ${a.label}", file, 480, 270, true, redraw) }
         if (file.exists()) items += "Back to the usual icon" to { file.delete(); redraw() }
         Sheet.menu(this, "Icon for ${a.label}", "Pick any picture on the TV. Square ones look best; wide ones fill the whole card.", items)
     }

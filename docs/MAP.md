@@ -18,7 +18,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     38   fun look(ctx: Context, c: ComponentName)  - What to draw for an app: the picture the owner chose for it, else the icon pack's, else its TV banner if it ha
     48   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (612 lines) - The home screen.
+## MainActivity.kt (613 lines) - The home screen.
     31 class MainActivity  - The home screen.
     58   fun updateBell()
     60   fun updateProfile()
@@ -48,27 +48,27 @@ Find a symbol with grep on this file, then read only that file around the line n
    391   fun appMenu(a: AppEntry)
    407   fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
    410   fun iconMenu(a: AppEntry)  - A picture of the owner's own for one app (an icon pack changes them all, in Settings).
-   423   fun onPause()
-   426   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
-   436   fun onResume()
-   457   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
-   465   fun onNewIntent(intent: Intent)
-   485   fun onBackPressed()
-   508   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
-   515   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
-   526   fun dispatchKeyEvent(e: KeyEvent)
-   556   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
-   562   fun isIn(v: View, container: View)
-   563   fun isInContent(v: View)
-   566   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
-   572   fun openSide()
-   573   fun closeSide()
-   576   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
-   596   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   601   fun onDestroy()
-   603   fun onTrimMemory(level: Int)
-   610   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
-   611   fun setTextColor(color: Int)
+   424   fun onPause()
+   427   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
+   437   fun onResume()
+   458   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
+   466   fun onNewIntent(intent: Intent)
+   486   fun onBackPressed()
+   509   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
+   516   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
+   527   fun dispatchKeyEvent(e: KeyEvent)
+   557   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
+   563   fun isIn(v: View, container: View)
+   564   fun isInContent(v: View)
+   567   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
+   573   fun openSide()
+   574   fun closeSide()
+   577   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
+   597   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   602   fun onDestroy()
+   604   fun onTrimMemory(level: Int)
+   611   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
+   612   fun setTextColor(color: Int)
 
 ## data/AccountWatched.kt (131 lines) - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
     12 object AccountWatched  - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
@@ -325,15 +325,18 @@ Find a symbol with grep on this file, then read only that file around the line n
     11   fun parsePhoto(text: String)  - The profile photo of the first match, or null.
     16   fun photo(name: String, cb: (String?)  - Cached for a month: a person's photo does not change.
 
-## data/PhoneServer.kt (87 lines) - A tiny web page on the TV so a phone on the same Wi-Fi can paste an addon link instead of typing it with the r
-    14 class PhoneServer  - A tiny web page on the TV so a phone on the same Wi-Fi can paste an addon link instead of typing it with the r
-    18   fun address()  - The address to open on the phone, or null when the TV has no local network address.
-    20   fun start()
-    30   fun stop()
-    32   fun serve(c: java.net.Socket)
-    60   fun page(msg: String)
-    68   fun setupPage()
-    83   fun localIp()
+## data/PhoneServer.kt (110 lines) - A tiny web page on the TV so a phone on the same Wi-Fi can paste an addon link instead of typing it with the r
+    15 class PhoneServer  - A tiny web page on the TV so a phone on the same Wi-Fi can paste an addon link instead of typing it with the r
+    19   fun address()  - The address to open on the phone, or null when the TV has no local network address.
+    21   fun start()
+    31   fun stop()
+    33   fun readHead(i: java.io.InputStream)
+    39   fun reply(c: java.net.Socket, type: String, body: ByteArray, cache: String = "")
+    43   fun serve(c: java.net.Socket)
+    70   fun picturePage()  - Shrinks the picture on the phone before sending it (a photo is many megabytes, the TV needs far less).
+    81   fun page(msg: String)
+    89   fun setupPage()
+   104   fun localIp()
 
 ## data/Pictures.kt (30 lines) - The pictures the owner picks from the device (a wallpaper, an app's icon), kept small in the app's own folder.
     10 object Pictures  - The pictures the owner picks from the device (a wallpaper, an app's icon), kept small in the app's own folder.
@@ -650,7 +653,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    708   fun onStop()
    715   fun onDestroy()
 
-## screens/SettingsActivity.kt (537 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
+## screens/SettingsActivity.kt (538 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     27 class SettingsActivity  - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     32   fun card(title: String)  - A card inside a group (kind S): its title, then the rows that follow it up to the next card.
     35   fun header(t: String, subtitle: String = "", icon: Int = 0, divider: Boolean = f  - A group of the left list: its name, the line under the page title, its icon, and whether a divider line comes 
@@ -664,37 +667,37 @@ Find a symbol with grep on this file, then read only that file around the line n
     63   fun onResume()
     66   fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
     68   fun wallpaperMenu()
-    77   fun androidSettings()
-    79   fun testSources()
-    89   fun turnOnFallback()  - Turns the Home button fallback on, or opens the system accessibility page when this app may not do it itself.
-    94   fun askName(kids: Boolean)
-    96   fun arrange(what: String)
-    98   fun backupNow()
-   108   fun showCode(code: String, extra: String = "")
-   112   fun restoreDialog()
-   118   fun lastBackupText()
-   120   fun signIn()
-   138   fun signOut()
-   140   fun rows()
-   247   fun subPage()
-   257   fun showPhonePopup(addr: String)  - Manage from phone: a code to scan, with its address, and a way to close.
-   264   fun addonName(url: String)
-   266   fun provides(a: Addon)
-   277   fun addonsChanged()  - Reloads the addons, tells Home to reload, and redraws this page.
-   279   fun installAddon(link: String)
-   285   fun addonsRows()
-   312   fun addonRows(url: String)
-   327   fun profileRows()
-   352   fun checkUpdate()
-   363   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
-   365   fun onCreate(savedInstanceState: Bundle?)
-   381   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
-   407   fun railItem(g: Group, i: Int)
-   419   fun closeSubs()
-   421   fun buildPanel(keep: Int)
-   466   fun view(r: Row, changed: ()
-   527   fun onBackPressed()
-   536   fun onDestroy()
+    78   fun androidSettings()
+    80   fun testSources()
+    90   fun turnOnFallback()  - Turns the Home button fallback on, or opens the system accessibility page when this app may not do it itself.
+    95   fun askName(kids: Boolean)
+    97   fun arrange(what: String)
+    99   fun backupNow()
+   109   fun showCode(code: String, extra: String = "")
+   113   fun restoreDialog()
+   119   fun lastBackupText()
+   121   fun signIn()
+   139   fun signOut()
+   141   fun rows()
+   248   fun subPage()
+   258   fun showPhonePopup(addr: String)  - Manage from phone: a code to scan, with its address, and a way to close.
+   265   fun addonName(url: String)
+   267   fun provides(a: Addon)
+   278   fun addonsChanged()  - Reloads the addons, tells Home to reload, and redraws this page.
+   280   fun installAddon(link: String)
+   286   fun addonsRows()
+   313   fun addonRows(url: String)
+   328   fun profileRows()
+   353   fun checkUpdate()
+   364   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
+   366   fun onCreate(savedInstanceState: Bundle?)
+   382   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
+   408   fun railItem(g: Group, i: Int)
+   420   fun closeSubs()
+   422   fun buildPanel(keep: Int)
+   467   fun view(r: Row, changed: ()
+   528   fun onBackPressed()
+   537   fun onDestroy()
 
 ## screens/SetupActivity.kt (129 lines) - First run: one full screen per step (Home app, Home button, notifications, addons).
     25 class SetupActivity  - First run: one full screen per step (Home app, Home button, notifications, addons).
@@ -836,6 +839,10 @@ Find a symbol with grep on this file, then read only that file around the line n
    150   fun edit(act: Activity, key: Int, changed: ()  - One button: what its presses do, on or off, where it works, restore, delete.
    186   fun confirm(act: Activity, title: String, message: String, confirmText: String,   - A yes or no.
    197   fun pickAction(act: Activity, key: Int, press: String, current: String?, done: (  - The jobs a press can do, in groups.
+
+## ui/PhonePicture.kt (28 lines) - For a TV with no file chooser: the phone opens a page on the TV's address (shown as a code), picks a picture, 
+    11 object PhonePicture  - For a TV with no file chooser: the phone opens a page on the TV's address (shown as a code), picks a picture, 
+    14   fun receive(act: Activity, title: String, target: File, w: Int, h: Int, png: Boo
 
 ## ui/PicturePicker.kt (25 lines) - Opens the device's own picture chooser (Files, Photos) and hands back what was picked.
      8 class PicturePicker  - Opens the device's own picture chooser (Files, Photos) and hands back what was picked.
