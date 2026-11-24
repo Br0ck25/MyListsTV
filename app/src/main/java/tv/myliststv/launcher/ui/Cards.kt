@@ -117,7 +117,7 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
             }
             if (kind == CardKind.WIDE || ep) {
                 addView(subLabel, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM).apply { setMargins(Ui.dp(c, 8), 0, Ui.dp(c, 8), Ui.dp(c, 8)) })
-                addView(bar, LayoutParams(0, Ui.dp(c, 3), Gravity.BOTTOM or Gravity.START))
+                addView(bar, LayoutParams(0, Ui.dp(c, 5), Gravity.BOTTOM or Gravity.START))
             }
         }
         foreground = Ui.focusBg(c, Ui.R_CARD, Ui.CLEAR)
@@ -137,7 +137,7 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
         label.text = if (kind == CardKind.POSTER && !m.image.isNullOrEmpty()) "" else m.title
         subLabel.text = m.sub ?: ""
         ImageLoader.load(img, m.image, wPx, hPx)
-        tick.visibility = if (m.done) VISIBLE else GONE
+        tick.visibility = if (m.done || (m.payload as? Meta)?.let { Watched.titleDone(it) } == true) VISIBLE else GONE
         badge.text = m.badge ?: ""; badge.visibility = if (m.badge == null) GONE else VISIBLE
         badgeEnd.text = m.badgeEnd ?: ""; badgeEnd.visibility = if (m.badgeEnd == null) GONE else VISIBLE
         fitBadges(m)
@@ -167,6 +167,12 @@ class CardAdapter(
     fun set(newItems: List<CardModel>) { items = newItems; notifyDataSetChanged() }
 
     fun payloads(): List<Any?> = items.map { it.payload }
+
+    /** Changes one card's model and redraws just it (the card keeps the focus). */
+    fun refresh(i: Int, change: (CardModel) -> Unit) { items.getOrNull(i)?.let { change(it); notifyItemChanged(i) } }
+
+    /** Takes one card out of the strip where it is, so the rest slide along and nothing else reloads. */
+    fun removeAt(i: Int) { if (i !in items.indices) return; items = items.toMutableList().also { it.removeAt(i) }; notifyItemRemoved(i) }
 
     /** Moves one card to another place (the list is changed in place, so the row's own model stays in step). */
     fun move(from: Int, to: Int) {
@@ -240,6 +246,7 @@ class RowsList(
     override fun requestChildFocus(child: View?, focused: View?) {
         super.requestChildFocus(child, focused)
         if (child == null) return
+        getChildAdapterPosition(child).takeIf { it >= 0 }?.let { lastRow = it }
         // Only when it is not already in place: scrolling re-requests focus, which would otherwise loop.
         if (getChildAdapterPosition(child) == 0 && computeVerticalScrollOffset() != 0) post { smoothScrollBy(0, -computeVerticalScrollOffset()) }   // the same easing as scrolling down, not a jump
         else if (child.top < 0) post { if (child.isAttachedToWindow && child.top < 0) smoothScrollBy(0, child.top) }
@@ -298,6 +305,15 @@ class RowsList(
         }
         return super.focusSearch(focused, direction)
     }
+
+    /** Moving down from the tabs: the first row's remembered card (its first card if none), not whichever card happens to sit under the tab. */
+    fun enter(): Boolean { val first = findViewHolderForAdapterPosition(0)?.itemView as? RowView ?: return false; return cardIn(first)?.requestFocus() == true }
+
+    fun removed(i: Int) = adapter!!.notifyItemRemoved(i)
+
+    private var lastRow = 0
+    /** Nothing has the focus (coming back from another page): put it on the card you were last on. False when something already has it. */
+    fun restoreFocus(): Boolean { if (findFocus() != null || rows.isEmpty()) return false; focusRowAt(lastRow.coerceIn(0, rows.size - 1)); return true }
 
     fun changed(i: Int) = adapter!!.notifyItemChanged(i)
     fun changedAll() = adapter!!.notifyDataSetChanged()

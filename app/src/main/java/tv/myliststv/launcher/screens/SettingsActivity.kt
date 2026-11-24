@@ -66,103 +66,75 @@ class SettingsActivity : Activity() {
         val pages = listOf("All settings" to Settings.ACTION_SETTINGS, "Wi-Fi and network" to Settings.ACTION_WIFI_SETTINGS, "Display" to Settings.ACTION_DISPLAY_SETTINGS,
             "Sound" to Settings.ACTION_SOUND_SETTINGS, "Bluetooth and remotes" to Settings.ACTION_BLUETOOTH_SETTINGS, "Apps" to Settings.ACTION_APPLICATION_SETTINGS,
             "Date and time" to Settings.ACTION_DATE_SETTINGS, "Storage" to Settings.ACTION_INTERNAL_STORAGE_SETTINGS)
-        android.app.AlertDialog.Builder(this).setTitle("Android settings").setItems(pages.map { it.first }.toTypedArray()) { _, i ->
-            try { startActivity(Intent(pages[i].second)) } catch (_: Exception) {
-                try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(this, "This TV does not open its settings from apps.", true) }
+        Sheet.menu(this, "Android settings", "Opens the TV's own settings", pages.map { (name, action) ->
+            name to {
+                try { startActivity(Intent(action)) } catch (_: Exception) {
+                    try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) { Pop.toast(this, "This TV does not open its settings from apps.", true) }
+                }
             }
-        }.show()
+        })
     }
 
     private fun testSources() {
-        if (StreamResolver.providers("movie", "tt0816692").isEmpty()) { android.app.AlertDialog.Builder(this).setTitle("Test my sources").setMessage("No stream addon is installed. Add one under Addons.").setPositiveButton("OK", null).show(); return }
-        tv.myliststv.launcher.ui.Pop.toast(this, "Testing\u2026")
+        if (StreamResolver.providers("movie", "tt0816692").isEmpty()) { Sheet.message(this, "Test my sources", "No stream addon is installed. Add one under Content & Discovery, Addons.", Sheet.Act("OK", true)); return }
+        Pop.toast(this, "Testing\u2026")
         StreamResolver.resolve("movie", "tt0816692", StreamResolver.DEFAULT_TIMEOUT_MS, StreamResolver.Session(onUpdate = { _, _ -> }, onDone = { _, st ->
             val lines = st.joinToString("\n\n") { (if (it.ok && it.count > 0) "\u2713 " else "\u2717 ") + it.name + ": " + (if (it.ok && it.count > 0) "${it.count} sources in ${"%.1f".format(it.millis / 1000.0)} s" else (it.note ?: "gave nothing")) }
-            android.app.AlertDialog.Builder(this).setTitle("Test my sources").setMessage(lines.ifEmpty { "No answers." }).setPositiveButton("OK", null).show()
+            Sheet.message(this, "Test my sources", lines.ifEmpty { "No answers." }, Sheet.Act("OK", true))
         }))
     }
 
     /** Turns the Home button fallback on, or opens the system accessibility page when this app may not do it itself. */
     private fun turnOnFallback() {
         if (HomeSetup.enableFallback(this)) refresh()
-        else try { tv.myliststv.launcher.ui.Pop.toast(this, "Turn on My Lists TV Home button", true); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
+        else try { Pop.toast(this, "Turn on My Lists TV Home button", true); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
     }
 
-    private fun profileMenu() {
-        val l = Profiles.all()
-        val items = l.map { it.name + if (it.kids) " (kids)" else "" } + listOf("Add profile", "Add kids profile", "Remove ${Profiles.active().name}")
-        android.app.AlertDialog.Builder(this).setTitle("Profiles").setItems(items.toTypedArray()) { _, i ->
-            when {
-                i < l.size -> { Profiles.switchTo(this, l[i].id); refresh() }
-                i == l.size -> askName(false)
-                i == l.size + 1 -> askName(true)
-                else -> { Profiles.remove(Profiles.activeId); Profiles.switchTo(this, Profiles.activeId); refresh() }
-            }
-        }.show()
-    }
-
-    /** Choose another profile whose addons this one uses, or stop sharing. */
-    private fun shareMenu() {
-        val me = Profiles.activeId
-        val others = Profiles.all().filter { it.id != me && Profiles.addonSource(it.id) == null }
-        val items = others.map { "Use ${it.name}'s addons" } + if (Profiles.addonSource() != null) listOf("Stop sharing (keep a copy)") else emptyList()
-        if (items.isEmpty()) { tv.myliststv.launcher.ui.Pop.toast(this, "No other profile can be shared from."); return }
-        android.app.AlertDialog.Builder(this).setTitle("Share addons").setItems(items.toTypedArray()) { _, i ->
-            if (i < others.size) Profiles.shareAddons(me, others[i].id) else AddonStore.stopSharing(me)
-            AddonStore.needsRefresh = true; refresh()
-        }.show()
-    }
-
-    private fun askName(kids: Boolean) = Ui.askText(this, if (kids) "New kids profile" else "New profile", "Name", "Add") { Profiles.add(it, kids); refresh() }
+    private fun askName(kids: Boolean) = Sheet.ask(this, if (kids) "New kids profile" else "New profile", "Name", "Add") { Profiles.add(it, kids); refresh() }
 
     private fun arrange(what: String) = startActivity(Intent(this, ArrangeActivity::class.java).putExtra("what", what))
 
     private fun backupNow() {
         val first = Prefs.backupCode.isEmpty()
         val code = Backup.codeForThisBox()
-        tv.myliststv.launcher.ui.Pop.toast(this, "Backing up\u2026")
+        Pop.toast(this, "Backing up\u2026")
         Backup.upload(code) { msg ->
-            if (first) showCode(code, msg) else tv.myliststv.launcher.ui.Pop.toast(this, msg, true)
+            if (first) showCode(code, msg) else Pop.toast(this, msg, true)
             refresh()
         }
     }
 
-    private fun showCode(code: String, extra: String = "") = android.app.AlertDialog.Builder(this).setTitle("Your recovery code")
-        .setMessage("$code\n\nWrite this down. It is the only way to restore your setup on another box, and My Lists cannot recover it for you.${if (extra.isNotEmpty()) "\n\n$extra" else ""}")
-        .setPositiveButton("I wrote it down", null).show()
+    private fun showCode(code: String, extra: String = "") = Sheet.message(this, "Your recovery code",
+        "$code\n\nWrite this down. It is the only way to restore your setup on another box, and My Lists cannot recover it for you.${if (extra.isNotEmpty()) "\n\n$extra" else ""}",
+        Sheet.Act("I wrote it down", true))
 
-    private fun restoreDialog() = Ui.askText(this, "Restore a backup", "XXXX-XXXX-XXXX-XXXX", "Restore", "Enter the recovery code from your backup. This replaces the addons and Library of the profile in use.", caps = true) { raw ->
+    private fun restoreDialog() = Sheet.ask(this, "Restore a backup", "XXXX-XXXX-XXXX-XXXX", "Restore", "Enter the recovery code from your backup. This replaces the addons and Library of the profile in use.", caps = true) { raw ->
         val code = Backup.clean(raw)
-        if (!Backup.isCode(code)) tv.myliststv.launcher.ui.Pop.toast(this, "That does not look like a recovery code.", true)
-        else { tv.myliststv.launcher.ui.Pop.toast(this, "Restoring\u2026"); Backup.restore(this, code) { msg -> tv.myliststv.launcher.ui.Pop.toast(this, msg, true); refresh() } }
+        if (!Backup.isCode(code)) Pop.toast(this, "That does not look like a recovery code.", true)
+        else { Pop.toast(this, "Restoring\u2026"); Backup.restore(this, code) { msg -> Pop.toast(this, msg, true); refresh() } }
     }
 
     private fun lastBackupText() = Prefs.lastBackup.let { if (it == 0L) "Never" else android.text.format.DateFormat.format("MMM d, h:mm a", it).toString() }
 
     private fun signIn() {
-        tv.myliststv.launcher.ui.Pop.toast(this, "Getting a code\u2026")
+        Pop.toast(this, "Getting a code\u2026")
         Pairing.start { s, why ->
-            if (s == null) { android.app.AlertDialog.Builder(this).setTitle("Could not sign in").setMessage(why ?: "Could not reach My Lists.").setPositiveButton("OK", null).show(); return@start }
-            // Scan the code with a phone camera, or type the link by hand.
-            val box = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; setPadding(Ui.dp(this@SettingsActivity, 24), Ui.dp(this@SettingsActivity, 8), Ui.dp(this@SettingsActivity, 24), Ui.dp(this@SettingsActivity, 8))
-                addView(android.widget.ImageView(this@SettingsActivity).apply { setImageBitmap(Qr.bitmap(Pairing.linkFull(s), Ui.dp(this@SettingsActivity, 200))) }, LinearLayout.LayoutParams(Ui.dp(this@SettingsActivity, 200), Ui.dp(this@SettingsActivity, 200)))
-                addView(Ui.text(this@SettingsActivity, "Scan this with your phone's camera, sign in and tap Link.\nOr open ${Pairing.linkUrl(s)}\nCode: ${s.userCode}", 14f, Ui.TEXT, false).apply { gravity = Gravity.CENTER }, Ui.matchWrap().apply { topMargin = Ui.dp(this@SettingsActivity, 10) })
-            }
-            val dlg = android.app.AlertDialog.Builder(this).setTitle("Sign in with My Lists").setCancelable(false).setView(box)
-                .setNegativeButton("Cancel") { _, _ -> Pairing.cancel() }.show()
+            if (s == null) { Sheet.message(this, "Could not sign in", why ?: "Could not reach My Lists.", Sheet.Act("OK", true)); return@start }
+            // Scan the code with a phone camera, or open the link by hand.
+            val sheet = Sheet(this, "Sign in with My Lists", "Scan this with your phone's camera, sign in and tap Link. Or open ${Pairing.linkUrl(s)} and enter the code ${s.userCode}.", 520).cancelable(false)
+            sheet.image(Qr.bitmap(Pairing.linkFull(s), Ui.dp(this, 190)))
+            val cancel = sheet.card("Cancel") { Pairing.cancel(); sheet.dismiss() }
+            sheet.show(); cancel.requestFocus()
             Pairing.poll(s) { link, name ->
-                dlg.dismiss()
-                if (link == null) tv.myliststv.launcher.ui.Pop.toast(this, "The code expired. Try again.", true)
-                else { Pairing.signIn(link, name); tv.myliststv.launcher.ui.Pop.toast(this, "Signed in as ${name.ifEmpty { "your account" }}. Your lists replace the defaults.", true) }
+                sheet.dismiss()
+                if (link == null) Pop.toast(this, "The code expired. Try again.", true)
+                else { Pairing.signIn(link, name); Pop.toast(this, "Signed in as ${name.ifEmpty { "your account" }}. Your lists replace the defaults.", true) }
                 refresh()
             }
         }
     }
 
-    private fun signOut() = android.app.AlertDialog.Builder(this).setTitle("Sign out of My Lists?")
-        .setMessage("Home goes back to the default catalogs. Your other addons stay.")
-        .setPositiveButton("Keep signed in", null).setNegativeButton("Sign out") { _, _ -> Pairing.signOut(); refresh() }.show()
+    private fun signOut() = Sheet.confirm(this, "Sign out of My Lists?", "Home goes back to the default catalogs. Your other addons stay.", "Sign out", "Keep signed in") { Pairing.signOut(); refresh() }
 
     private fun rows(): List<Row> = buildList {
         val me = this@SettingsActivity
@@ -179,14 +151,15 @@ class SettingsActivity : Activity() {
         add(header("Layout", "How Home looks and which rows it shows", R.drawable.ic_layout, divider = true))
         add(card("Look"))
         add(toggle("Show cast, logos and episodes from Cinemeta", "Asks Cinemeta, the standard Stremio metadata addon, for details your catalog addon lacks.", { Prefs.extraDetails }, { Prefs.extraDetails = it }))
-        add(toggle("Wide posters", "Show catalog items as wide pictures instead of tall posters.", { Prefs.horizontalPosters }, { Prefs.horizontalPosters = it }))
+        add(toggle("Landscape posters", "Show catalog items as landscape pictures instead of tall posters.", { Prefs.horizontalPosters }, { Prefs.horizontalPosters = it }))
         add(choice("Navigation", "Where Home, Movies, Series and the other pages are listed. Hidden opens with Left.", listOf(0, 1, 2), { Prefs.navStyle }, { Prefs.navStyle = it }, { listOf("Top bar", "Side bar", "Hidden side bar")[it] }))
         add(choice("Card size", "Posters, wide cards and app tiles grow or shrink together.", listOf(-1, 0, 1, 2, 3), { Prefs.cardSize }, { Prefs.cardSize = it }, { listOf("Extra small", "Small", "Medium", "Large", "Extra large")[it + 1] }))
         add(card("Home rows"))
         add(action("Arrange Home rows", "Move lists and the apps row up or down, or hide them from Home.") { arrange("rows") })
         add(action("Arrange apps row", "Reorder the apps on Home or hide some. The Apps tab still shows all of them.") { arrange("apps") })
-        add(toggle("Show Airing next", "The next episode of the shows you follow on My Lists, soonest first.", { Prefs.showAiring }, { Prefs.showAiring = it }))
-        add(toggle("Show Continue watching", "", { Prefs.showContinue }, { Prefs.showContinue = it }))
+        add(toggle("Show Airing Next", "The next episode of the shows you follow on My Lists, soonest first.", { Prefs.showAiring }, { Prefs.showAiring = it }))
+        if (Prefs.showAiring) add(toggle("Hide upcoming from Continue Watching", "An episode that is in Airing Next is not also shown in Continue Watching.", { Prefs.hideUpcomingContinue }, { Prefs.hideUpcomingContinue = it }))
+        add(toggle("Show Continue Watching", "", { Prefs.showContinue }, { Prefs.showContinue = it }))
         add(toggle("Show apps row", "", { Prefs.showAppsRow }, { Prefs.showAppsRow = it }))
         add(header("Content & Discovery", "Addons, catalogs, and discovery sources", R.drawable.ic_compass))
         add(card(""))
@@ -209,23 +182,23 @@ class SettingsActivity : Activity() {
         add(header("Default Launcher", "Make My Lists TV your Home screen, and set up the Home button", R.drawable.ic_home, divider = true))
         add(card("Home app"))
         add(info("Home app", if (HomeSetup.isHome(this@SettingsActivity)) "This launcher" else "Another launcher"))
-        add(action("Make this my Home app", "Opens the system choice. Pick My Lists TV and choose Always.") { if (HomeSetup.isHome(this@SettingsActivity)) tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "My Lists TV is already your Home app.") else HomeSetup.requestHome(this@SettingsActivity) })
+        add(action("Make this my Home app", "Opens the system choice. Pick My Lists TV and choose Always.") { if (HomeSetup.isHome(this@SettingsActivity)) Pop.toast(this@SettingsActivity, "My Lists TV is already your Home app.") else HomeSetup.requestHome(this@SettingsActivity) })
         add(card("Home button"))
         add(info("Home button fallback", if (HomeSetup.fallbackOn(this@SettingsActivity)) "On" else "Off"))
         add(action("Turn on the Home button fallback", "For TVs that keep their own launcher as Home. Opens the system accessibility page if needed. It only sees which app came forward.") {
-            if (HomeSetup.fallbackOn(this@SettingsActivity)) tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "The Home button fallback is already on.")
+            if (HomeSetup.fallbackOn(this@SettingsActivity)) Pop.toast(this@SettingsActivity, "The Home button fallback is already on.")
             else if (HomeSetup.enableFallback(this@SettingsActivity)) refresh()
-            else try { tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "Turn on My Lists TV Home button", true); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
+            else try { Pop.toast(this@SettingsActivity, "Turn on My Lists TV Home button", true); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
         })
         add(card("Notifications"))
         add(info("Notifications bell", if (Notices.allowed(this@SettingsActivity)) "On" else "Off"))
         add(action("Turn on notifications", "Shows your TV's notifications in the bell at the top right of Home. Opens the system Notification access page.") {
-            if (Notices.allowed(this@SettingsActivity)) tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "Notifications are already on.")
-            else try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "This TV has no such setting. Use the phone or computer steps.", true) }
+            if (Notices.allowed(this@SettingsActivity)) Pop.toast(this@SettingsActivity, "Notifications are already on.")
+            else try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Pop.toast(this@SettingsActivity, "This TV has no such setting. Use the phone or computer steps.", true) }
         })
         add(card("More"))
         add(action("Screensaver", "Pick My Lists TV backdrops as the screensaver in Android's settings.") {
-            try { startActivity(Intent(Settings.ACTION_DREAM_SETTINGS)) } catch (_: Exception) { try { startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "This TV keeps its screensaver setting somewhere else.", true) } } })
+            try { startActivity(Intent(Settings.ACTION_DREAM_SETTINGS)) } catch (_: Exception) { try { startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS)) } catch (_: Exception) { Pop.toast(this@SettingsActivity, "This TV keeps its screensaver setting somewhere else.", true) } } })
         add(action("Set up from a phone or computer", "Shows an address with the exact steps and commands for TVs that block the buttons above.") { HomeSetup.phoneSteps(this@SettingsActivity) })
         add(header("Remote & Buttons", "Customize remote buttons, Home actions, and app shortcuts in My Lists TV and globally.", R.drawable.ic_remote))
         add(card("Button Mapper"))
@@ -253,12 +226,12 @@ class SettingsActivity : Activity() {
         add(toggle("Advanced settings", "Shows more options in each group.", { Prefs.advanced }, { Prefs.advanced = it }))
         add(card("Performance"))
         add(choice("Lite mode", "Less motion and memory. Auto turns on for weak boxes.", listOf("Auto", "On", "Off"), { Prefs.liteMode }, { Prefs.liteMode = it }))
-        add(action("Clear caches", "Frees stored images and catalog data (${Http.cacheBytes() / 1_048_576} MB now).") { Http.clear(); ImageLoader.clearDisk(); tv.myliststv.launcher.ui.Pop.toast(this@SettingsActivity, "Caches cleared") })
+        add(action("Clear caches", "Frees stored images and catalog data (${Http.cacheBytes() / 1_048_576} MB now).") { Http.clear(); ImageLoader.clearDisk(); Pop.toast(this@SettingsActivity, "Caches cleared") })
         add(card("System"))
         add(action("Android settings", "Wi-Fi, display, sound, Bluetooth, apps and the rest of the TV's own settings.") { androidSettings() })
         add(header("About", "Version, updates, and privacy", R.drawable.ic_info))
         add(card(""))
-        add(action("Check for updates", "Version 0.1.${Updater.installedBuild(this@SettingsActivity)} installed.") { checkUpdate() })
+        add(action("Check for updates", "Version ${Version.name(Updater.installedBuild(this@SettingsActivity))} installed.") { checkUpdate() })
         add(info("Make this your home screen", "adb shell cmd package set-home-activity tv.myliststv.launcher/.MainActivity"))
         add(info("Privacy", "No analytics, no tracking. Signed in, your watch progress goes to your My Lists account. Skip-intro times from IntroDB (introdb.app)."))
     }
@@ -274,27 +247,12 @@ class SettingsActivity : Activity() {
         }
     }
 
-    /** Manage from phone: a bare pop-up over the dimmed page with a code to scan, its address and Close. */
+    /** Manage from phone: a code to scan, with its address, and a way to close. */
     private fun showPhonePopup(addr: String) {
-        val me = this
-        val d = android.app.Dialog(me)
-        d.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
-        val body = Ui.vbox(me).apply { gravity = Gravity.CENTER_HORIZONTAL; minimumWidth = Ui.dp(me, 480); setPadding(Ui.dp(me, 24), Ui.dp(me, 12), Ui.dp(me, 24), Ui.dp(me, 12)) }
-        body.addView(Ui.text(me, "Scan with your phone to add addons", 16f, Ui.TEXT2).apply { gravity = Gravity.CENTER })
-        body.addView(android.widget.ImageView(me).apply { setImageBitmap(Qr.bitmap(addr, Ui.dp(me, 190))); setPadding(Ui.dp(me, 12), Ui.dp(me, 12), Ui.dp(me, 12), Ui.dp(me, 12)); background = Ui.rounded(me, Ui.QR_LIGHT, Ui.R_DIALOG) },
-            LinearLayout.LayoutParams(Ui.dp(me, 214), Ui.dp(me, 214)).apply { topMargin = Ui.dp(me, 14) })
-        body.addView(Ui.text(me, addr, 14f, Ui.DIM), Ui.wrap().apply { topMargin = Ui.dp(me, 10) })
-        val close = Ui.hbox(me, 8).apply {
-            gravity = Gravity.CENTER; setPadding(Ui.dp(me, 26), Ui.dp(me, 10), Ui.dp(me, 26), Ui.dp(me, 10))
-            background = Ui.pillBg(me, Ui.FILL, Ui.FOCUS_FILL); isFocusable = true; isClickable = true; setOnClickListener { d.dismiss() }
-            addView(android.widget.ImageView(me).apply { setImageResource(R.drawable.ic_close); setColorFilter(Ui.TEXT) }, LinearLayout.LayoutParams(Ui.dp(me, 18), Ui.dp(me, 18)))
-            addView(Ui.text(me, "Close", 16f, Ui.TEXT, true))
-        }
-        body.addView(close, Ui.wrap().apply { topMargin = Ui.dp(me, 16) })
-        d.setContentView(body)
-        d.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Ui.CLEAR))
-        d.window?.setDimAmount(0.85f)
-        d.show(); close.requestFocus()
+        val s = Sheet(this, "Add addons from your phone", "Scan with your phone, then paste the addon's link (or a recovery code) on the page that opens.", 480)
+        s.image(Qr.bitmap(addr, Ui.dp(this, 190)), addr)
+        val close = s.card("Close") { s.dismiss() }
+        s.show(); close.requestFocus()
     }
 
     private fun addonName(url: String) = AddonStore.loaded.firstOrNull { it.manifestUrl == url }?.name ?: url.removePrefix("https://").removePrefix("http://").substringBefore('/')
@@ -313,9 +271,9 @@ class SettingsActivity : Activity() {
     private fun addonsChanged() = AddonStore.load { AddonStore.needsRefresh = true; runOnUiThread { refresh() } }
 
     private fun installAddon(link: String) {
-        if (link.isBlank()) { tv.myliststv.launcher.ui.Pop.toast(this, "Type or paste an addon link first."); return }
-        tv.myliststv.launcher.ui.Pop.toast(this, "Checking…")
-        Links.add(link.trim()) { msg -> runOnUiThread { tv.myliststv.launcher.ui.Pop.toast(this, msg, true); addonField?.setText(""); addonsChanged() } }
+        if (link.isBlank()) { Pop.toast(this, "Type or paste an addon link first."); return }
+        Pop.toast(this, "Checking…")
+        Links.add(link.trim()) { msg -> runOnUiThread { Pop.toast(this, msg, true); addonField?.setText(""); addonsChanged() } }
     }
 
     private fun addonsRows(): List<Row> = buildList {
@@ -329,9 +287,9 @@ class SettingsActivity : Activity() {
             add(card("Install addon"))
             add(field("Install", "https://example.com/manifest.json") { installAddon(it) })
             add(card(""))
-            add(action("Manage from phone", if (addr != null) "Scan a QR code to add addons from your phone, and see the address" else "Connect the TV to Wi-Fi to add addons from your phone.", icon = R.drawable.ic_layout) { if (addr != null) showPhonePopup(addr) else tv.myliststv.launcher.ui.Pop.toast(me, "Connect the TV to Wi-Fi first.") })
+            add(action("Manage from phone", if (addr != null) "Scan a QR code to add addons from your phone, and see the address" else "Connect the TV to Wi-Fi to add addons from your phone.", icon = R.drawable.ic_layout) { if (addr != null) showPhonePopup(addr) else Pop.toast(me, "Connect the TV to Wi-Fi first.") })
             add(action("Reorder home catalogs", "Controls catalog row order on Home", icon = R.drawable.ic_list) { arrange("rows") })
-            add(action("Refresh Addons", "Pull the latest addon changes for the current profile", icon = R.drawable.ic_refresh) { tv.myliststv.launcher.ui.Pop.toast(me, "Refreshing…"); addonsChanged() })
+            add(action("Refresh Addons", "Pull the latest addon changes for the current profile", icon = R.drawable.ic_refresh) { Pop.toast(me, "Refreshing…"); addonsChanged() })
         }
         add(card("Installed addons"))
         val loaded = AddonStore.loaded.associateBy { it.manifestUrl }
@@ -368,7 +326,7 @@ class SettingsActivity : Activity() {
             add(action(p.name + if (p.kids) " (kids)" else "", if (active) "In use now" else "Switch to this profile", icon = R.drawable.ic_person, value = { if (active) "Active" else "" }) { if (!active) { Profiles.switchTo(me, p.id); refresh() } })
         }
         add(card("Manage"))
-        Profiles.all().forEach { p -> add(action("Rename ${p.name}", "Change the name shown for this profile.", icon = R.drawable.ic_person) { Ui.askText(me, "Rename ${p.name}", "Name", "Save", initial = p.name) { Profiles.rename(p.id, it); refresh() } }) }
+        Profiles.all().forEach { p -> add(action("Rename ${p.name}", "Change the name shown for this profile.", icon = R.drawable.ic_person) { Sheet.ask(me, "Rename ${p.name}", "Name", "Save", initial = p.name) { Profiles.rename(p.id, it); refresh() } }) }
         add(action("Add profile", "A separate account, addons, Library and history.", icon = R.drawable.ic_add) { askName(false) })
         add(action("Add kids profile", "A profile that hides titles that are not for children.", icon = R.drawable.ic_add) { askName(true) })
         if (Profiles.all().size > 1) {
@@ -386,14 +344,12 @@ class SettingsActivity : Activity() {
     }
 
     private fun checkUpdate() {
-        tv.myliststv.launcher.ui.Pop.toast(this, "Checking for updates\u2026")
+        Pop.toast(this, "Checking for updates\u2026")
         Updater.latest { r ->
             val mine = Updater.installedBuild(this)
-            if (r == null) tv.myliststv.launcher.ui.Pop.toast(this, "Could not check right now.", true)
-            else if (r.build <= mine) tv.myliststv.launcher.ui.Pop.toast(this, "You have the latest version.", true)
-            else android.app.AlertDialog.Builder(this).setTitle("Update available").setMessage("${r.tag} is ready. You have 0.1.$mine.")
-                .setPositiveButton("Install") { _, _ -> Updater.install(this, r) { tv.myliststv.launcher.ui.Pop.toast(this, it) } }
-                .setNegativeButton("Later", null).show()
+            if (r == null) Pop.toast(this, "Could not check right now.", true)
+            else if (r.build <= mine) Pop.toast(this, "You have the latest version.", true)
+            else Sheet.message(this, "Update available", "${r.tag} is ready. You have ${Version.name(mine)}.", Sheet.Act("Later"), Sheet.Act("Install", true) { Updater.install(this, r) { Pop.toast(this, it) } })
         }
     }
 

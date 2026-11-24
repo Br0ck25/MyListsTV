@@ -49,10 +49,10 @@ object HomeSetup {
         val server = PhoneServer { _, done -> done("Nothing to add here.") }
         server.start()
         val url = server.address()?.let { "$it/setup" }
-        val d = tv.myliststv.launcher.ui.Ui.dialog(a, "Set up from your phone or computer",
+        val d = tv.myliststv.launcher.ui.Sheet.message(a, "Set up from your phone or computer",
             if (url != null) "Scan this with your phone, or open the address in a browser on the same Wi-Fi. It lists each command to run, in order, and what it does.\n\n$url" else "Connect the TV to Wi-Fi first.",
-            tv.myliststv.launcher.ui.Ui.Act("Done", true) {}, image = url?.let { tv.myliststv.launcher.ui.Qr.bitmap(it, tv.myliststv.launcher.ui.Ui.dp(a, 190)) })
-        d.setOnDismissListener { server.stop() }
+            tv.myliststv.launcher.ui.Sheet.Act("Done", true), image = url?.let { tv.myliststv.launcher.ui.Qr.bitmap(it, tv.myliststv.launcher.ui.Ui.dp(a, 190)) })
+        d.onDismiss { server.stop() }
     }
 
     /** The commands to run from a computer, with this box's address filled in. */

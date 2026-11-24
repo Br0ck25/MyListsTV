@@ -138,7 +138,7 @@ class PlayerSmokeTest {
         val end = System.currentTimeMillis() + 4000
         while (System.currentTimeMillis() < end) { shadowOf(Looper.getMainLooper()).idle(); Thread.sleep(100) }
         fun all(v: View, out: MutableList<View> = ArrayList()): List<View> { out += v; if (v is ViewGroup) for (i in 0 until v.childCount) all(v.getChildAt(i), out); return out }
-        val sources = all(a.window.decorView).filterIsInstance<android.widget.TextView>().first { it.text.toString() == "Sources" }
+        val sources = all(a.window.decorView).first { it.contentDescription?.toString() == "Sources" }   // an icon button; its label is its description
         sources.performClick(); shadowOf(Looper.getMainLooper()).idle()
         val labels = all(a.window.decorView).filterIsInstance<android.widget.TextView>().map { it.text.toString() }
         assertTrue("panel lists the sources", labels.count { it.contains("source ") } >= 3)

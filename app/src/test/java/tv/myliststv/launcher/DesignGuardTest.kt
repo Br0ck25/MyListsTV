@@ -41,6 +41,15 @@ class DesignGuardTest {
         assertEquals("sizes must be one of $scale", emptyList<String>(), bad)
     }
 
+    /** Every menu, question, message and text entry is a [tv.myliststv.launcher.ui.Sheet]; the right-hand panels are SidePanel. Nothing builds its own pop-up. */
+    @Test fun popUpsAreSheetsOrSidePanels() {
+        val own = setOf("Sheet.kt", "SidePanel.kt")
+        val bad = screens().filter { it.name !in own }.flatMap { f ->
+            f.readLines().mapIndexedNotNull { i, l -> if (Regex("""AlertDialog\b|android\.app\.Dialog\b|\bDialog\(|PopupMenu|ListPopupWindow|Toast\.makeText""").containsMatchIn(l.substringBefore("//")) && !l.trimStart().startsWith("import ")) "${f.name}:${i + 1}: ${l.trim()}" else null }
+        }
+        assertEquals("use Sheet (menu, message, ask, confirm, busy) or Pop.toast, see docs/DESIGN.md section 9", emptyList<String>(), bad.filter { !it.startsWith("Pop.kt") })
+    }
+
     @Test fun everyCardKindIsRoundedAndClipped() {
         val ctx = ApplicationProvider.getApplicationContext<App>()
         for (kind in CardKind.values()) {

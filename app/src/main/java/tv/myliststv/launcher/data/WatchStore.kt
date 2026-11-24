@@ -5,7 +5,10 @@ import android.content.SharedPreferences
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Local watch progress behind Continue watching. Small and capped so it never grows. */
+/** Local watch progress behind Continue Watching. Small and capped so it never grows. */
+/** Anything shorter than this is not a title (a stream addon's error clip is 10 to 30 seconds): it is never kept as progress and never counts as watched. */
+const val MIN_REAL_MS = 120_000L
+
 object WatchStore {
     private lateinit var sp: SharedPreferences
     private const val MAX = 40
@@ -40,7 +43,7 @@ object WatchStore {
 
     /** Entries worth showing: started, not finished. */
     /** Entries worth showing: started and not finished, or next-up episodes from the account (no length yet). */
-    fun continueWatching(): List<Entry> = all().map(::tidy).filter { it.fraction in 0.02f..0.93f || it.durationMs == 0L }
+    fun continueWatching(): List<Entry> = all().filter { it.durationMs == 0L || it.durationMs >= MIN_REAL_MS }.map(::tidy).filter { it.fraction in 0.02f..0.93f || it.durationMs == 0L }
 
     /** Under 2% in (the point where Resume starts to apply): nothing worth resuming, so it counts as next up. */
     private fun tidy(e: Entry) = if (e.durationMs > 1L && e.fraction < 0.02f) e.copy(positionMs = 0L, durationMs = 0L) else e
@@ -52,6 +55,7 @@ object WatchStore {
      * resuming, so it is kept as "next up" at the top; storing it as it is would hide it until it passed 2% and drop its old entry.
      */
     fun save(e: Entry) {
+        if (e.durationMs in 2 until MIN_REAL_MS) return   // an error clip, not the title
         val entry = tidy(e)
         val list = all().filter { it.metaId != e.metaId }.toMutableList()
         list.add(0, entry)

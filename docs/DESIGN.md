@@ -48,7 +48,7 @@ Text sizes (the only ones allowed): 11 caption, 12 and 13 small, 14 body, 15 con
 - **Action row.** Label and a `›` on the right. Never shows a value. Destructive actions ask first with Keep / Remove.
 - **Info row.** Not focusable, dimmer outline, value on the right.
 - **Panel/row container.** `CARD`, `R_PANEL`, 16 × 12 padding.
-- **Dialog.** System dialog in the dark theme, short title, one sentence of body, at most three buttons, the safe choice first.
+- **Dialog.** A `Sheet` (section 9): short title, one sentence of body, at most three buttons as cards, the safe choice first.
 - **Banner/toast.** Pill, `ELEVATED` fill, white text. One line.
 - **Progress.** 3-unit bar, `BRAND` on a 20% white track.
 
@@ -57,7 +57,7 @@ Text sizes (the only ones allowed): 11 caption, 12 and 13 small, 14 body, 15 con
 2. A choice among 2–6 values is a **choice row**; more than 6 is a list dialog; a free value (a link, a name) is an action that opens an input dialog.
 3. One control per row, on the right. Label bold on the left, one line of muted help under it (omit if the label says it all).
 4. Changes apply at once. There is no Save button.
-5. **Back** goes up one level and never loses a change. **Hold OK** on a row or card opens its context menu as a list dialog. The launcher home never closes on Back.
+5. **Back** goes up one level and never loses a change. **Hold OK** on a row or card opens its context menu as a `Sheet.menu`. The launcher home never closes on Back.
 6. **Settings is a split menu inside one rounded panel** (groups with chevrons on the left, dark rows on the right). The groups (General, Playback, Home, Backup, Performance, About) run down the left; the rows of the group under the focus show on the right and change as focus moves down the list. Right enters the rows, Back returns to the groups. Most used first. Advanced-only rows appear only in Advanced mode, directly under their group.
    The top bar has no logo or app name: the tabs start at the left edge.
 7. Destructive rows (remove, clear, reset) sit last in their group, and always confirm.
@@ -88,6 +88,10 @@ Plain words, sentence case, no jargon (say "source", not "stream resolver"; "add
 5. Check it in lite mode.
 
 ## 9. Dialogs and top bar
-- Every system dialog and menu gets its look from `Theme.MyListsTV.Dialog` (res/values/themes.xml, colours in res/values/colors.xml, which mirror the tokens in Ui.kt). Use `AlertDialog.Builder` as usual; do not style a dialog by hand.
-- The top bar has the tabs on the left and, on the right, the profile chip (who is watching), then round icon buttons (`Ui.iconButton`): notifications, search, settings. New bar actions are icon buttons, not text pills.
+- **One pop-up: `ui/Sheet.kt`.** Every menu, question, message, confirmation, text entry and "please wait" is a `Sheet`: a rounded card (`R_DIALOG`, `ELEVATED` ring) with a 24 title, a 14 line under it, and a list of option cards (`card`). Use the helper that fits: `Sheet.menu` (a list of choices), `Sheet.message` (words, an optional QR code, buttons as cards), `Sheet.ask` (one line of text), `Sheet.confirm` (the safe choice first), `Sheet.busy`. Build one by hand with `card`, `label`, `box`, `text`, `image` and `field` only when none fits.
+- The first card has the focus; a primary action is outlined in the brand colour (`highlighted`), never filled; a chosen value gets a tick (`selected`). Cards have a title and at most one line under it.
+- The right-hand panels (notifications, the gear) are `ui/SidePanel.kt`. Those two files are the only places a pop-up is built. Never use `AlertDialog`, `Dialog`, `PopupMenu` or `Toast`; `DesignGuardTest.popUpsAreSheetsOrSidePanels` fails if one appears.
+- Short messages at the bottom of the screen are `Pop.toast` (ui/Pop.kt), drawn by the app with no icon (the system toast shows an app icon the TV keeps from an older version).
+- The same title offers the same menu everywhere (`ui/TitleMenu.kt`: Go to details, Add to or Remove from Library, Mark as watched or unwatched). Add to that one place, not to a screen.
+- The top bar has the tabs on the left and, on the right, the profile chip (who is watching), then round icon buttons (`Ui.iconButton`): notifications and settings, then the clock. Search is a page in the tab row or side bar, not a button. New bar actions are icon buttons, not text pills.
 - Moving along the tabs switches page; moving up from a page onto the tabs does not (OK does).

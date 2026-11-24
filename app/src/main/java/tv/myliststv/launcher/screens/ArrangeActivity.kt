@@ -41,9 +41,9 @@ class ArrangeActivity : Activity() {
             val all = AppRepository.load(this).sortedBy { order.indexOf(it.component.packageName).let { i -> if (i < 0) Int.MAX_VALUE else i } }
             Http.post { fill(all.map { Triple(it.component.packageName, it.label, "Installed app") }, Prefs.appHidden) { o, h -> Prefs.appOrder = o; Prefs.appHidden = h } }
         } else {
-            val fixed = mapOf("Continue watching" to "Your progress", "Airing next" to "Next episodes of the shows you follow", "Your apps" to "Installed apps")
+            val fixed = mapOf("Continue Watching" to "Your progress", "Airing Next" to "Next episodes of the shows you follow", "Your Apps" to "Installed apps")
             val source = Catalogs.browseRows(null, 8).associate { (a, cat) -> Catalogs.rowTitle(null, cat) to (if (a.name.startsWith("My Lists")) "My Lists" else a.name) }
-            val titles = listOf("Continue watching", "Airing next") + Catalogs.browseRows(null, 8).map { (_, cat) -> Catalogs.rowTitle(null, cat) } + "Your apps"
+            val titles = listOf("Continue Watching", "Airing Next") + Catalogs.browseRows(null, 8).map { (_, cat) -> Catalogs.rowTitle(null, cat) } + "Your Apps"
             fill(titles.distinct().sortedBy { Prefs.homeRank(it) }.map { Triple(it, it, fixed[it] ?: source[it] ?: "Catalog") }, Prefs.homeHidden) { o, h -> Prefs.homeOrder = o; Prefs.homeHidden = h }
         }
     }

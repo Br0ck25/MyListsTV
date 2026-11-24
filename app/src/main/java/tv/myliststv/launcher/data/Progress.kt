@@ -14,7 +14,7 @@ object Progress {
 
     /** The request for this play, or null when it should not be sent (no account, no IMDb id, a start, or live TV). */
     fun request(link: String, e: WatchStore.Entry): Pair<String, String>? {
-        if (link.isEmpty() || !Regex("tt\\d+").matches(e.metaId) || e.durationMs <= 0) return null
+        if (link.isEmpty() || !Regex("tt\\d+").matches(e.metaId) || e.durationMs < MIN_REAL_MS) return null
         val series = e.type == "series"
         val o = JSONObject().put("targetId", Pairing.targetOf(link)).put("type", if (series) "series" else "movie").put("imdbId", e.metaId)
         if (series) o.put("season", e.season).put("episode", e.episode)
@@ -79,10 +79,37 @@ object Progress {
         return "$ORIGIN/api/nuvio-tv/history${if (watched) "" else "/remove"}" to o.toString()
     }
 
-    /** A title or episode marked watched (or not watched) by hand also goes to the account's watched history, so the website and other TVs agree. Does nothing signed out. */
-    fun markWatched(metaId: String, type: String, season: Int, episode: Int, watched: Boolean) {
-        val (url, body) = watchedRequest(Prefs.accountLink, metaId, type, season, episode, watched, System.currentTimeMillis()) ?: return
+    /** The request that marks a whole show watched (every aired episode) or takes it all off, or null when signed out or not an IMDb title. */
+    fun wholeShowRequest(link: String, metaId: String, watched: Boolean, now: Long): Pair<String, String>? {
+        if (link.isEmpty() || !Regex("tt\\d+").matches(metaId)) return null
+        val o = JSONObject().put("targetId", Pairing.targetOf(link)).put("type", "series").put("imdbId", metaId).put("whole", true)
+        if (watched) o.put("completed", true).put("watchedAt", now)
+        return "$ORIGIN/api/nuvio-tv/history${if (watched) "" else "/remove"}" to o.toString()
+    }
+
+    fun markWholeShow(metaId: String, watched: Boolean) {
+        val (url, body) = wholeShowRequest(Prefs.accountLink, metaId, watched, System.currentTimeMillis()) ?: return
         Http.background { try { Http.send("POST", url, body) } catch (_: Exception) {} }
+    }
+
+    /** A title or episode marked watched (or not watched) by hand also goes to the account's watched history, so the website and other TVs agree. Does nothing signed out. */
+    fun markWatched(metaId: String, type: String, season: Int, episode: Int, watched: Boolean, result: ((Boolean, String) -> Unit)? = null) {
+        val (url, body) = watchedRequest(Prefs.accountLink, metaId, type, season, episode, watched, System.currentTimeMillis()) ?: return
+        send(url, body, result)
+    }
+
+    /** Sends one request to the account and says how it went: [result] gets (accepted, a short reason) on the main thread. The reply is logged (never the token). */
+    private fun send(url: String, body: String, result: ((Boolean, String) -> Unit)?) {
+        Http.background {
+            var ok = false; var why = "no answer"
+            try {
+                val (code, text) = Http.send("POST", url, body)
+                ok = code in 200..299 && (try { JSONObject(text).optBoolean("ok", true) } catch (_: Exception) { true })
+                why = if (ok) "ok" else "HTTP $code ${text.take(120)}"
+                android.util.Log.d("MyListsTV", "${url.substringAfter("/api/")} -> $code ${text.take(160)}")
+            } catch (e: Exception) { why = e.message ?: "network error"; android.util.Log.d("MyListsTV", "${url.substringAfter("/api/")} failed: $why") }
+            if (result != null) Http.post { result(ok, why) }
+        }
     }
 
     /** Sends at most once a minute unless [force] (leaving the player, or the end of the title). */

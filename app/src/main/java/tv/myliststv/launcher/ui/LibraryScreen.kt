@@ -1,7 +1,6 @@
 package tv.myliststv.launcher.ui
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.view.View
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.GridLayoutManager
@@ -24,10 +23,7 @@ class LibraryScreen(private val act: Activity, private val onMeta: (Meta) -> Uni
         it.addView(pills, Ui.matchWrap())
         empty.setPadding(Ui.dp(act, 48), Ui.dp(act, 12), Ui.dp(act, 48), 0)
         it.addView(empty, Ui.matchWrap())
-        // As many columns as fit: the card width (scaled by the card size setting) plus its margins.
-        val cell = Ui.dp(act, if (wide) 220 else 130) * Prefs.cardScale
-        grid.layoutManager = GridLayoutManager(act, ((act.resources.displayMetrics.widthPixels - Ui.dp(act, 84)) / cell).toInt().coerceIn(2, 10)); grid.itemAnimator = null; grid.clipToPadding = false
-        grid.setPadding(Ui.dp(act, 42), Ui.dp(act, 4), Ui.dp(act, 42), Ui.dp(act, 56))
+        CardGrid.apply(grid, act, if (wide) 208 else 118, 4, 56)   // the same card size, spacing and edges as the rows on Home
         it.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f))
     }
 

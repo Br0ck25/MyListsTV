@@ -17,6 +17,8 @@ The full plan lives in the "My Lists TV: Build Plan" doc the owner shares; `docs
 10. Small, root-cause changes. Don't refactor unrelated code. Never skip or loosen a test to get green.
 11. Don't commit secrets, keystores or `local.properties`.
 12. **No source file over 2,000 lines** (Kotlin, XML, Gradle, workflow). Split by job before it gets there. `SizeGuardTest` fails the build if one does.
+13. **One look for every pop-up and menu.** Use `ui/Sheet.kt` (and `Pop.toast` for short messages); never `AlertDialog`, `Dialog`, `PopupMenu` or `Toast`. A new colour, size or radius goes in `Ui.kt` first. `DesignGuardTest` enforces both. See `docs/DESIGN.md`.
+14. **Versions:** the CI run number is the build number and the Android version code. The name is 0.1.1 ... 0.1.99, then 0.2.0 ... 0.2.99, then 0.3.0 (`data/Version.kt`, `app/build.gradle.kts`, `.github/workflows/build.yml`: change all three together).
 
 ## Working rules (added at the owner's request, from the Karpathy-style guidelines)
 These bias toward care over speed. For trivial work, use judgment. Where they meet the owner's rules above, ask only about product decisions and decide technical choices yourself.

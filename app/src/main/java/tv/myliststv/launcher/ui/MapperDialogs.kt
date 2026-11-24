@@ -3,7 +3,6 @@ package tv.myliststv.launcher.ui
 import tv.myliststv.launcher.*
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
@@ -23,52 +22,6 @@ import tv.myliststv.launcher.data.*
  * tells the page behind to redraw.
  */
 object MapperDialogs {
-    /** One modal: a title, a line under it, then a scrolling list of cards. */
-    class Sheet(val act: Activity, title: String, subtitle: String?, private val width: Int = 480) {
-        val list = Ui.vbox(act).apply { setPadding(Ui.dp(act, 3), Ui.dp(act, 3), Ui.dp(act, 3), Ui.dp(act, 3)) }
-        val dialog: AlertDialog
-
-        init {
-            val c = act
-            val body = Ui.vbox(c).apply { setPadding(Ui.dp(c, 22), Ui.dp(c, 20), Ui.dp(c, 22), Ui.dp(c, 16)) }
-            body.addView(Ui.text(c, title, 24f, Ui.TEXT, true))
-            if (!subtitle.isNullOrBlank()) body.addView(Ui.text(c, subtitle, 14f, Ui.DIM).apply { setLineSpacing(0f, 1.15f) }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 6) })
-            body.addView(ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false; clipToPadding = false }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 10) })
-            dialog = AlertDialog.Builder(c).setView(body).create()
-        }
-
-        fun show(): Sheet { dialog.show(); dialog.window?.setLayout(Ui.dp(act, width), ViewGroup.LayoutParams.WRAP_CONTENT); return this }
-        fun dismiss() = dialog.dismiss()
-        fun clear() = list.removeAllViews()
-        /** Index among the cards of the one that has focus, so a redraw can put it back. */
-        fun focusIndex(): Int = (0 until list.childCount).map { list.getChildAt(it) }.filter { it.isFocusable }.indexOfFirst { it.hasFocus() }.coerceAtLeast(0)
-        fun focusAt(i: Int) { val f = (0 until list.childCount).map { list.getChildAt(it) }.filter { it.isFocusable }; f.getOrNull(i.coerceIn(0, (f.size - 1).coerceAtLeast(0)))?.requestFocus() }
-
-        fun label(t: String) = list.addView(Ui.text(act, t, 13f, Ui.DIM, true), Ui.matchWrap().apply { topMargin = Ui.dp(act, 10); leftMargin = Ui.dp(act, 2) })
-
-        /** A box that is not a button: text on a quiet card. */
-        fun box(v: View): View { v.background = Ui.rounded(act, Ui.BG, Ui.R_CARD, Ui.FILL_STRONG); list.addView(v, Ui.matchWrap().apply { topMargin = Ui.dp(act, 8) }); return v }
-
-        fun card(title: String, sub: String? = null, trailing: String? = null, selected: Boolean = false, highlighted: Boolean = false, onClick: () -> Unit): View {
-            val c = act
-            val v = Ui.hbox(c).apply {
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(Ui.dp(c, 14), Ui.dp(c, 10), Ui.dp(c, 14), Ui.dp(c, 10))
-                Ui.rowStyle(c, this, Ui.R_CARD, Ui.BG)
-                if (highlighted) background = Ui.rounded(c, Ui.BG, Ui.R_CARD, Ui.BRAND)
-                isFocusable = true; isClickable = true; setOnClickListener { onClick() }
-            }
-            val mid = Ui.vbox(c)
-            mid.addView(Ui.text(c, title, 15f, if (selected || highlighted) Ui.BRAND else Ui.TEXT))
-            if (!sub.isNullOrBlank()) mid.addView(Ui.text(c, sub, 13f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 2) })
-            v.addView(mid, LinearLayout.LayoutParams(0, -2, 1f))
-            if (!trailing.isNullOrBlank()) v.addView(Ui.text(c, trailing, 13f, Ui.DIM, true), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = Ui.dp(c, 12) })
-            if (selected) v.addView(ImageView(c).apply { setImageResource(R.drawable.ic_check); setColorFilter(Ui.BRAND) }, LinearLayout.LayoutParams(Ui.dp(c, 18), Ui.dp(c, 18)).apply { leftMargin = Ui.dp(c, 10) })
-            list.addView(v, Ui.matchWrap().apply { topMargin = Ui.dp(c, 6) })
-            return v
-        }
-    }
-
     /** The icon of a button's row: its own for the common buttons, otherwise by kind. */
     fun iconFor(key: Int): Int = when (key) {
         KeyEvent.KEYCODE_HOME -> R.drawable.ic_home

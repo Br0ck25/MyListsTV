@@ -4,7 +4,6 @@ import tv.myliststv.launcher.screens.*
 import tv.myliststv.launcher.services.*
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
@@ -77,9 +76,11 @@ class MainActivity : Activity() {
 
     private fun pickProfile() {
         val l = Profiles.all()
-        AlertDialog.Builder(this).setTitle("Who is watching?").setItems(l.map { it.name + if (it.kids) " (kids)" else "" }.toTypedArray()) { _, i ->
-            Profiles.switchTo(this, l[i].id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }; Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
-        }.show()
+        Sheet.menu(this, "Who is watching?", null, l.map { p ->
+            (p.name + if (p.kids) " (kids)" else "") to {
+                Profiles.switchTo(this, p.id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { dropPages(); select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }; Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
+            }
+        })
     }
 
     /** The bell: a panel down the right edge. New-episode alerts for your Library first, then the TV's own notifications when access is given. */
@@ -119,7 +120,7 @@ class MainActivity : Activity() {
         sys.forEach { n -> card(n.pkg, n.app, n.time, n.title, n.text, { try { n.open?.send() } catch (_: Exception) {}; Notices.dismiss(n.key) }, { Notices.dismiss(n.key) }) }
         if (own.isEmpty() && sys.isEmpty()) list.addView(Ui.text(c, if (allowed) "Nothing new. New episodes of series in your Library show up here." else "Nothing new yet.", 14f, Ui.DIM, false, 3))
         if (!allowed) list.addView(Ui.button(c, "Show the TV's own notifications too") {
-            try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(c, "This TV has no such setting. See Settings, Launcher setup, for the phone steps.", true) }
+            try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Pop.toast(c, "This TV has no such setting. See Settings, Launcher setup, for the phone steps.", true) }
         }, Ui.wrap().apply { topMargin = Ui.dp(c, 8) })
     }
 
@@ -134,7 +135,7 @@ class MainActivity : Activity() {
         item(R.drawable.ic_home, "Launcher settings") { panel.dismiss(); startActivity(Intent(c, SettingsActivity::class.java)) }
         item(R.drawable.ic_settings, "Android settings") {
             panel.dismiss()
-            try { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) } catch (_: Exception) { tv.myliststv.launcher.ui.Pop.toast(c, "This TV does not open its settings from apps.", true) }
+            try { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) } catch (_: Exception) { Pop.toast(c, "This TV does not open its settings from apps.", true) }
         }
         panel.show(page)
     }
@@ -240,10 +241,9 @@ class MainActivity : Activity() {
 
     /** Safe mode, first-run welcome, or the "who is watching" question, whichever applies. */
     private fun afterStart(safe: Boolean) {
-        if (safe) AlertDialog.Builder(this).setTitle("Safe mode").setCancelable(false)
-            .setMessage("My Lists TV stopped several times in a row, so addons are off for this start.")
-            .setPositiveButton("Start normally") { _, _ -> CrashGuard.clear(this); recreate() }
-            .setNegativeButton("Reset addons and caches") { _, _ -> AddonStore.reset(); Http.clear(); ImageLoader.clearDisk(); CrashGuard.clear(this); recreate() }.show()
+        if (safe) Sheet.message(this, "Safe mode", "My Lists TV stopped several times in a row, so addons are off for this start.",
+            Sheet.Act("Start normally", true) { CrashGuard.clear(this); recreate() },
+            Sheet.Act("Reset addons and caches") { AddonStore.reset(); Http.clear(); ImageLoader.clearDisk(); CrashGuard.clear(this); recreate() }, cancelable = false)
         else if (!Prefs.setupDone) welcome()
         else if (Profiles.all().size > 1 && !Profiles.askedThisRun) {
             Profiles.askedThisRun = true
@@ -302,9 +302,18 @@ class MainActivity : Activity() {
         setTextColor(Ui.DIM)
     }
 
+    /** Home, Movies, Series and Search stay built for a few minutes, so going back to one is not a reload and keeps its place and its focus. */
+    private class Kept(val screen: Any, val view: View, val at: Long)
+    private val pages = HashMap<Int, Kept>()
+    private val PAGE_KEEP_MS = 5 * 60_000L
+
+    /** What the pages show changed (addons, profile, settings): none of the built pages is right any more. */
+    private fun dropPages() = pages.clear()
+
     private fun select(i: Int, force: Boolean = false) {
         if (!ready) return
         if (i == current && !force) return
+        if (force) pages.remove(i)
         current = i
         tabViews.forEachIndexed { idx, v -> v.isSelected = navStyle != 0 && idx == i; if (!v.isFocused) v.setTextColor(if (idx == i) Ui.TEXT else Ui.DIM) }
         refreshRailTint()
@@ -312,13 +321,24 @@ class MainActivity : Activity() {
         content.removeAllViews()
         screen = null
         showBackdrop(i in 0..4)
+        val kept = pages[i]
+        if (kept != null && System.currentTimeMillis() - kept.at < PAGE_KEEP_MS) {
+            screen = kept.screen; content.addView(kept.view)
+            (kept.screen as? BrowseScreen)?.refreshContinue()   // only what changed while you were away
+            return
+        }
+        fun keep(s: Any, v: View) {
+            pages[i] = Kept(s, v, System.currentTimeMillis())
+            // Only the four newest pages stay built (Home, Movies, Series and Search) (a small box has little memory to spare).
+            while (pages.size > 4) pages.minByOrNull { it.value.at }?.let { pages.remove(it.key) }
+        }
         when (i) {
             0, 1, 2 -> {
                 val s = BrowseScreen(this, type = when (i) { 1 -> "movie"; 2 -> "series"; else -> null }, withContinue = i == 0, withApps = i == 0,
                     onMeta = ::openMeta, onResume = ::resumeEntry, onApp = ::launch, onAppMenu = ::appMenu, onBackdrop = ::setBackdrop)
-                screen = s; content.addView(s.view); s.start()
+                screen = s; content.addView(s.view); s.start(); keep(s, s.view)
             }
-            3 -> { val s = SearchScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start() }
+            3 -> { val s = SearchScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start(); keep(s, s.view) }
             4 -> { val s = LibraryScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start() }
             5 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
         }
@@ -327,13 +347,13 @@ class MainActivity : Activity() {
     private var lastHome = 0L
     private var lastSync = 0L
 
-    private fun reloadAddons() { AddonStore.needsRefresh = false; AddonStore.load { select(current.coerceAtLeast(0), force = true) } }
+    private fun reloadAddons() { AddonStore.needsRefresh = false; AddonStore.load { dropPages(); select(current.coerceAtLeast(0), force = true) } }
 
     /** Where a mapped remote button sends the launcher. */
     private fun go(where: String) {
         val tab = listOf("home", "movies", "series", "search", "library", "apps").indexOf(where)
         when {
-            tab >= 0 -> { select(tab, force = true); tabViews[tab].requestFocus() }
+            tab >= 0 -> { select(tab); tabViews[tab].requestFocus() }
             where == "settings" -> startActivity(Intent(this, SettingsActivity::class.java))
             where == "profiles" -> pickProfile()
         }
@@ -354,32 +374,27 @@ class MainActivity : Activity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
             addCategory(if (a.sideloaded) Intent.CATEGORY_LAUNCHER else Intent.CATEGORY_LEANBACK_LAUNCHER)
         }
-        try { startActivity(intent) } catch (e: Exception) { tv.myliststv.launcher.ui.Pop.toast(this, "Could not open ${a.label}") }
+        try { startActivity(intent) } catch (e: Exception) { Pop.toast(this, "Could not open ${a.label}") }
     }
 
     private fun appMenu(a: AppEntry) {
         val pkg = a.component.packageName
-        val onHome = current == 0
-        val items = if (onHome) arrayOf("Move", "Hide from Home", "App info", "Uninstall") else arrayOf("App info", "Uninstall")
-        AlertDialog.Builder(this).setTitle(a.label).setItems(items) { _, i ->
-            val which = i - if (onHome) 2 else 0
-            if (which < 0) {
-                if (i == 0) { moving = true; tv.myliststv.launcher.ui.Pop.toast(this, "Move it with Left and Right, then press OK", true) }
-                else { Prefs.appHidden = Prefs.appHidden + pkg; select(current, force = true) }
-                return@setItems
-            }
-            try {
-                if (which == 0) startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg")))
-                else startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg")))
-            } catch (e: Exception) { tv.myliststv.launcher.ui.Pop.toast(this, "Not available on this device") }
-        }.show()
+        val system = { intent: Intent -> try { startActivity(intent) } catch (e: Exception) { Pop.toast(this, "Not available on this device") } }
+        val items = ArrayList<Pair<String, () -> Unit>>()
+        if (current == 0) {
+            items += "Move" to { moving = true; Pop.toast(this, "Move it with Left and Right, then press OK", true) }
+            items += "Hide from Home" to { Prefs.appHidden = Prefs.appHidden + pkg; if ((screen as? BrowseScreen)?.hideApp(pkg) != true) select(current, force = true) }
+        }
+        items += "App info" to { system(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg"))) }
+        items += "Uninstall" to { system(Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg"))) }
+        Sheet.menu(this, a.label, "Installed app", items)
     }
 
     private var seenEpoch = Prefs.epoch
 
     override fun onPause() { handler.removeCallbacks(clockTick); super.onPause() }
 
-    /** Pulls what the account holds (Library, addons, Continue watching, Airing next) at most every five minutes; also right after the first load, which onResume cannot do as the pages are not ready yet. */
+    /** Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; also right after the first load, which onResume cannot do as the pages are not ready yet. */
     private fun syncAccount() {
         val t = System.currentTimeMillis()
         if (t - lastSync <= 5 * 60_000L) return
@@ -387,6 +402,7 @@ class MainActivity : Activity() {
         Library.pull { if (current == 4) select(4, force = true) }
         SetupSync.pull { reloadAddons() }
         Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
+        AccountWatched.pull { (screen as? BrowseScreen)?.refreshChecks(); if (current >= 4) select(current, force = true) }
     }
 
     override fun onResume() {
@@ -399,9 +415,11 @@ class MainActivity : Activity() {
         }
         if (::bellBadge.isInitialized) updateBell()
         if (::profileName.isInitialized) updateProfile()
-        if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; if (ready && current >= 0) select(current, force = true) }
-        if (AddonStore.needsRefresh) { AddonStore.needsRefresh = false; AddonStore.load { select(current.coerceAtLeast(0), force = true) } }
+        if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; dropPages(); if (ready && current >= 0) select(current, force = true) }
+        if (AddonStore.needsRefresh) { AddonStore.needsRefresh = false; AddonStore.load { dropPages(); select(current.coerceAtLeast(0), force = true) } }
         (screen as? BrowseScreen)?.refreshContinue()
+        // Back from a details page: nothing is focused now, so put the focus where it was (otherwise Down lands on whatever sits under the pointer).
+        content.post { if (ready && currentFocus == null) { if ((screen as? BrowseScreen)?.restoreFocus() != true) tabViews.getOrNull(current)?.requestFocus() } }
     }
 
     private var pendingHome: Runnable? = null
@@ -410,7 +428,7 @@ class MainActivity : Activity() {
     /** One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do. */
     private fun runHome(action: String) {
         when (action) {
-            "home" -> { if (current != 0) select(0, force = true); tabViews[0].requestFocus() }
+            "home" -> { if (current != 0) select(0); tabViews[0].requestFocus() }
             "movies", "series", "library", "apps", "search", "settings", "profiles" -> go(action)
             else -> ButtonMap.run(this, action)
         }
@@ -487,6 +505,8 @@ class MainActivity : Activity() {
                 val up = f.focusSearch(View.FOCUS_UP)
                 if (up != null && isIn(up, topBar)) { tabViews[current.coerceIn(0, tabViews.size - 1)].requestFocus(); return true }
             }
+            // Down from the top bar's pages goes to the first row's remembered card, as Up and Down do between rows.
+            if (navStyle == 0 && e.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && f != null && f in tabViews && ready && (screen as? BrowseScreen)?.enter() == true) return true
             // With a side bar, Up from the top row goes to the bell, search and settings at the top right (the one nearest across), not into the side bar.
             if (navStyle != 0 && e.keyCode == KeyEvent.KEYCODE_DPAD_UP && f != null && isInContent(f) && ready) {
                 val up = f.focusSearch(View.FOCUS_UP)
@@ -540,7 +560,7 @@ class MainActivity : Activity() {
                 }
                 true
             }
-            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_BACK -> { moving = false; tv.myliststv.launcher.ui.Pop.toast(this, "Placed"); true }
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_BACK -> { moving = false; Pop.toast(this, "Placed"); true }
             else -> { moving = false; false }
         }
     }

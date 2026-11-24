@@ -29,11 +29,14 @@ jobs:
         with:
           name: MyListsTV-apk
           path: MyListsTV.apk
+      - name: Version name from the run number (0.1.99, then 0.2.0; same rule as data/Version.kt)
+        id: ver
+        run: echo "name=0.$((1 + ${{ github.run_number }} / 100)).$((${{ github.run_number }} % 100))" >> "$GITHUB_OUTPUT"
       - name: Publish a release (main only)
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.${{ github.run_number }}
-          name: My Lists TV 0.1 build ${{ github.run_number }}
+          tag_name: v${{ steps.ver.outputs.name }}
+          name: My Lists TV ${{ steps.ver.outputs.name }}
           prerelease: true
           files: MyListsTV.apk

@@ -3,7 +3,7 @@ package tv.myliststv.launcher.data
 import java.util.TimeZone
 import kotlin.math.ceil
 
-/** What a Continue watching card says about where you are: episodes still to watch, time left, or when the next one airs. */
+/** What a Continue Watching card says about where you are: episodes still to watch, time left, or when the next one airs. */
 object EpisodesLeft {
     /** [left]: aired episodes still to watch, counting the one you are on. [airs]: "Airs in 3 days" when the next one is not out yet. */
     data class Info(val left: Int, val airs: String?)
