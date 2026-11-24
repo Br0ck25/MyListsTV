@@ -1,0 +1,34 @@
+name: Promote a beta to production
+
+# Every push to main is published as a beta (a pre-release; see build.yml). Run this by hand (Actions, Promote a beta to production,
+# Run workflow) when a beta has been tested. It makes that same release a production release (no rebuild, the APK is identical), which is
+# what the app's "Production" update channel offers. Leave the tag empty to promote the newest beta.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to promote, e.g. v0.1.46 (empty: the newest beta)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Make the release a production release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          if [ -z "$TAG" ]; then
+            TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 30 --json tagName,isPrerelease --jq '[.[] | select(.isPrerelease)][0].tagName')
+          fi
+          if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then echo "There is no beta release to promote."; exit 1; fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --prerelease=false --latest --title "My Lists TV ${TAG#v}" \
+            --notes "Production release ${TAG#v}: a beta that was tested and promoted."
+          echo "Promoted $TAG to production."

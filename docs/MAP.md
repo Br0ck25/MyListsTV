@@ -331,7 +331,7 @@ Find a symbol with grep on this file, then read only that file around the line n
      7   fun describe(httpStatus: Int?, kind: Kind)
     19   fun worthTryingAnotherSource(httpStatus: Int?, kind: Kind)  - True when a different source is likely to help, so fallback should run.
 
-## data/Prefs.kt (193 lines) - All user settings in one place.
+## data/Prefs.kt (198 lines) - All user settings in one place.
      8 object Prefs  - All user settings in one place.
     16   fun init(c: Context)
     21   var liteMode
@@ -340,47 +340,48 @@ Find a symbol with grep on this file, then read only that file around the line n
     34   var fallbackOn
     38   var fallbackTries
     42   var startupTimeoutSec
-    46   var subtitleLang
-    50   var skipIntro
-    55   var extraDetails  - Ask Cinemeta (the standard Stremio metadata addon) for logos, country, awards and episodes the catalog addon l
-    59   var autoplayNext
-    63   var showAppsRow
-    68   var horizontalPosters  - Catalog items as wide backdrop pictures (true) or tall posters (false).
-    73   var cardSize  - Size of posters, wide cards and app tiles together: 0 small, 1 medium, 2 large.
-    77   val cardScale  - The card size setting: -1 extra small, 0 small, 1 medium (the default), 2 large, 3 extra large.
-    79   fun strings(k: String)
-    80   fun putStrings(k: String, v: List<String>)
-    83   fun renamed(l: List<String>)  - The rows were renamed (Your apps, Continue watching, Airing next); what an older version saved still counts un
-    84   var homeOrder
-    85   var homeHidden
-    86   var appOrder
-    87   var appHidden
-    89   fun homeRank(title: String)  - Sort key for a home row: its place in [homeOrder], else Your Apps first, then Continue Watching and Airing Nex
-    92   var navStyle  - Where the pages (Home, Movies...) are listed: 0 across the top, 1 side bar, 2 side bar that stays hidden until
-    97   var buttonMap  - Remote button rules, see ButtonMap.
-   101   var mapperOn  - The Button Mapper's master switch, and the buttons switched off one by one (key codes).
-   105   var homeCustom  - "Customize Home Button": when off, Home does its factory jobs (single press: Home, double press: profile switc
-   108   var buttonMapOff
-   113   fun recallTracks(metaId: String?)  - The audio and subtitle language the viewer last chose for a title, so the next episode starts the same way.
-   116   fun rememberTrack(metaId: String?, audio: Boolean, lang: String)
-   124   var hideUpcomingContinue  - With Airing Next on: a next-up episode that Airing Next already lists is left out of Continue Watching.
-   127   var showAiring
-   132   var airingJson  - The last Airing Next answer for the profile in use (JSON), so Home shows it at once.
-   136   var showContinue
-   141   var backupCode  - Recovery code for this box's online backup.
-   146   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
-   151   var accountName  - The My Lists account name of the profile in use, shown as "Signed in as ...".
-   156   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
-   158   var lastBackup
-   163   fun forget(id: String)  - Forgets what a removed profile kept here.
-   166   fun export()  - Settings as JSON for a backup.
-   168   fun import(o: org.json.JSONObject)
-   174   var setupDone
-   178   var advanced
-   182   fun isLowRamBox()
-   187   fun lite()
-   190   fun effectiveMaxResolution()  - The highest resolution to prefer.
-   192   fun memoryCacheBytes()
+    47   var updateChannel  - Which releases Settings, About offers: "production" (releases promoted by the owner) or "beta" (every build fr
+    51   var subtitleLang
+    55   var skipIntro
+    60   var extraDetails  - Ask Cinemeta (the standard Stremio metadata addon) for logos, country, awards and episodes the catalog addon l
+    64   var autoplayNext
+    68   var showAppsRow
+    73   var horizontalPosters  - Catalog items as wide backdrop pictures (true) or tall posters (false).
+    78   var cardSize  - Size of posters, wide cards and app tiles together: 0 small, 1 medium, 2 large.
+    82   val cardScale  - The card size setting: -1 extra small, 0 small, 1 medium (the default), 2 large, 3 extra large.
+    84   fun strings(k: String)
+    85   fun putStrings(k: String, v: List<String>)
+    88   fun renamed(l: List<String>)  - The rows were renamed (Your apps, Continue watching, Airing next); what an older version saved still counts un
+    89   var homeOrder
+    90   var homeHidden
+    91   var appOrder
+    92   var appHidden
+    94   fun homeRank(title: String)  - Sort key for a home row: its place in [homeOrder], else Your Apps first, then Continue Watching and Airing Nex
+    97   var navStyle  - Where the pages (Home, Movies...) are listed: 0 across the top, 1 side bar, 2 side bar that stays hidden until
+   102   var buttonMap  - Remote button rules, see ButtonMap.
+   106   var mapperOn  - The Button Mapper's master switch, and the buttons switched off one by one (key codes).
+   110   var homeCustom  - "Customize Home Button": when off, Home does its factory jobs (single press: Home, double press: profile switc
+   113   var buttonMapOff
+   118   fun recallTracks(metaId: String?)  - The audio and subtitle language the viewer last chose for a title, so the next episode starts the same way.
+   121   fun rememberTrack(metaId: String?, audio: Boolean, lang: String)
+   129   var hideUpcomingContinue  - With Airing Next on: a next-up episode that Airing Next already lists is left out of Continue Watching.
+   132   var showAiring
+   137   var airingJson  - The last Airing Next answer for the profile in use (JSON), so Home shows it at once.
+   141   var showContinue
+   146   var backupCode  - Recovery code for this box's online backup.
+   151   var accountLink  - The signed-in My Lists addon link, or empty when using the default catalogs.
+   156   var accountName  - The My Lists account name of the profile in use, shown as "Signed in as ...".
+   161   fun accountLinkOf(id: String)  - Another profile's account link (for the addons a profile shares from it).
+   163   var lastBackup
+   168   fun forget(id: String)  - Forgets what a removed profile kept here.
+   171   fun export()  - Settings as JSON for a backup.
+   173   fun import(o: org.json.JSONObject)
+   179   var setupDone
+   183   var advanced
+   187   fun isLowRamBox()
+   192   fun lite()
+   195   fun effectiveMaxResolution()  - The highest resolution to prefer.
+   197   fun memoryCacheBytes()
 
 ## data/Profiles.kt (76 lines) - Viewer profiles.
      9 object Profiles  - Viewer profiles.
@@ -471,13 +472,13 @@ Find a symbol with grep on this file, then read only that file around the line n
     23   fun providers(type: String, videoId: String)
     30   fun fetch(type: String, videoId: String, lang: String, cb: (List<Sub>)  - Asks every subtitle addon (3 s each, in parallel).
 
-## data/Updater.kt (57 lines) - Sideload updates: finds the newest GitHub release, downloads its APK, and hands it to the system installer.
+## data/Updater.kt (64 lines) - Sideload updates: finds the newest GitHub release, downloads its APK, and hands it to the system installer.
     11 object Updater  - Sideload updates: finds the newest GitHub release, downloads its APK, and hands it to the system installer.
-    14   class Release
-    16   fun installedBuild(c: Context)
-    22   fun latest(cb: (Release?)  - [cb] runs on the main thread with the newest release, or null if it could not be read.
-    28   fun parse(json: String)  - Picks the highest build number among releases that carry an APK.
-    43   fun install(c: Context, r: Release, progress: (String)  - Downloads the APK and opens the installer.
+    15   class Release  - [beta]: published as a pre-release (a build from main that has not been promoted to production).
+    17   fun installedBuild(c: Context)
+    23   fun latest(cb: (Release?)  - [cb] runs on the main thread with the newest release, or null if it could not be read.
+    32   fun parse(json: String, includeBeta: Boolean = false)  - Picks the highest build number among releases that carry an APK.
+    50   fun install(c: Context, r: Release, progress: (String)  - Downloads the APK and opens the installer.
 
 ## data/Urls.kt (23 lines) - Builds addon resource URLs.
      6 object Urls  - Builds addon resource URLs.
@@ -622,7 +623,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    708   fun onStop()
    715   fun onDestroy()
 
-## screens/SettingsActivity.kt (531 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
+## screens/SettingsActivity.kt (532 lines) - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     27 class SettingsActivity  - Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group u
     32   fun card(title: String)  - A card inside a group (kind S): its title, then the rows that follow it up to the next card.
     35   fun header(t: String, subtitle: String = "", icon: Int = 0, divider: Boolean = f  - A group of the left list: its name, the line under the page title, its icon, and whether a divider line comes 
@@ -646,25 +647,25 @@ Find a symbol with grep on this file, then read only that file around the line n
    119   fun signIn()
    137   fun signOut()
    139   fun rows()
-   241   fun subPage()
-   251   fun showPhonePopup(addr: String)  - Manage from phone: a code to scan, with its address, and a way to close.
-   258   fun addonName(url: String)
-   260   fun provides(a: Addon)
-   271   fun addonsChanged()  - Reloads the addons, tells Home to reload, and redraws this page.
-   273   fun installAddon(link: String)
-   279   fun addonsRows()
-   306   fun addonRows(url: String)
-   321   fun profileRows()
-   346   fun checkUpdate()
-   357   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
-   359   fun onCreate(savedInstanceState: Bundle?)
-   375   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
-   401   fun railItem(g: Group, i: Int)
-   413   fun closeSubs()
-   415   fun buildPanel(keep: Int)
-   460   fun view(r: Row, changed: ()
-   521   fun onBackPressed()
-   530   fun onDestroy()
+   242   fun subPage()
+   252   fun showPhonePopup(addr: String)  - Manage from phone: a code to scan, with its address, and a way to close.
+   259   fun addonName(url: String)
+   261   fun provides(a: Addon)
+   272   fun addonsChanged()  - Reloads the addons, tells Home to reload, and redraws this page.
+   274   fun installAddon(link: String)
+   280   fun addonsRows()
+   307   fun addonRows(url: String)
+   322   fun profileRows()
+   347   fun checkUpdate()
+   358   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
+   360   fun onCreate(savedInstanceState: Bundle?)
+   376   fun refresh(keep: Int = -1, focusRail: Boolean = false)  - Rebuilds the group list and the rows of the selected group.
+   402   fun railItem(g: Group, i: Int)
+   414   fun closeSubs()
+   416   fun buildPanel(keep: Int)
+   461   fun view(r: Row, changed: ()
+   522   fun onBackPressed()
+   531   fun onDestroy()
 
 ## screens/SetupActivity.kt (129 lines) - First run: one full screen per step (Home app, Home button, notifications, addons).
     25 class SetupActivity  - First run: one full screen per step (Home app, Home button, notifications, addons).

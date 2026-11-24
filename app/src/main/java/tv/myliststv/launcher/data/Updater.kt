@@ -11,7 +11,8 @@ import java.io.File
 object Updater {
     private const val RELEASES = "https://api.github.com/repos/Br0ck25/MyListsTV/releases"
 
-    data class Release(val build: Int, val tag: String, val apkUrl: String)
+    /** [beta]: published as a pre-release (a build from main that has not been promoted to production). */
+    data class Release(val build: Int, val tag: String, val apkUrl: String, val beta: Boolean = false)
 
     fun installedBuild(c: Context): Int {
         val p = c.packageManager.getPackageInfo(c.packageName, 0)
@@ -20,21 +21,27 @@ object Updater {
 
     /** [cb] runs on the main thread with the newest release, or null if it could not be read. */
     fun latest(cb: (Release?) -> Unit) = Http.background {
-        val r = try { parse(Http.fetchBlocking(RELEASES, 8000, 10000)) } catch (_: Exception) { null }
+        val r = try { parse(Http.fetchBlocking(RELEASES, 8000, 10000), Prefs.updateChannel == "beta") } catch (_: Exception) { null }
         Http.post { cb(r) }
     }
 
-    /** Picks the highest build number among releases that carry an APK. Pure, so tests can check it. */
-    fun parse(json: String): Release? {
+    /**
+     * Picks the highest build number among releases that carry an APK. Production takes only releases that are not pre-releases (the
+     * ones promoted by the owner); beta takes every release, so a promoted build counts for both. Drafts never count. Pure, so tests can check it.
+     */
+    fun parse(json: String, includeBeta: Boolean = false): Release? {
         val a = JSONArray(json)
         var best: Release? = null
         for (i in 0 until a.length()) {
             val o = a.optJSONObject(i) ?: continue
+            if (o.optBoolean("draft")) continue
+            val pre = o.optBoolean("prerelease")
+            if (pre && !includeBeta) continue
             val tag = o.optString("tag_name")
             val n = Version.build(tag) ?: continue
             val assets = o.optJSONArray("assets") ?: continue
             val apk = (0 until assets.length()).map { assets.getJSONObject(it) }.firstOrNull { it.optString("name").endsWith(".apk") } ?: continue
-            if (best == null || n > best.build) best = Release(n, tag, apk.optString("browser_download_url"))
+            if (best == null || n > best.build) best = Release(n, tag, apk.optString("browser_download_url"), pre)
         }
         return best
     }

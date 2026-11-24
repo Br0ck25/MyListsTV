@@ -37,6 +37,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.name }}
-          name: My Lists TV ${{ steps.ver.outputs.name }}
+          name: My Lists TV ${{ steps.ver.outputs.name }} (beta)
+          body: "Beta build: every push to main is published here as a beta. It is the same APK that is promoted to production once tested (Actions, Promote a beta to production). Choose the update channel in Settings, About."
           prerelease: true
           files: MyListsTV.apk

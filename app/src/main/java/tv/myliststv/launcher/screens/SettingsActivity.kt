@@ -231,7 +231,8 @@ class SettingsActivity : Activity() {
         add(action("Android settings", "Wi-Fi, display, sound, Bluetooth, apps and the rest of the TV's own settings.") { androidSettings() })
         add(header("About", "Version, updates, and privacy", R.drawable.ic_info))
         add(card(""))
-        add(action("Check for updates", "Version ${Version.name(Updater.installedBuild(this@SettingsActivity))} installed.") { checkUpdate() })
+        add(choice("Update channel", "Production: releases that have been tested and promoted. Beta: every new build, sooner but it may have bugs.", listOf("production", "beta"), { Prefs.updateChannel }, { Prefs.updateChannel = it }, { if (it == "beta") "Beta" else "Production" }))
+        add(action("Check for updates", "Version ${Version.name(Updater.installedBuild(this@SettingsActivity))} installed. Checking the ${if (Prefs.updateChannel == "beta") "beta" else "production"} channel.") { checkUpdate() })
         add(info("Make this your home screen", "adb shell cmd package set-home-activity tv.myliststv.launcher/.MainActivity"))
         add(info("Privacy", "No analytics, no tracking. Signed in, your watch progress goes to your My Lists account. Skip-intro times from IntroDB (introdb.app)."))
     }
@@ -347,9 +348,9 @@ class SettingsActivity : Activity() {
         Pop.toast(this, "Checking for updates\u2026")
         Updater.latest { r ->
             val mine = Updater.installedBuild(this)
-            if (r == null) Pop.toast(this, "Could not check right now.", true)
+            if (r == null) Pop.toast(this, if (Prefs.updateChannel == "beta") "Could not check right now." else "No production release found yet, or could not check. Switch to Beta to see every build.", true)
             else if (r.build <= mine) Pop.toast(this, "You have the latest version.", true)
-            else Sheet.message(this, "Update available", "${r.tag} is ready. You have ${Version.name(mine)}.", Sheet.Act("Later"), Sheet.Act("Install", true) { Updater.install(this, r) { Pop.toast(this, it) } })
+            else Sheet.message(this, "Update available", "${r.tag}${if (r.beta) " (beta)" else ""} is ready. You have ${Version.name(mine)}.", Sheet.Act("Later"), Sheet.Act("Install", true) { Updater.install(this, r) { Pop.toast(this, it) } })
         }
     }
 
