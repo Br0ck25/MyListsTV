@@ -18,57 +18,57 @@ Find a symbol with grep on this file, then read only that file around the line n
     38   fun look(ctx: Context, c: ComponentName)  - What to draw for an app: the picture the owner chose for it, else the icon pack's, else its TV banner if it ha
     48   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (603 lines) - The home screen.
+## MainActivity.kt (609 lines) - The home screen.
     34 class MainActivity  - The home screen.
     64   fun updateBell()
     66   fun updateProfile()
-    71   fun profileChip()
-    86   fun pickProfile()  - "Who's watching?": a whole screen of round avatars; the choice comes back to [onActivityResult].
-    88   fun switchProfile(id: String, force: Boolean)
-    94   fun showNotices()  - The bell: a panel down the right edge.
-   105   fun fill(list: LinearLayout, panel: SidePanel)
-   137   fun setBackdrop(url: String?)  - Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every p
-   145   fun glowFromBackdrop()  - Tints the room with the colour of the backdrop that just arrived.
-   151   fun showBackdrop(on: Boolean)
-   160   fun idleBackdrop()  - No title is highlighted: the owner's wallpaper, if they picked one.
-   169   fun onCreate(savedInstanceState: Bundle?)
-   240   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
-   253   fun welcome()  - First run: the setup screens (Home app, Home button, notifications, addons), each one skippable.
-   259   fun setSideOpen(open: Boolean)  - Side bar (always there): a slim strip of icons that opens into the labelled panel while the focus is on it.
-   280   fun refreshRailTint()  - While the strip is slim only the icons show: the open page's is blue, the others dim.
-   285   fun sideItems()
-   289   fun tabView(t: String)
-   309   fun dropPages()  - What the pages show changed (addons, profile, settings): none of the built pages is right any more.
-   311   fun select(i: Int, force: Boolean = false)
-   348   fun reloadAddons()
-   351   fun go(where: String)  - Where a mapped remote button sends the launcher.
-   360   fun openMeta(m: Meta)
-   364   fun resumeEntry(e: WatchStore.Entry)
-   369   fun launch(a: AppEntry)
-   378   fun appMenu(a: AppEntry)
-   394   fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
-   400   fun iconMenu(a: AppEntry)  - A picture of the owner's own for one app (an icon pack changes them all, in Settings).
-   414   fun onPause()
-   417   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
-   427   fun onResume()
-   448   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
-   456   fun onNewIntent(intent: Intent)
-   476   fun onBackPressed()
-   499   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
-   506   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
-   517   fun dispatchKeyEvent(e: KeyEvent)
-   547   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
-   553   fun isIn(v: View, container: View)
-   554   fun isInContent(v: View)
-   557   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
-   563   fun openSide()
-   564   fun closeSide()
-   567   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
-   587   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   592   fun onDestroy()
-   594   fun onTrimMemory(level: Int)
-   601   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
-   602   fun setTextColor(color: Int)
+    77   fun profileChip()
+    92   fun pickProfile()  - "Who's watching?": a whole screen of round avatars; the choice comes back to [onActivityResult].
+    94   fun switchProfile(id: String, force: Boolean)
+   100   fun showNotices()  - The bell: a panel down the right edge.
+   111   fun fill(list: LinearLayout, panel: SidePanel)
+   143   fun setBackdrop(url: String?)  - Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every p
+   151   fun glowFromBackdrop()  - Tints the room with the colour of the backdrop that just arrived.
+   157   fun showBackdrop(on: Boolean)
+   166   fun idleBackdrop()  - No title is highlighted: the owner's wallpaper, if they picked one.
+   175   fun onCreate(savedInstanceState: Bundle?)
+   246   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
+   259   fun welcome()  - First run: the setup screens (Home app, Home button, notifications, addons), each one skippable.
+   265   fun setSideOpen(open: Boolean)  - Side bar (always there): a slim strip of icons that opens into the labelled panel while the focus is on it.
+   286   fun refreshRailTint()  - While the strip is slim only the icons show: the open page's is blue, the others dim.
+   291   fun sideItems()
+   295   fun tabView(t: String)
+   315   fun dropPages()  - What the pages show changed (addons, profile, settings): none of the built pages is right any more.
+   317   fun select(i: Int, force: Boolean = false)
+   354   fun reloadAddons()
+   357   fun go(where: String)  - Where a mapped remote button sends the launcher.
+   366   fun openMeta(m: Meta)
+   370   fun resumeEntry(e: WatchStore.Entry)
+   375   fun launch(a: AppEntry)
+   384   fun appMenu(a: AppEntry)
+   400   fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
+   406   fun iconMenu(a: AppEntry)  - A picture of the owner's own for one app (an icon pack changes them all, in Settings).
+   420   fun onPause()
+   423   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
+   433   fun onResume()
+   454   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
+   462   fun onNewIntent(intent: Intent)
+   482   fun onBackPressed()
+   505   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
+   512   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
+   523   fun dispatchKeyEvent(e: KeyEvent)
+   553   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
+   559   fun isIn(v: View, container: View)
+   560   fun isInContent(v: View)
+   563   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
+   569   fun openSide()
+   570   fun closeSide()
+   573   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
+   593   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   598   fun onDestroy()
+   600   fun onTrimMemory(level: Int)
+   607   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
+   608   fun setTextColor(color: Int)
 
 ## data/AccountWatched.kt (131 lines) - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
     12 object AccountWatched  - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
