@@ -23,7 +23,9 @@ class LibraryScreen(private val act: Activity, private val onMeta: (Meta) -> Uni
         it.addView(pills, Ui.matchWrap())
         empty.setPadding(Ui.dp(act, 48), Ui.dp(act, 12), Ui.dp(act, 48), 0)
         it.addView(empty, Ui.matchWrap())
-        CardGrid.apply(grid, act, if (wide) 208 else 118, 4, 56)   // the same card size, spacing and edges as the rows on Home
+        // The same card size, spacing and edges as the rows on Home. The top space leaves room for the selected card, which grows, to show whole under the filter buttons.
+        CardGrid.apply(grid, act, if (wide) 208 else 118, 24, 56)
+        grid.clipChildren = false; it.clipChildren = false
         it.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f))
     }
 

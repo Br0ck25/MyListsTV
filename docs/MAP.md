@@ -832,10 +832,10 @@ Find a symbol with grep on this file, then read only that file around the line n
    324   fun changedAll()
    325   fun inserted(i: Int)
 
-## ui/LibraryScreen.kt (49 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
+## ui/LibraryScreen.kt (51 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     11 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
-    30   fun start()
-    40   fun show()
+    32   fun start()
+    42   fun show()
 
 ## ui/MapperDialogs.kt (223 lines) - The Button Mapper's modals, in the order Settings, Remote & Buttons opens them: Add Button Mapping (press a bu
     24 object MapperDialogs  - The Button Mapper's modals, in the order Settings, Remote & Buttons opens them: Add Button Mapping (press a bu
