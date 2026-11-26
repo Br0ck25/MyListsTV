@@ -29,7 +29,7 @@ class BrowseScreen(
     private val c = act
     private val lite = Prefs.lite()
     private val rows = ArrayList<RowModel>()
-    private val heroTitle = Ui.text(c, "", 30f, Ui.TEXT, true, 1)
+    private val heroTitle = Ui.text(c, "", 34f, Ui.TEXT, true, 1)
     private val heroMeta = Ui.text(c, "", 14f, Ui.ACCENT, true, 1)
     private val heroDesc = Ui.text(c, "", 14f, Ui.TEXT2, false, 3)
     private val list = RowsList(c, rows, lite, ::hero, { model ->
@@ -54,7 +54,7 @@ class BrowseScreen(
         val hero = Ui.vbox(c).apply { setPadding(Ui.dp(c, 48), Ui.dp(c, 10), Ui.dp(c, 420), Ui.dp(c, 6)) }
         hero.addView(heroTitle); hero.addView(heroMeta); hero.addView(heroDesc)
         (heroMeta.layoutParams as? LinearLayout.LayoutParams)
-        root.addView(hero, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(c, 120)))
+        root.addView(hero, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(c, 128)))
         root.addView(list, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         view = root
     }
@@ -96,7 +96,7 @@ class BrowseScreen(
                 val apps = AppRepository.forHome(act)
                 Http.post {
                     val row = RowModel("Your Apps", "Installed", CardKind.APP, apps.map { a ->
-                        AppRepository.look(act.packageManager, a.component).let { (icon, banner) -> CardModel(a.label, null, payload = a, icon = icon, banner = banner) }
+                        AppRepository.look(act, a.component).let { (icon, banner) -> CardModel(a.label, null, payload = a, icon = icon, banner = banner) }
                     })
                     rows += row
                     rows.sortBy { Prefs.homeRank(it.title) }
@@ -247,7 +247,7 @@ class BrowseScreen(
                     }
                 }
             }
-            is AppEntry -> { heroTitle.text = p.label; heroMeta.text = "Installed app"; heroDesc.text = "Press OK to open." }
+            is AppEntry -> { onBackdrop(""); heroTitle.text = p.label; heroMeta.text = "Installed app"; heroDesc.text = "Press OK to open." }
         }
     }
 }

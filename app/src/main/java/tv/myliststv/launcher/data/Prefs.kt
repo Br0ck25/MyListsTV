@@ -13,6 +13,9 @@ object Prefs {
     @Volatile var epoch = 0
         private set
 
+    /** Tells Home to rebuild when it is next shown, for a change that is not a saved setting (a picked wallpaper or icon). */
+    fun bump() { epoch++ }
+
     fun init(c: Context) {
         appContext = c.applicationContext; sp = c.getSharedPreferences("settings", Context.MODE_PRIVATE)
         sp.getString("backupCode", null)?.let { if (Secure.needsWrap(it)) sp.edit().putString("backupCode", Secure.wrap(it)).apply() }    // wraps a code saved before the Keystore was used
@@ -90,6 +93,17 @@ object Prefs {
     var homeHidden: List<String> get() = renamed(strings("homeHidden")); set(v) = putStrings("homeHidden", v)
     var appOrder: List<String> get() = strings("appOrder"); set(v) = putStrings("appOrder", v)
     var appHidden: List<String> get() = strings("appHidden"); set(v) = putStrings("appHidden", v)
+
+    /** The package of the icon pack in use, or empty for the apps' own icons. */
+    var iconPack: String get() = sp.getString("iconPack", "") ?: ""; set(v) { sp.edit().putString("iconPack", v).apply(); epoch++ }
+
+    /** The names the owner gave apps, by package. */
+    val appNames: Map<String, String> get() = strings("appNames").mapNotNull { l -> l.split('\t', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] } }.toMap()
+    /** Names an app; a blank name puts its own name back. */
+    fun setAppName(pkg: String, name: String) {
+        val n = name.replace(Regex("\\s+"), " ").trim()
+        putStrings("appNames", appNames.filterKeys { it != pkg }.map { "${it.key}\t${it.value}" } + if (n.isEmpty()) emptyList() else listOf("$pkg\t$n"))
+    }
     /** Sort key for a home row: its place in [homeOrder], else Your Apps first, then Continue Watching and Airing Next, then the catalogs. */
     fun homeRank(title: String): Int = homeOrder.indexOf(title).let { if (it >= 0) it else when (title) { "Your Apps" -> -3; "Continue Watching" -> -2; "Airing Next" -> -1; else -> 5000 } }
 
@@ -97,6 +111,11 @@ object Prefs {
     var navStyle: Int
         get() = sp.getInt("navStyle", 0)
         set(v) { sp.edit().putInt("navStyle", v).apply(); epoch++ }
+
+    /** The highlight colour: a place in [tv.myliststv.launcher.ui.Ui.ACCENTS] (the focus ring, selections, toggles, primary buttons). 0 is blue. */
+    var accent: Int
+        get() = sp.getInt("accent", 0)
+        set(v) { sp.edit().putInt("accent", v).apply(); epoch++ }
 
     /** Remote button rules, see ButtonMap. */
     var buttonMap: String

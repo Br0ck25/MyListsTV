@@ -26,7 +26,7 @@ class AppsScreen(private val act: Activity, private val onApp: (AppEntry) -> Uni
             val apps = AppRepository.load(act)
             Http.post {
                 val models = apps.map { a ->
-                    AppRepository.look(act.packageManager, a.component).let { (icon, banner) -> CardModel(a.label, null, payload = a, icon = icon, banner = banner) }
+                    AppRepository.look(act, a.component).let { (icon, banner) -> CardModel(a.label, null, payload = a, icon = icon, banner = banner) }
                 }
                 rv.adapter = CardAdapter(CardKind.APP, models, Prefs.lite(), { }, { m -> (m.payload as? AppEntry)?.let(onApp) }, { m -> (m.payload as? AppEntry)?.let(onMenu) })
             }

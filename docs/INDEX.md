@@ -13,7 +13,7 @@ Start here, then `grep -n <name> docs/MAP.md` for the exact file and line. Rules
 | Source list, choosing and ranking sources | `screens/StreamsActivity.kt`, `data/StreamRank.kt`, `data/StreamResolver.kt` |
 | Player, controls, fallback, up next, skip intro | `screens/PlayerActivity.kt`, `ui/PlaySession.kt`, `data/Segments.kt` |
 | Search | `ui/SearchScreen.kt`, `data/Catalogs.kt` (`search`) |
-| A setting (add, rename, group) | `screens/SettingsActivity.kt` (`rows`), store it in `data/Prefs.kt` |
+| A setting (add, rename, group) | `screens/SettingsActivity.kt` (`rows`; a new group also goes in `sections`), store it in `data/Prefs.kt` |
 | Addons list and adding links | `screens/SettingsActivity.kt` (Content & Discovery, Addons), `data/AddonStore.kt`, `data/Links.kt` |
 | Catalogs, metadata, Cinemeta details | `data/Catalogs.kt`, `data/Json.kt`, `data/Urls.kt` |
 | All network and caching | `data/Http.kt`, `data/ImageLoader.kt` |
@@ -23,11 +23,14 @@ Start here, then `grep -n <name> docs/MAP.md` for the exact file and line. Rules
 | Share addons between profiles | `data/Profiles.kt` (`addonSource`), `data/AddonStore.kt` (`saved`), `screens/SettingsActivity.kt` (`shareMenu`) |
 | Profiles, kids filter, watch history | `data/Profiles.kt`, `data/WatchStore.kt` |
 | Remote button mapper, Home button | `data/ButtonMap.kt`, `services/HomeButtonService.kt`, `data/HomeSetup.kt` |
+| Settings groups Inputs (HDMI) and Android settings shortcuts | `screens/SettingsActivity.kt` (`rows`), `data/SystemLinks.kt` |
+| Wallpaper, picking a picture from the device | `data/Pictures.kt`, `ui/PicturePicker.kt`, `MainActivity.kt` (`idleBackdrop`), `screens/SettingsActivity.kt` (`wallpaperMenu`) |
+| Icon packs, a picked icon for one app, rename app | `data/IconPacks.kt`, `AppRepository.kt` (`look`), `data/Pictures.kt`, `MainActivity.kt` (`appMenu`, `iconMenu`), `data/Prefs.kt` (`appNames`, `iconPack`) |
 | Notifications bell | `services/NotificationsService.kt` (`Notices`), `MainActivity.kt` (`showNotices`) |
 | Screensaver | `services/BackdropDream.kt` |
 | Watch Next row on the system home | `data/WatchNext.kt` |
 | First-run setup screens (Home app, Home button, notifications, addons) | `screens/SetupActivity.kt`, `data/HomeSetup.kt`, `MainActivity.kt` (`welcome`) |
-| Phone page (paste links, setup steps) | `data/PhoneServer.kt` |
+| Phone page (paste links, setup steps, send a picture) | `data/PhoneServer.kt`, `ui/PhonePicture.kt` |
 | Crash safe mode | `data/CrashGuard.kt` |
 | Updates | `data/Updater.kt` |
 

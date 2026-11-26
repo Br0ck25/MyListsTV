@@ -10,8 +10,9 @@ import java.net.URLDecoder
 /**
  * A tiny web page on the TV so a phone on the same Wi-Fi can paste an addon link instead of typing it with the remote.
  * Runs only while the Addons screen is open. [onAdd] gets the pasted link and returns a message to show on the phone.
+ * With [onPicture] it also serves /picture, a page that sends a picture from the phone; [onPicture] gets the bytes and returns the message to show.
  */
-class PhoneServer(private val port: Int = 8765, private val onAdd: (String, (String) -> Unit) -> Unit) {
+class PhoneServer(private val port: Int = 8765, private val onPicture: ((ByteArray) -> String)? = null, private val onAdd: (String, (String) -> Unit) -> Unit) {
     @Volatile private var server: ServerSocket? = null
 
     /** The address to open on the phone, or null when the TV has no local network address. */
@@ -29,33 +30,53 @@ class PhoneServer(private val port: Int = 8765, private val onAdd: (String, (Str
 
     fun stop() { try { server?.close() } catch (_: Exception) {}; server = null }
 
+    private fun readHead(i: java.io.InputStream): String {
+        val h = java.io.ByteArrayOutputStream(); var tail = 0
+        while (h.size() < 16384) { val b = i.read(); if (b < 0) break; h.write(b); tail = (tail shl 8) or b; if (tail == BLANK_LINE) break }
+        return h.toString("UTF-8")
+    }
+
+    private fun reply(c: java.net.Socket, type: String, body: ByteArray, cache: String = "") = c.getOutputStream().apply {
+        write("HTTP/1.1 200 OK\r\nContent-Type: $type\r\n${cache}Content-Length: ${body.size}\r\nConnection: close\r\n\r\n".toByteArray()); write(body); flush()
+    }
+
     private fun serve(c: java.net.Socket) { c.use {
         try {
             c.soTimeout = 5000
-            val r = c.getInputStream().bufferedReader()
-            val request = r.readLine() ?: return@use
-            var length = 0
-            while (true) { val h = r.readLine() ?: break; if (h.isEmpty()) break; if (h.startsWith("Content-Length:", true)) length = h.substring(15).trim().toInt() }
+            val input = java.io.DataInputStream(c.getInputStream().buffered())
+            val head = readHead(input)
+            val request = head.substringBefore("\r\n")
+            val length = Regex("(?i)\\r\\ncontent-length:\\s*(\\d+)").find(head)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+            if (request.startsWith("POST /upload")) {
+                val msg = if (onPicture == null || length !in 1..MAX_PICTURE) "That picture is too big." else onPicture.invoke(ByteArray(length).also { input.readFully(it) })
+                reply(c, "text/plain; charset=utf-8", msg.toByteArray()); return@use
+            }
             val msg: String
             if (request.startsWith("POST")) {
-                val buf = CharArray(length.coerceAtMost(4096)); r.read(buf)
+                val buf = ByteArray(length.coerceAtMost(4096)).also { input.readFully(it) }
                 val link = URLDecoder.decode(String(buf).substringAfter("link=", ""), "UTF-8")
                 val latch = java.util.concurrent.CountDownLatch(1); var result = "Could not install it."
                 onAdd(link) { result = it; latch.countDown() }
                 latch.await(15, java.util.concurrent.TimeUnit.SECONDS)
                 msg = result
             } else msg = ""
-            if (request.contains(" /logo.png")) {
-                val png = App.instance.resources.openRawResource(R.raw.logo).use { it.readBytes() }
-                c.getOutputStream().apply { write("HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nCache-Control: max-age=86400\r\nContent-Length: ${png.size}\r\nConnection: close\r\n\r\n".toByteArray()); write(png); flush() }
-                return@use
-            }
-            val body = (if (request.contains(" /setup")) setupPage() else page(msg)).toByteArray()
-            c.getOutputStream().apply {
-                write("HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: ${body.size}\r\nConnection: close\r\n\r\n".toByteArray()); write(body); flush()
-            }
+            if (request.contains(" /logo.png")) { reply(c, "image/png", App.instance.resources.openRawResource(R.raw.logo).use { it.readBytes() }, "Cache-Control: max-age=86400\r\n"); return@use }
+            val body = (if (request.contains(" /setup")) setupPage() else if (request.contains(" /picture")) picturePage() else page(msg)).toByteArray()
+            reply(c, "text/html; charset=utf-8", body)
         } catch (_: Exception) {}
     } }
+
+    /** Shrinks the picture on the phone before sending it (a photo is many megabytes, the TV needs far less). */
+    private fun picturePage() = """<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><title>My Lists TV</title>
+<body style="font:18px system-ui;background:#0a0b11;color:#eef0f7;padding:24px;max-width:560px;margin:auto">
+<img src="/logo.png" width=88 height=88 style="border-radius:20px;display:block;margin:0 0 14px" alt="My Lists">
+<h2>Send a picture to My Lists TV</h2><p style="color:#9aa1b8">Choose a picture on this phone. It goes straight to the TV.</p>
+<p><input id=f type=file accept="image/*" style="font-size:18px"></p><p id=m style="color:#59e0ae;font-weight:700"></p>
+<script>
+f.onchange=async()=>{const file=f.files[0];if(!file)return;m.textContent='Sending...';
+try{const b=await createImageBitmap(file),k=Math.min(1,1280/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*k);c.height=Math.round(b.height*k);c.getContext('2d').drawImage(b,0,0,c.width,c.height);
+const blob=await new Promise(r=>c.toBlob(r,'image/png'));m.textContent=await(await fetch('/upload',{method:'POST',body:blob})).text()}catch(e){m.textContent='Could not send that picture.'}}
+</script>"""
 
     private fun page(msg: String) = """<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><title>My Lists TV</title>
 <body style="font:18px system-ui;background:#0a0b11;color:#eef0f7;padding:24px;max-width:560px;margin:auto">
@@ -84,4 +105,6 @@ $steps
         NetworkInterface.getNetworkInterfaces().toList().filter { it.isUp && !it.isLoopback }
             .flatMap { it.inetAddresses.toList() }.firstOrNull { it is java.net.Inet4Address && it.isSiteLocalAddress }?.hostAddress
     } catch (_: Exception) { null }
+
+    companion object { const val MAX_PICTURE = 12_000_000; private const val BLANK_LINE = 218762506 }    // the bytes CR LF CR LF that end the request head
 }

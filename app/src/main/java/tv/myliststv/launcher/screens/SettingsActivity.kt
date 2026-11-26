@@ -20,9 +20,10 @@ import tv.myliststv.launcher.data.*
 import tv.myliststv.launcher.ui.*
 
 /**
- * Settings as a split menu (docs/DESIGN.md section 4): the groups run down the left, and the rows of the group under the
- * focus show on the right. Every on/off is a toggle, a choice among a few values is a choice row (OK or Left/Right changes
- * it), anything else is an action. Changes apply at once and are stored in [Prefs]. Back returns from the rows to the groups.
+ * Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen. It opens on the list
+ * of groups under small headings; OK opens a group's page, which slides in with a back arrow on top. Every on/off is a toggle, a
+ * choice among a few values is a choice row (OK or Left/Right changes it), anything else is an action. Changes apply at once and
+ * are stored in [Prefs]. Back (or Left) goes up one page and then leaves.
  */
 class SettingsActivity : Activity() {
     /** kind: H header (starts a group), T toggle, C choice, A action, I info. [act] gets +1 or -1 for choices, anything else otherwise. */
@@ -31,9 +32,9 @@ class SettingsActivity : Activity() {
     /** A card inside a group (kind S): its title, then the rows that follow it up to the next card. */
     private fun card(title: String) = Row('S', title)
 
-    /** A group of the left list: its name, the line under the page title, its icon, and whether a divider line comes before it. */
-    private fun header(t: String, subtitle: String = "", icon: Int = 0, divider: Boolean = false) = Row('H', t, subtitle, on = { divider }, icon = icon)
-    private class Group(val name: String, val subtitle: String, val icon: Int, val divider: Boolean, val rows: List<Row>)
+    /** A group of the settings list: its name, the line under the page title, its icon, and a short summary shown at the right. */
+    private fun header(t: String, subtitle: String = "", icon: Int = 0, value: () -> String = { "" }) = Row('H', t, subtitle, value = value, icon = icon)
+    private class Group(val name: String, val subtitle: String, val icon: Int, val value: String, val rows: List<Row>)
     /** Text typed in the page itself (kind E): [value] is the hint, [input] gets the text, the button says [label]. */
     private fun field(label: String, hint: String, submit: (String) -> Unit) = Row('E', label, value = { hint }, input = submit)
     private fun toggle(label: String, desc: String, get: () -> Boolean, set: (Boolean) -> Unit) = Row('T', label, desc, on = get, act = { set(!get()) })
@@ -42,14 +43,18 @@ class SettingsActivity : Activity() {
     private fun action(label: String, desc: String = "", icon: Int = 0, value: () -> String = { "" }, run: () -> Unit) = Row('A', label, desc, value = value, act = { run() }, icon = icon)
     private fun info(label: String, value: String) = Row('I', label, value = { value })
 
-    private lateinit var rail: LinearLayout
-    private lateinit var col: LinearLayout
+    private lateinit var host: android.widget.FrameLayout
+    /** The groups under their small headings on the first page. A group not listed here is not shown, so add a new one here. */
+    private val sections = listOf(
+        "You" to listOf("Account", "Profiles"),
+        "Home" to listOf("Layout", "Content & Discovery"),
+        "Watching" to listOf("Playback", "Remote & Buttons"),
+        "This TV" to listOf("Inputs", "Android settings", "Default Launcher", "Advanced", "About"),
+    )
     private var cat = 0
-    /** True while the rows are rebuilt: the focus that Android moves to the first group meanwhile must not switch the page. */
-    private var rebuilding = false
+    /** True while a group's page shows; false while the list of groups does. */
+    private var open = false
     private var groups: List<Group> = emptyList()
-    private val railItems = ArrayList<View>()
-    private lateinit var colScroll: ScrollView
     /** The pages opened inside the open group (the Addons list, one addon), newest last. Back closes the newest. */
     private val subStack = ArrayList<String>()
     private var pendingRemove: String? = null
@@ -57,22 +62,21 @@ class SettingsActivity : Activity() {
     private var phone: PhoneServer? = null
     private var showQr = false
 
-    private fun openSub(id: String) { subStack.add(id); refresh(); focusFirst() }
-    private fun focusFirst() = col.post { col.let { c -> var f: View? = null; fun walk(v: View) { if (f != null) return; if (v.isFocusable && v !is android.widget.EditText) { f = v; return }; if (v is ViewGroup) for (i in 0 until v.childCount) walk(v.getChildAt(i)) }; walk(c); f?.requestFocus() } }
+    private fun openSub(id: String) { subStack.add(id); show(0, slide = true) }
 
-    override fun onResume() { super.onResume(); if (::rail.isInitialized) refresh() }
+    override fun onResume() { super.onResume(); if (::host.isInitialized) refresh() }
 
-    private fun androidSettings() {
-        val pages = listOf("All settings" to Settings.ACTION_SETTINGS, "Wi-Fi and network" to Settings.ACTION_WIFI_SETTINGS, "Display" to Settings.ACTION_DISPLAY_SETTINGS,
-            "Sound" to Settings.ACTION_SOUND_SETTINGS, "Bluetooth and remotes" to Settings.ACTION_BLUETOOTH_SETTINGS, "Apps" to Settings.ACTION_APPLICATION_SETTINGS,
-            "Date and time" to Settings.ACTION_DATE_SETTINGS, "Storage" to Settings.ACTION_INTERNAL_STORAGE_SETTINGS)
-        Sheet.menu(this, "Android settings", "Opens the TV's own settings", pages.map { (name, action) ->
-            name to {
-                try { startActivity(Intent(action)) } catch (_: Exception) {
-                    try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) { Pop.toast(this, "This TV does not open its settings from apps.", true) }
-                }
-            }
-        })
+    private val pictures = PicturePicker(this, 41)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) { super.onActivityResult(requestCode, resultCode, data); pictures.result(requestCode, resultCode, data) }
+
+    private fun wallpaperMenu() {
+        val items = ArrayList<Pair<String, () -> Unit>>()
+        items += "Choose a picture" to { pictures.pick { uri ->
+            Http.background { val ok = Pictures.save(this, uri, Pictures.wallpaperFile(this), 1280, 720, png = false); Http.post { if (ok) Prefs.bump(); Pop.toast(this, if (ok) "Wallpaper set" else "That file is not a picture this TV can read.", !ok) } }
+        } }
+        items += "Send from my phone" to { PhonePicture.receive(this, "Send a wallpaper", Pictures.wallpaperFile(this), 1280, 720, false) { Prefs.bump(); Pop.toast(this, "Wallpaper set") } }
+        if (Pictures.wallpaperFile(this).exists()) items += "Remove wallpaper" to { Pictures.wallpaperFile(this).delete(); Prefs.bump(); Pop.toast(this, "Wallpaper removed") }
+        Sheet.menu(this, "Wallpaper", "Shown when no movie or show is highlighted.", items)
     }
 
     private fun testSources() {
@@ -138,7 +142,7 @@ class SettingsActivity : Activity() {
 
     private fun rows(): List<Row> = buildList {
         val me = this@SettingsActivity
-        add(header("Account", "Account and sync status", R.drawable.ic_person))
+        add(header("Account", "Account and sync status", R.drawable.ic_person) { if (Prefs.accountLink.isEmpty()) "Signed out" else Prefs.accountName.ifEmpty { "Signed in" } })
         add(card(""))
         if (Prefs.accountLink.isEmpty()) add(action("Sign in with My Lists", "For ${Profiles.active().name}: replaces the default catalogs with your own lists, and syncs the Library. Takes 30 seconds with your phone.") { signIn() })
         else { add(info("Signed in as", Prefs.accountName.ifEmpty { "your account" })); add(action("Sign out", "Goes back to the default catalogs. Your other addons stay.") { signOut() }) }
@@ -146,14 +150,19 @@ class SettingsActivity : Activity() {
         add(action("Back up my setup", "An offline copy of ${Profiles.active().name}'s addons and Library, encrypted with a recovery code (the first profile also saves the profile list and settings). Signed in, these also follow the account. Last backup: ${lastBackupText()}.") { backupNow() })
         add(action("Restore a backup", "Use your recovery code. You can also paste it on the phone page in Settings, then Addons.") { restoreDialog() })
         if (Prefs.backupCode.isNotEmpty()) add(action("Show recovery code", "The code that opens your backup.") { showCode(Prefs.backupCode) })
-        add(header("Profiles", "Who is watching. Each profile keeps its own account, addons, Library and history.", R.drawable.ic_people))
+        add(header("Profiles", "Who is watching. Each profile keeps its own account, addons, Library and history.", R.drawable.ic_people) { Profiles.active().name })
         addAll(profileRows())
-        add(header("Layout", "How Home looks and which rows it shows", R.drawable.ic_layout, divider = true))
+        add(header("Layout", "How Home looks and which rows it shows", R.drawable.ic_layout))
         add(card("Look"))
         add(toggle("Show cast, logos and episodes from Cinemeta", "Asks Cinemeta, the standard Stremio metadata addon, for details your catalog addon lacks.", { Prefs.extraDetails }, { Prefs.extraDetails = it }))
         add(toggle("Landscape posters", "Show catalog items as landscape pictures instead of tall posters.", { Prefs.horizontalPosters }, { Prefs.horizontalPosters = it }))
         add(choice("Navigation", "Where Home, Movies, Series and the other pages are listed. Hidden opens with Left.", listOf(0, 1, 2), { Prefs.navStyle }, { Prefs.navStyle = it }, { listOf("Top bar", "Side bar", "Hidden side bar")[it] }))
+        add(choice("Highlight colour", "The ring around what is selected, and toggles, tabs and main buttons.", Ui.ACCENTS.indices.toList(), { Prefs.accent }, { Prefs.accent = it }, { Ui.ACCENTS[it].name }))
         add(choice("Card size", "Posters, wide cards and app tiles grow or shrink together.", listOf(-1, 0, 1, 2, 3), { Prefs.cardSize }, { Prefs.cardSize = it }, { listOf("Extra small", "Small", "Medium", "Large", "Extra large")[it + 1] }))
+        IconPacks.installed(this@SettingsActivity).let { packs ->
+            add(choice("Icon pack", if (packs.isEmpty()) "Install an icon pack (Nova, ADW or Apex format) from the Play Store, then pick it here." else "Changes the icon of every app it covers. Hold OK on an app to change just that one.", listOf("") + packs.map { it.pkg }, { Prefs.iconPack }, { Prefs.iconPack = it }, { p -> packs.firstOrNull { it.pkg == p }?.label ?: "Default" }))
+        }
+        add(action("Wallpaper", "Your own picture behind Home when no title is highlighted (apps, the Apps page). Pick one from the TV's files.") { wallpaperMenu() })
         add(card("Home rows"))
         add(action("Arrange Home rows", "Move lists and the apps row up or down, or hide them from Home.") { arrange("rows") })
         add(action("Arrange apps row", "Reorder the apps on Home or hide some. The Apps tab still shows all of them.") { arrange("apps") })
@@ -161,7 +170,7 @@ class SettingsActivity : Activity() {
         if (Prefs.showAiring) add(toggle("Hide upcoming from Continue Watching", "An episode that is in Airing Next is not also shown in Continue Watching.", { Prefs.hideUpcomingContinue }, { Prefs.hideUpcomingContinue = it }))
         add(toggle("Show Continue Watching", "", { Prefs.showContinue }, { Prefs.showContinue = it }))
         add(toggle("Show apps row", "", { Prefs.showAppsRow }, { Prefs.showAppsRow = it }))
-        add(header("Content & Discovery", "Addons, catalogs, and discovery sources", R.drawable.ic_compass))
+        add(header("Content & Discovery", "Addons, catalogs, and discovery sources", R.drawable.ic_compass) { AddonStore.saved().size.let { "$it addon" + if (it == 1) "" else "s" } })
         add(card(""))
         add(action("Addons", "Manage addons, catalog order, and what each one provides", icon = R.drawable.ic_puzzle) { openSub("addons") })
         add(action("Test my sources", "Asks every stream addon for a well-known movie and says which answered, how fast, and why not if one did not.") { testSources() })
@@ -179,7 +188,7 @@ class SettingsActivity : Activity() {
             add(toggle("Try the next source if one fails", "Switches by itself when a source does not start.", { Prefs.fallbackOn }, { Prefs.fallbackOn = it }))
             add(choice("Source start timeout", "How long to wait for the first picture.", listOf(6, 10, 15), { Prefs.startupTimeoutSec }, { Prefs.startupTimeoutSec = it }, { "$it s" }))
         }
-        add(header("Default Launcher", "Make My Lists TV your Home screen, and set up the Home button", R.drawable.ic_home, divider = true))
+        add(header("Default Launcher", "Make My Lists TV your Home screen, and set up the Home button", R.drawable.ic_home))
         add(card("Home app"))
         add(info("Home app", if (HomeSetup.isHome(this@SettingsActivity)) "This launcher" else "Another launcher"))
         add(action("Make this my Home app", "Opens the system choice. Pick My Lists TV and choose Always.") { if (HomeSetup.isHome(this@SettingsActivity)) Pop.toast(this@SettingsActivity, "My Lists TV is already your Home app.") else HomeSetup.requestHome(this@SettingsActivity) })
@@ -227,9 +236,15 @@ class SettingsActivity : Activity() {
         add(card("Performance"))
         add(choice("Lite mode", "Less motion and memory. Auto turns on for weak boxes.", listOf("Auto", "On", "Off"), { Prefs.liteMode }, { Prefs.liteMode = it }))
         add(action("Clear caches", "Frees stored images and catalog data (${Http.cacheBytes() / 1_048_576} MB now).") { Http.clear(); ImageLoader.clearDisk(); Pop.toast(this@SettingsActivity, "Caches cleared") })
-        add(card("System"))
-        add(action("Android settings", "Wi-Fi, display, sound, Bluetooth, apps and the rest of the TV's own settings.") { androidSettings() })
-        add(header("About", "Version, updates, and privacy", R.drawable.ic_info))
+        add(header("Inputs", "HDMI and the TV's other video inputs", R.drawable.ic_tv))
+        add(card(""))
+        val inputs = SystemLinks.inputs(me)
+        if (inputs.isEmpty()) add(info("No inputs listed", "This TV does not list any inputs to apps. Use its own Input or Source button."))
+        inputs.forEach { i -> add(action(i.label, icon = R.drawable.ic_tv) { SystemLinks.openInput(me, i.id) }) }
+        add(header("Android settings", "Wi-Fi, display, sound, Bluetooth and the rest of the TV's own settings", R.drawable.ic_settings))
+        add(card(""))
+        SystemLinks.pages.forEach { (name, page) -> add(action(name, icon = R.drawable.ic_settings) { SystemLinks.open(me, page) }) }
+        add(header("About", "Version, updates, and privacy", R.drawable.ic_info) { Version.name(Updater.installedBuild(me)) })
         add(card(""))
         add(choice("Update channel", "Production: releases that have been tested and promoted. Beta: every new build, sooner but it may have bugs.", listOf("production", "beta"), { Prefs.updateChannel }, { Prefs.updateChannel = it }, { if (it == "beta") "Beta" else "Production" }))
         add(action("Check for updates", "Version ${Version.name(Updater.installedBuild(this@SettingsActivity))} installed. Checking the ${if (Prefs.updateChannel == "beta") "beta" else "production"} channel.") { checkUpdate() })
@@ -315,7 +330,7 @@ class SettingsActivity : Activity() {
         add(action("Move up", "Earlier stream addons win ties.", icon = R.drawable.ic_back) { AddonStore.move(url, -1); addonsChanged() })
         add(action("Move down", "Later addons are tried after earlier ones.", icon = R.drawable.ic_back) { AddonStore.move(url, 1); addonsChanged() })
         if (pendingRemove == url) add(action("Confirm: remove ${addonName(url)}", "This cannot be undone. Your other settings stay as they are.", icon = R.drawable.ic_close) {
-            AddonStore.remove(url); pendingRemove = null; subStack.removeAt(subStack.size - 1); addonsChanged(); focusFirst() })
+            AddonStore.remove(url); pendingRemove = null; subStack.removeAt(subStack.size - 1); addonsChanged(); show(0) })
         else add(action("Remove addon", "Uninstalls it from this profile.", icon = R.drawable.ic_close) { pendingRemove = url; refresh() })
     }
 
@@ -360,102 +375,104 @@ class SettingsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val c = this
-        // One rounded panel on the black canvas: the groups down the left, the rows of the open group on the right.
-        val panel = Ui.hbox(c).apply { background = Ui.rounded(c, Ui.CARD, Ui.R_DIALOG); gravity = Gravity.TOP }
-        rail = Ui.vbox(c).apply { setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 8), Ui.dp(c, 16)) }
-        panel.addView(ScrollView(c).apply { addView(rail); isVerticalScrollBarEnabled = false; fadeEdges(this) }, LinearLayout.LayoutParams(Ui.dp(c, 270), -1))
-        col = Ui.vbox(c).apply { setPadding(Ui.dp(c, 16), Ui.dp(c, 20), Ui.dp(c, 24), Ui.dp(c, 20)) }
-        panel.addView(ScrollView(c).apply { addView(col); isVerticalScrollBarEnabled = false; clipToPadding = false; fadeEdges(this); colScroll = this }, LinearLayout.LayoutParams(0, -1, 1f))
-        val root = android.widget.FrameLayout(c).apply { setBackgroundColor(Ui.BG); val m = Ui.dp(c, 32); setPadding(m, Ui.dp(c, 24), m, Ui.dp(c, 24)) }
-        root.addView(panel, android.widget.FrameLayout.LayoutParams(-1, -1))
-        setContentView(root)
-        if (intent.getStringExtra("open") == "addons") { refresh(); cat = groups.indexOfFirst { it.name == "Content & Discovery" }.coerceAtLeast(0); openSub("addons") } else refresh(focusRail = true)
+        // The drawer: [host] holds the page that shows.
+        host = android.widget.FrameLayout(c)
+        setContentView(SidePanel.drawer(c, host))
+        refresh()
+        if (intent.getStringExtra("open") == "addons") { cat = groups.indexOfFirst { it.name == "Content & Discovery" }.coerceAtLeast(0); open = true; openSub("addons") }
     }
 
-    /** Rebuilds the group list and the rows of the selected group. [keep] is the row to put focus back on. */
-    private fun refresh(keep: Int = -1, focusRail: Boolean = false) {
-        // Rebuilding the rows removes the focused row; put focus back where it was so it does not fall to the first group.
-        val focused = col.findFocus()?.let { f -> var v: View? = f; while (v != null && v.tag !is Int) v = v.parent as? View; (v?.tag as? Int) ?: -1 } ?: -1
-        val keepRow = if (keep >= 0) keep else focused
+    /** Rebuilds the groups and the page that shows, and puts focus back on the row that had it. [keep] is the row to focus instead. */
+    private fun refresh(keep: Int = -1) {
+        val focused = host.findFocus()?.let { f -> var v: View? = f; while (v != null && v.tag !is Int) v = v.parent as? View; (v?.tag as? Int) ?: -1 } ?: -1
         val all = rows()
         groups = buildList {
             var h: Row? = null; var cur = ArrayList<Row>()
-            for (r in all) if (r.kind == 'H') { h?.let { add(Group(it.label, it.desc, it.icon, it.on(), cur)) }; h = r; cur = ArrayList() } else cur.add(r)
-            h?.let { add(Group(it.label, it.desc, it.icon, it.on(), cur)) }
+            for (r in all) if (r.kind == 'H') { h?.let { add(Group(it.label, it.desc, it.icon, it.value(), cur)) }; h = r; cur = ArrayList() } else cur.add(r)
+            h?.let { add(Group(it.label, it.desc, it.icon, it.value(), cur)) }
         }
         cat = cat.coerceIn(0, groups.size - 1)
-        if (railItems.size != groups.size) {
-            rail.removeAllViews(); railItems.clear()
-            val me = this@SettingsActivity
-            rail.addView(Ui.text(me, "Settings", 24f, Ui.TEXT, true), Ui.wrap().apply { leftMargin = Ui.dp(me, 14); bottomMargin = Ui.dp(me, 10) })
-            groups.forEachIndexed { i, g ->
-                if (g.divider && i > 0) rail.addView(View(me).apply { setBackgroundColor(Ui.FILL) }, Ui.matchWrap().apply { height = Ui.dp(me, 1); topMargin = Ui.dp(me, 10); bottomMargin = Ui.dp(me, 6); leftMargin = Ui.dp(me, 14); rightMargin = Ui.dp(me, 14) })
-                val item = railItem(g, i); railItems.add(item)
-                rail.addView(item, Ui.matchWrap().apply { topMargin = Ui.dp(me, 4) })
-            }
-        }
-        for (i in groups.indices) railItems[i].isSelected = i == cat
-        buildPanel(keepRow)
-        if (focusRail) rail.post { railItems.getOrNull(cat)?.requestFocus() }
+        show(if (keep >= 0) keep else focused)
     }
 
-    private fun railItem(g: Group, i: Int): View = Ui.hbox(this).apply {
+    /** Puts the first page or the open group's page in the panel, with focus on the row tagged [focusRow] (else the first row). A page slides in from the side unless the box is in lite mode. */
+    private fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true) {
+        val page = if (open) groupPage() else mainPage()
+        host.removeAllViews(); host.addView(page, android.widget.FrameLayout.LayoutParams(-1, -1))
+        if (slide && !Prefs.lite()) { page.translationX = Ui.dp(this, if (forward) 48 else -48).toFloat(); page.alpha = 0f; page.animate().translationX(0f).alpha(1f).setDuration(160).start() }
+        page.post { val rs = rowViews(page).filter { canFocus(it) }; (rs.firstOrNull { it.tag == focusRow } ?: rs.firstOrNull())?.requestFocus() }
+    }
+
+    /** The views a page tags with their row number (a group's number on the first page), in order. The back row has no number. */
+    private fun rowViews(v: View, out: ArrayList<View> = ArrayList()): ArrayList<View> {
+        if (((v.tag as? Int) ?: -1) >= 0) out += v
+        if (v is ViewGroup) for (i in 0 until v.childCount) rowViews(v.getChildAt(i), out)
+        return out
+    }
+    private fun canFocus(v: View) = v.isFocusable || v is ViewGroup && (0 until v.childCount).any { v.getChildAt(it).isFocusable }
+
+    private fun scrolling(v: View) = ScrollView(this).apply { addView(v); isVerticalScrollBarEnabled = false; clipToPadding = false; fadeEdges(this) }
+
+    /** The groups under their small headings. */
+    private fun mainPage(): View {
+        val me = this
+        val list = Ui.vbox(me).apply { setPadding(Ui.dp(me, 14), Ui.dp(me, 8), Ui.dp(me, 14), Ui.dp(me, 16)) }
+        sections.forEach { (name, members) ->
+            val shown = members.map { m -> groups.indexOfFirst { it.name == m } }.filter { it >= 0 }
+            if (shown.isEmpty()) return@forEach
+            list.addView(Ui.sectionLabel(me, name), Ui.matchWrap().apply { topMargin = Ui.dp(me, 16); leftMargin = Ui.dp(me, 14); bottomMargin = Ui.dp(me, 4) })
+            shown.forEach { i -> list.addView(groupRow(groups[i], i), Ui.matchWrap().apply { topMargin = Ui.dp(me, 2) }) }
+        }
+        return scrolling(list)
+    }
+
+    private fun groupRow(g: Group, i: Int): View = Ui.hbox(this, 14).apply {
         val me = this@SettingsActivity
-        id = View.generateViewId(); gravity = Gravity.CENTER_VERTICAL
-        if (g.icon != 0) addView(android.widget.ImageView(me).apply { setImageResource(g.icon); setColorFilter(Ui.TEXT2) }, LinearLayout.LayoutParams(Ui.dp(me, 20), Ui.dp(me, 20)).apply { rightMargin = Ui.dp(me, 14) })
-        addView(Ui.text(context, g.name, 16f, Ui.TEXT, true, 1), LinearLayout.LayoutParams(0, -2, 1f))
-        addView(Ui.text(context, "\u203a", 22f, Ui.DIM, true))
-        setPadding(Ui.dp(me, 18), Ui.dp(me, 8), Ui.dp(me, 16), Ui.dp(me, 8))
-        background = Ui.pillBg(me, Ui.BG); isFocusable = true; isClickable = true
-        setOnFocusChangeListener { _, f -> if (f && cat != i && !rebuilding) { cat = i; closeSubs(); for (k in groups.indices) railItems[k].isSelected = k == i; buildPanel(-1) } }
-        setOnClickListener { cat = i; closeSubs(); buildPanel(-1); focusFirst() }
+        tag = i; isFocusable = true; isClickable = true; background = Ui.menuRowBg(me)
+        setPadding(Ui.dp(me, 12), Ui.dp(me, 10), Ui.dp(me, 14), Ui.dp(me, 10))
+        addView(Ui.iconTile(me, g.icon))
+        addView(Ui.text(me, g.name, 16f, Ui.TEXT, true, 1), LinearLayout.LayoutParams(0, -2, 1f))
+        if (g.value.isNotEmpty()) addView(Ui.text(me, g.value, 14f, Ui.DIM, false, 1))
+        addView(Ui.text(me, "\u203a", 22f, Ui.DIM, true))
+        setOnClickListener { cat = i; open = true; closeSubs(); show(0, slide = true) }
+    }
+
+    /** A group's page (or the Addons page inside it): a back arrow with the title, the line under it, then the rows. */
+    private fun groupPage(): View {
+        val me = this
+        val g = groups[cat]; val sub = subPage()
+        val title = sub?.first ?: g.name
+        val subtitle = sub?.second ?: g.subtitle
+        val rs = sub?.third ?: g.rows
+        val page = Ui.vbox(me)
+        val back = SidePanel.backRow(me, title) { goBack() }
+        page.addView(back, Ui.matchWrap().apply { setMargins(Ui.dp(me, 14), Ui.dp(me, 14), Ui.dp(me, 14), 0) })
+        if (subtitle.isNotEmpty()) page.addView(Ui.text(me, subtitle, 14f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { topMargin = Ui.dp(me, 6); leftMargin = Ui.dp(me, 28); rightMargin = Ui.dp(me, 28) })
+        val list = Ui.vbox(me).apply { setPadding(Ui.dp(me, 14), Ui.dp(me, 4), Ui.dp(me, 14), Ui.dp(me, 16)) }
+        rs.forEachIndexed { i, r ->
+            if (r.kind == 'S') {
+                // A heading over the rows that follow it, up to the next heading.
+                if (r.label.isNotEmpty()) list.addView(Ui.sectionLabel(me, r.label), Ui.matchWrap().apply { topMargin = Ui.dp(me, 16); leftMargin = Ui.dp(me, 14); bottomMargin = Ui.dp(me, 2) })
+                else list.addView(View(me), Ui.matchWrap().apply { height = Ui.dp(me, 6) })
+                return@forEachIndexed
+            }
+            val v = view(r) { refresh(keep = i) }
+            v.tag = i
+            list.addView(v, Ui.matchWrap().apply { topMargin = Ui.dp(me, 2) })
+        }
+        page.addView(scrolling(list), LinearLayout.LayoutParams(-1, 0, 1f))
+        return page
     }
 
     private fun closeSubs() { subStack.clear(); pendingRemove = null; phone?.stop(); phone = null; showQr = false }
 
-    private fun buildPanel(keep: Int) {
-        rebuilding = true; col.postDelayed({ rebuilding = false }, 300)
-        // Removing the focused row would hand focus to the first group for a frame (the flash); the groups cannot take it until the row is back.
-        rail.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
-        col.removeAllViews()
-        val g = groups[cat]
-        val sub = subPage()
-        val me = this
-        val title = sub?.first ?: if (g.name == "Remote & Buttons") "Remote & Buttons \u2014 Button Mapper" else g.name
-        val subtitle = sub?.second ?: g.subtitle
-        val rs = sub?.third ?: g.rows
-        col.addView(Ui.text(me, title, 24f, Ui.TEXT, true))
-        if (subtitle.isNotEmpty()) col.addView(Ui.text(me, subtitle, 14f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { topMargin = Ui.dp(me, 4) })
-        val railId = railItems[cat].id
-        var firstFocusable: View? = null
-        val built = arrayOfNulls<View>(rs.size)
-        val order = ArrayList<View>()
-        val beside = HashMap<View, View>()   // a field and the button next to it share one place in the Up and Down order
-        var into: LinearLayout = col
-        rs.forEachIndexed { i, r ->
-            if (r.kind == 'S') {
-                // A card: a titled box that holds the rows after it, up to the next card.
-                val box = Ui.vbox(me).apply { background = Ui.rounded(me, Ui.FILL, Ui.R_PANEL); setPadding(Ui.dp(me, 14), Ui.dp(me, 12), Ui.dp(me, 14), Ui.dp(me, 12)) }
-                if (r.label.isNotEmpty()) box.addView(Ui.text(me, r.label, 16f, Ui.TEXT, true))
-                col.addView(box, Ui.matchWrap().apply { topMargin = Ui.dp(me, 14) })
-                into = box
-                return@forEachIndexed
-            }
-            val v = view(r) { refresh(keep = i) }
-            v.id = View.generateViewId(); v.tag = i
-            if (r.kind == 'E') { val g = v as ViewGroup; val f = g.getChildAt(0); val b = g.getChildAt(1); f.id = View.generateViewId(); b.id = View.generateViewId(); f.nextFocusLeftId = railId; b.nextFocusLeftId = f.id; f.nextFocusRightId = b.id; if (firstFocusable == null) firstFocusable = f; order += f; beside[f] = b }
-            else if (v.isFocusable) { v.nextFocusLeftId = railId; if (firstFocusable == null) firstFocusable = v; order += v }
-            built[i] = v
-            into.addView(v, Ui.matchWrap().apply { topMargin = Ui.dp(me, 8) })
+    /** Up one page: out of an addon, out of the Addons list, out of the group, then out of Settings. */
+    private fun goBack() {
+        when {
+            subStack.isNotEmpty() -> { subStack.removeAt(subStack.size - 1); pendingRemove = null; if (subStack.isEmpty()) { phone?.stop(); phone = null; showQr = false }; show(0, slide = true, forward = false) }
+            open -> { open = false; closeSubs(); show(cat, slide = true, forward = false) }
+            else -> finish()
         }
-        railItems[cat].nextFocusRightId = firstFocusable?.id ?: View.NO_ID
-        // Up and Down go row to row. Left to itself, Down from a row can pick a group on the left that happens to sit a little lower.
-        order.forEachIndexed { i, v -> v.nextFocusUpId = (order.getOrNull(i - 1) ?: v).id; v.nextFocusDownId = (order.getOrNull(i + 1) ?: v).id }
-        beside.forEach { (f, b) -> b.nextFocusUpId = f.nextFocusUpId; b.nextFocusDownId = f.nextFocusDownId }
-        // On the first row the page title and first card come into view again after a scroll down and back up.
-        order.firstOrNull()?.setOnFocusChangeListener { _, has -> if (has) colScroll.post { colScroll.smoothScrollTo(0, 0) } }
-        if (keep >= 0) built.getOrNull(keep)?.requestFocus()
-        rail.post { rail.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS }
     }
 
     private fun view(r: Row, changed: () -> Unit): View {
@@ -486,8 +503,8 @@ class SettingsActivity : Activity() {
             r.image?.invoke()?.let { addView(android.widget.ImageView(c).apply { setImageBitmap(it) }, LinearLayout.LayoutParams(Ui.dp(c, 150), Ui.dp(c, 150))) }
             addView(Ui.text(c, r.desc, 14f, Ui.TEXT2).apply { setLineSpacing(0f, 1.15f) }, LinearLayout.LayoutParams(0, -2, 1f))
         }
-        val row = Ui.hbox(c).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); Ui.rowStyle(c, this, fill = if (r.kind == 'I') Ui.CARD else Ui.BG) }
-        if (r.icon != 0) row.addView(android.widget.ImageView(c).apply { setImageResource(r.icon); setColorFilter(Ui.TEXT) }, LinearLayout.LayoutParams(Ui.dp(c, 22), Ui.dp(c, 22)).apply { rightMargin = Ui.dp(c, 14) })
+        val row = Ui.hbox(c).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(Ui.dp(c, 12), Ui.dp(c, 10), Ui.dp(c, 14), Ui.dp(c, 10)); if (r.kind != 'I') background = Ui.menuRowBg(c) }
+        if (r.icon != 0) row.addView(Ui.iconTile(c, r.icon, 32), LinearLayout.LayoutParams(Ui.dp(c, 32), Ui.dp(c, 32)).apply { rightMargin = Ui.dp(c, 14) })
         val mid = Ui.vbox(c)
         // A row of the mapper may need its whole sentence; the others stay short.
         val long = r.icon != 0 || r.kind == 'T' || r.kind == 'A' && r.value().isNotEmpty()
@@ -514,19 +531,13 @@ class SettingsActivity : Activity() {
             if (r.kind == 'C') row.setOnKeyListener { _, code, ev ->
                 if (ev.action == KeyEvent.ACTION_DOWN && (code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_DPAD_RIGHT)) { r.act(if (code == KeyEvent.KEYCODE_DPAD_LEFT) -1 else 1); changed(); true } else false
             }
+            else row.setOnKeyListener { _, code, ev -> if (ev.action == KeyEvent.ACTION_DOWN && code == KeyEvent.KEYCODE_DPAD_LEFT) { goBack(); true } else false }
         }
         return row
     }
 
-    @Deprecated("Back closes a page inside a group, then goes from the rows to the groups, then leaves.")
-    override fun onBackPressed() {
-        if (subStack.isNotEmpty()) {
-            subStack.removeAt(subStack.size - 1); pendingRemove = null
-            if (subStack.isEmpty()) { phone?.stop(); phone = null; showQr = false }
-            refresh(); focusFirst(); return
-        }
-        if (col.hasFocus()) railItems.getOrNull(cat)?.requestFocus() else super.onBackPressed()
-    }
+    @Deprecated("Back goes up one page, then leaves.")
+    override fun onBackPressed() = goBack()
 
     override fun onDestroy() { phone?.stop(); super.onDestroy() }
 }

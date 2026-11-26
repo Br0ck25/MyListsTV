@@ -3,7 +3,7 @@ package tv.myliststv.launcher.ui
 import tv.myliststv.launcher.*
 
 import android.content.Context
-import android.graphics.Color
+import android.os.Build
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
@@ -18,6 +18,9 @@ import tv.myliststv.launcher.data.ImageLoader
 import tv.myliststv.launcher.data.Meta
 import tv.myliststv.launcher.data.Prefs
 import tv.myliststv.launcher.data.Watched
+
+/** How much a card grows when it has focus: it rises above its neighbours. */
+private const val LIFT = 1.15f
 
 enum class CardKind { POSTER, WIDE, APP, EPISODE }
 
@@ -121,6 +124,7 @@ class Card(c: Context, private val kind: CardKind) : FrameLayout(c) {
             }
         }
         foreground = Ui.focusBg(c, Ui.R_CARD, Ui.CLEAR)
+        if (Build.VERSION.SDK_INT >= 28) outlineSpotShadowColor = Ui.BRAND   // the shadow a raised card casts glows in the highlight colour
     }
 
     fun bind(m: CardModel) {
@@ -197,7 +201,7 @@ class CardAdapter(
         }
         h.card.setOnFocusChangeListener { v, f ->
             if (f) { (v.parent as? RecyclerView)?.setTag(tv.myliststv.launcher.R.id.tag_row_pos, h.bindingAdapterPosition); onPos?.invoke(h.bindingAdapterPosition) }
-            if (!lite) v.animate().scaleX(if (f) 1.06f else 1f).scaleY(if (f) 1.06f else 1f).setDuration(110).start()
+            if (!lite) v.animate().scaleX(if (f) LIFT else 1f).scaleY(if (f) LIFT else 1f).translationZ(if (f) Ui.dpf(v.context, 12f) else 0f).setDuration(110).start()
             if (f) onFocus(m)
         }
     }
@@ -212,7 +216,8 @@ class RowView(c: Context) : LinearLayout(c) {
     val strip = RecyclerView(c).apply {
         layoutManager = LinearLayoutManager(c, LinearLayoutManager.HORIZONTAL, false)
         clipToPadding = false
-        setPadding(Ui.dp(c, 42), Ui.dp(c, 4), Ui.dp(c, 42), Ui.dp(c, 4))
+        setPadding(Ui.dp(c, 42), Ui.dp(c, 12), Ui.dp(c, 42), Ui.dp(c, 12))   // room for the focused card to rise
+        clipChildren = false
         itemAnimator = null
         isFocusable = false
         descendantFocusability = FOCUS_AFTER_DESCENDANTS
@@ -221,7 +226,7 @@ class RowView(c: Context) : LinearLayout(c) {
     var adapter: CardAdapter? = null
 
     init {
-        orientation = VERTICAL
+        orientation = VERTICAL; clipChildren = false
         val head = Ui.hbox(c, 10)
         head.setPadding(Ui.dp(c, 48), Ui.dp(c, 6), Ui.dp(c, 48), 0)
         head.addView(title); head.addView(source)
@@ -240,7 +245,7 @@ class RowsList(
     private val onClick: (CardModel) -> Unit,
     private val onLong: ((CardModel) -> Unit)? = null,
 ) : RecyclerView(c) {
-    init { layoutManager = LinearLayoutManager(c); itemAnimator = null; clipToPadding = false; setPadding(0, 0, 0, Ui.dp(c, 56)); setItemViewCacheSize(3); adapter = A() }
+    init { layoutManager = LinearLayoutManager(c); itemAnimator = null; clipToPadding = false; clipChildren = false; setPadding(0, 0, 0, Ui.dp(c, 56)); setItemViewCacheSize(3); adapter = A() }
 
     /** Landing on a row shows it whole, title included: the first row goes to the very top, any other row is scrolled until its heading is in view. */
     override fun requestChildFocus(child: View?, focused: View?) {

@@ -41,12 +41,17 @@ class ShotTest {
         File(dir, "$name.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
+    private fun all(v: View, out: MutableList<View> = ArrayList()): List<View> { out += v; if (v is android.view.ViewGroup) for (i in 0 until v.childCount) all(v.getChildAt(i), out); return out }
+
     @Test fun screens() {
         Assume.assumeTrue(dir != null)
         val s = Robolectric.buildActivity(SettingsActivity::class.java).setup().get(); settle(500); shot(s, "settings")
+        fun open(label: String) { var v: View? = all(s.window.decorView).filterIsInstance<android.widget.TextView>().first { it.text.toString() == label }; while (v != null && !v.isClickable) v = v.parent as? View; v!!.performClick(); settle(500) }
+        open("Layout"); shot(s, "settings_layout")
+        @Suppress("DEPRECATION") s.onBackPressed(); settle(300); open("Content & Discovery"); open("Addons"); shot(s, "settings_addons")
+        val ar = Robolectric.buildActivity(ArrangeActivity::class.java, android.content.Intent().putExtra("what", "rows")).setup().get(); settle(500); shot(ar, "arrange")
         val m = Robolectric.buildActivity(MainActivity::class.java).setup().get(); settle(7000)
         // Focus the second poster so the backdrop and hero show, as they do when the viewer scrolls.
-        fun all(v: View, out: MutableList<View> = ArrayList()): List<View> { out += v; if (v is android.view.ViewGroup) for (i in 0 until v.childCount) all(v.getChildAt(i), out); return out }
         lay(m); settle(300); lay(m)
         // Robolectric's window has no focus, so call the card's focus listener the way a D-pad move would.
         all(m.window.decorView).filterIsInstance<tv.myliststv.launcher.ui.Card>().getOrNull(1)?.let { it.onFocusChangeListener?.onFocusChange(it, true) }; settle(4500); shot(m, "home")

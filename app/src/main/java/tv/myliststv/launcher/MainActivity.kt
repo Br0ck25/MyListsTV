@@ -43,6 +43,8 @@ class MainActivity : Activity() {
     private var ready = false
     private lateinit var bg: ImageView
     private lateinit var scrims: List<View>
+    /** The glow over the backdrop: the room takes on the focused title's colours. */
+    private lateinit var tint: View
     private lateinit var bellBtn: View
     private lateinit var side: LinearLayout
     private lateinit var clock: TextView
@@ -51,6 +53,7 @@ class MainActivity : Activity() {
     /** True while an app is being moved with the D-pad (hold OK on an app, Move). */
     private var moving = false
     private val navStyle = Prefs.navStyle
+    private val accent = Prefs.accent
     private val sideWidth get() = Ui.dp(this, 200)
     private lateinit var bellBadge: TextView
     private var backdropUrl: String? = null
@@ -103,7 +106,7 @@ class MainActivity : Activity() {
         fun card(pkg: String, app: String, time: Long, title: String, text: String, open: () -> Unit, clear: () -> Unit) {
             val row = Ui.hbox(c, 10).apply { gravity = Gravity.CENTER_VERTICAL }
             val body = Ui.vbox(c).apply {
-                setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); Ui.rowStyle(c, this, fill = Ui.ELEVATED); isFocusable = true; isClickable = true
+                setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); background = Ui.menuRowBg(c, normal = Ui.ELEVATED); isFocusable = true; isClickable = true
                 setOnClickListener { open(); panel.dismiss() }
                 val top = Ui.hbox(c, 8)
                 top.addView(android.widget.ImageView(c).apply { try { setImageDrawable(if (pkg.isEmpty()) getDrawable(R.drawable.ic_launcher) else packageManager.getApplicationIcon(pkg)) } catch (_: Exception) { } }, LinearLayout.LayoutParams(Ui.dp(c, 18), Ui.dp(c, 18)))
@@ -124,51 +127,39 @@ class MainActivity : Activity() {
         }, Ui.wrap().apply { topMargin = Ui.dp(c, 8) })
     }
 
-    /** The gear: Apps, Launcher settings (the full settings) and Android settings, in the same right-hand panel. */
-    private fun showSettingsPanel() {
-        val c = this
-        val panel = SidePanel(c)
-        val page = SidePanel.page(c)
-        page.addView(SidePanel.header(c, "Settings"))
-        fun item(icon: Int, label: String, go: () -> Unit) = page.addView(SidePanel.item(c, icon, label, go), Ui.matchWrap().apply { topMargin = Ui.dp(c, 12) })
-        item(R.drawable.ic_apps, "Apps") { panel.push(appsPage(panel)) }
-        item(R.drawable.ic_home, "Launcher settings") { panel.dismiss(); startActivity(Intent(c, SettingsActivity::class.java)) }
-        item(R.drawable.ic_settings, "Android settings") {
-            panel.dismiss()
-            try { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) } catch (_: Exception) { Pop.toast(c, "This TV does not open its settings from apps.", true) }
-        }
-        panel.show(page)
-    }
-
-    /** Every app as a banner with its name under it, two across; OK opens it, hold OK for its menu. */
-    private fun appsPage(panel: SidePanel): View {
-        val c = this
-        val page = SidePanel.page(c)
-        page.addView(SidePanel.header(c, "Apps"))
-        val grid = androidx.recyclerview.widget.RecyclerView(c).apply {
-            layoutManager = androidx.recyclerview.widget.GridLayoutManager(c, 2); itemAnimator = null; clipToPadding = false; setPadding(0, Ui.dp(c, 4), 0, Ui.dp(c, 8))
-        }
-        page.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = Ui.dp(c, 10) })
-        Http.background {
-            val apps = AppRepository.load(c)
-            Http.post { grid.adapter = AppGridAdapter(c, apps, { panel.dismiss(); launch(it) }, { appMenu(it) }) }
-        }
-        return page
-    }
-
     private var backdropJob: Runnable? = null
 
     /** Shows [url] behind the screen after the focus has rested for a moment, so scrolling fast does not load every picture. A null leaves the current one. */
     private fun setBackdrop(url: String?) {
+        if (url == "") { if (Pictures.wallpaperFile(this).exists()) idleBackdrop(); return }    // "" means no title: show the wallpaper
         if (url == null || url == backdropUrl) return
         backdropJob?.let { handler.removeCallbacks(it) }
-        backdropJob = Runnable { backdropUrl = url; ImageLoader.load(bg, url, Ui.dp(this, if (Prefs.lite()) 640 else 960), Ui.dp(this, if (Prefs.lite()) 360 else 540), fade = !Prefs.lite()) }.also { handler.postDelayed(it, 250) }
+        backdropJob = Runnable { backdropUrl = url; ImageLoader.load(bg, url, Ui.dp(this, if (Prefs.lite()) 640 else 960), Ui.dp(this, if (Prefs.lite()) 360 else 540), fade = !Prefs.lite()) { ok -> if (ok) glowFromBackdrop() } }.also { handler.postDelayed(it, 250) }
+    }
+
+    /** Tints the room with the colour of the backdrop that just arrived. */
+    private fun glowFromBackdrop() {
+        val bmp = (bg.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap ?: return
+        tint.background = Ui.glow(this, Ui.ambient(bmp))
+        if (!Prefs.lite()) { tint.alpha = 0f; tint.animate().alpha(1f).setDuration(300).start() }
     }
 
     private fun showBackdrop(on: Boolean) {
-        val v = if (on) View.VISIBLE else View.GONE
-        bg.visibility = v; scrims.forEach { it.visibility = v }
+        val wall = Pictures.wallpaperFile(this).exists()
+        val v = if (on || wall) View.VISIBLE else View.GONE
+        bg.visibility = v; tint.visibility = v; scrims.forEach { it.visibility = v }
         if (!on) { backdropJob?.let { handler.removeCallbacks(it) }; backdropUrl = null; bg.setImageDrawable(null) }
+        if (wall && bg.drawable == null) idleBackdrop()
+    }
+
+    /** No title is highlighted: the owner's wallpaper, if they picked one. */
+    private fun idleBackdrop() {
+        backdropJob?.let { handler.removeCallbacks(it) }; backdropUrl = null; tint.background = null
+        val f = Pictures.wallpaperFile(this).takeIf { it.exists() } ?: return
+        Http.background {
+            val bmp = try { android.graphics.BitmapFactory.decodeFile(f.path, android.graphics.BitmapFactory.Options().apply { inPreferredConfig = android.graphics.Bitmap.Config.RGB_565 }) } catch (_: Throwable) { null }
+            Http.post { if (bmp != null && backdropUrl == null) bg.setImageBitmap(bmp) }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -181,7 +172,9 @@ class MainActivity : Activity() {
             View(this).apply { background = Ui.scrimLeft() },
             View(this).apply { background = Ui.scrimBottom() },
         )
+        tint = View(this)
         root.addView(bg, FrameLayout.LayoutParams(-1, -1))
+        root.addView(tint, FrameLayout.LayoutParams(-1, -1))
         root.addView(scrims[0], FrameLayout.LayoutParams(-1, -1))
         root.addView(scrims[1], FrameLayout.LayoutParams(-1, Ui.dp(this, 420), Gravity.BOTTOM))
         content = FrameLayout(this).apply { setPadding(0, Ui.dp(this@MainActivity, 64), 0, 0) }
@@ -211,7 +204,7 @@ class MainActivity : Activity() {
             addView(Ui.iconButton(this@MainActivity, R.drawable.ic_bell, "Notifications") { showNotices() }, FrameLayout.LayoutParams(icon, icon))
             addView(bellBadge, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, Ui.dp(this@MainActivity, 16), Gravity.TOP or Gravity.END))
         }
-        settingsBtn = Ui.iconButton(this, R.drawable.ic_settings, "Settings") { showSettingsPanel() }
+        settingsBtn = Ui.iconButton(this, R.drawable.ic_settings, "Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }
         if (navStyle == 0) topBar.addView(profileChip(), LinearLayout.LayoutParams(-2, icon).apply { rightMargin = Ui.dp(this@MainActivity, 8) })
         else side.addView(profileChip(), 0, LinearLayout.LayoutParams(-1, icon).apply { bottomMargin = Ui.dp(this@MainActivity, 10) })
         topBar.addView(bellBtn, LinearLayout.LayoutParams(icon, icon));  topBar.addView(settingsBtn, LinearLayout.LayoutParams(icon, icon))
@@ -268,11 +261,11 @@ class MainActivity : Activity() {
         if (::profileName.isInitialized) profileName.visibility = if (open) View.VISIBLE else View.GONE
         // Slim: no pills, just the icons; the one that is focused gets a ring. Open: the names, and the open page outlined.
         sideItems().forEach {
-            it.background = if (open) Ui.pillBg(this, Ui.CLEAR) else Ui.focusBg(this, Ui.R_PILL, Ui.FOCUS_FILL)
+            it.background = Ui.menuRowBg(this, selectedToo = open)
             it.setPadding(Ui.dp(this, if (open) 16 else 18), Ui.dp(this, 12), Ui.dp(this, 16), Ui.dp(this, 12))
         }
         profileChipView?.apply {
-            background = if (open) Ui.pillBg(this@MainActivity) else Ui.focusBg(this@MainActivity, Ui.R_PILL, Ui.FOCUS_FILL)
+            background = Ui.menuRowBg(this@MainActivity, normal = if (open) Ui.FILL else Ui.CLEAR)
             (this as LinearLayout).gravity = if (open) Gravity.CENTER_VERTICAL else Gravity.CENTER
             setPadding(Ui.dp(this@MainActivity, if (open) 6 else 0), Ui.dp(this@MainActivity, 5), Ui.dp(this@MainActivity, if (open) 16 else 0), Ui.dp(this@MainActivity, 5))
         }
@@ -293,11 +286,12 @@ class MainActivity : Activity() {
         text = t; label = t; Ui.size(this, if (navStyle != 0) 20f else 15f); typeface = android.graphics.Typeface.DEFAULT_BOLD
         val v = if (navStyle != 0) 12 else 8
         setPadding(Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, v), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, v))
-        background = Ui.pillBg(this@MainActivity, Ui.CLEAR); isFocusable = true; isClickable = true
-        // The side bar shows an icon before each name, in the same colour as the name.
+        background = if (navStyle != 0) Ui.menuRowBg(this@MainActivity) else Ui.pillBg(this@MainActivity, Ui.CLEAR); isFocusable = true; isClickable = true
+        // The side bar shows an icon before each name, on a small rounded square, in the same colour as the name.
         if (navStyle != 0) {
-            val d = getDrawable(tabIcons[tabs.indexOf(t).coerceAtLeast(0)])!!.mutate(); val s = Ui.dp(this@MainActivity, 22)
-            d.setBounds(0, 0, s, s); setCompoundDrawables(d, null, null, null); compoundDrawablePadding = Ui.dp(this@MainActivity, 14); gravity = Gravity.CENTER_VERTICAL
+            val d = getDrawable(tabIcons[tabs.indexOf(t).coerceAtLeast(0)])!!.mutate(); val s = Ui.dp(this@MainActivity, 34); val inset = Ui.dp(this@MainActivity, 7)
+            val tile = android.graphics.drawable.LayerDrawable(arrayOf(Ui.rounded(this@MainActivity, Ui.FILL, Ui.R_TILE), d)).apply { setLayerInset(1, inset, inset, inset, inset); setBounds(0, 0, s, s) }
+            setCompoundDrawables(tile, null, null, null); compoundDrawablePadding = Ui.dp(this@MainActivity, 14); gravity = Gravity.CENTER_VERTICAL
         }
         setTextColor(Ui.DIM)
     }
@@ -385,9 +379,27 @@ class MainActivity : Activity() {
             items += "Move" to { moving = true; Pop.toast(this, "Move it with Left and Right, then press OK", true) }
             items += "Hide from Home" to { Prefs.appHidden = Prefs.appHidden + pkg; if ((screen as? BrowseScreen)?.hideApp(pkg) != true) select(current, force = true) }
         }
+        items += "Rename" to { Sheet.ask(this, "Rename app", "Name", "Save", "Leave it empty to use the app's own name.", initial = a.label) { Prefs.setAppName(pkg, it); select(current, force = true) } }
+        items += "Change icon" to { iconMenu(a) }
         items += "App info" to { system(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg"))) }
         items += "Uninstall" to { system(Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg"))) }
         Sheet.menu(this, a.label, "Installed app", items)
+    }
+
+    private val pictures = PicturePicker(this, 42)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) { super.onActivityResult(requestCode, resultCode, data); pictures.result(requestCode, resultCode, data) }
+
+    /** A picture of the owner's own for one app (an icon pack changes them all, in Settings). */
+    private fun iconMenu(a: AppEntry) {
+        val file = Pictures.iconFile(this, a.component.packageName)
+        val redraw = { dropPages(); select(current, force = true) }
+        val items = ArrayList<Pair<String, () -> Unit>>()
+        items += "Choose a picture" to { pictures.pick { uri ->
+            Http.background { val ok = Pictures.save(this, uri, file, 480, 270, png = true); Http.post { if (ok) redraw() else Pop.toast(this, "That file is not a picture this TV can read.", true) } }
+        } }
+        items += "Send from my phone" to { PhonePicture.receive(this, "Send an icon for ${a.label}", file, 480, 270, true, redraw) }
+        if (file.exists()) items += "Back to the usual icon" to { file.delete(); redraw() }
+        Sheet.menu(this, "Icon for ${a.label}", "Pick any picture on the TV. Square ones look best; wide ones fill the whole card.", items)
     }
 
     private var seenEpoch = Prefs.epoch
@@ -408,14 +420,14 @@ class MainActivity : Activity() {
     override fun onResume() {
         if (::clock.isInitialized) { handler.removeCallbacks(clockTick); clockTick.run() }
         super.onResume()
-        if (Prefs.navStyle != navStyle) { recreate(); return }
+        if (Prefs.navStyle != navStyle || Prefs.accent != accent) { recreate(); return }
         if (ready) {
             Alerts.check { if (::bellBadge.isInitialized) updateBell() }
             syncAccount()
         }
         if (::bellBadge.isInitialized) updateBell()
         if (::profileName.isInitialized) updateProfile()
-        if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; dropPages(); if (ready && current >= 0) select(current, force = true) }
+        if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; dropPages(); bg.setImageDrawable(null); backdropUrl = null; if (ready && current >= 0) select(current, force = true) }
         if (AddonStore.needsRefresh) { AddonStore.needsRefresh = false; AddonStore.load { dropPages(); select(current.coerceAtLeast(0), force = true) } }
         (screen as? BrowseScreen)?.refreshContinue()
         // Back from a details page: nothing is focused now, so put the focus where it was (otherwise Down lands on whatever sits under the pointer).
