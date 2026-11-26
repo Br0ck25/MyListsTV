@@ -549,15 +549,15 @@ Find a symbol with grep on this file, then read only that file around the line n
     21   fun setTitle(m: Meta, watched: Boolean)  - A whole title marked by hand: a movie is its own "episode", a show gets the flag "*" (its episodes keep their 
     23   fun set(metaId: String, videoId: String, watched: Boolean)
 
-## screens/ArrangeActivity.kt (116 lines) - Reorder Home Catalogs (or the apps row): a page of cards, each with its name, where it comes from, an on/off t
+## screens/ArrangeActivity.kt (117 lines) - Reorder Home Catalogs (or the apps row): a page of cards, each with its name, where it comes from, an on/off t
     21 class ArrangeActivity  - Reorder Home Catalogs (or the apps row): a page of cards, each with its name, where it comes from, an on/off t
     29   fun onCreate(savedInstanceState: Bundle?)
-    51   fun fill(keys: List<Triple<String, String, String>>, hidden: List<String>, onSav
-    58   fun rowFor(item: Item)
-    94   fun refreshCarry()  - The card being carried is outlined in the brand colour.
-   102   fun move(row: View, d: Int)  - Swaps the card with its neighbour and keeps focus on its handle.
-   112   fun persist()
-   115   fun onBackPressed()
+    52   fun fill(keys: List<Triple<String, String, String>>, hidden: List<String>, onSav
+    59   fun rowFor(item: Item)
+    95   fun refreshCarry()  - The card being carried is outlined in the brand colour.
+   103   fun move(row: View, d: Int)  - Swaps the card with its neighbour and keeps focus on its handle.
+   113   fun persist()
+   116   fun onBackPressed()
 
 ## screens/DetailsActivity.kt (415 lines) - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
     25 class DetailsActivity  - Details for one title, laid out like a streaming app: the title's backdrop behind everything, its logo (or nam
@@ -653,7 +653,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    708   fun onStop()
    715   fun onDestroy()
 
-## screens/SettingsActivity.kt (553 lines) - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
+## screens/SettingsActivity.kt (543 lines) - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
     28 class SettingsActivity  - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
     33   fun card(title: String)  - A card inside a group (kind S): its title, then the rows that follow it up to the next card.
     36   fun header(t: String, subtitle: String = "", icon: Int = 0, value: ()  - A group of the settings list: its name, the line under the page title, its icon, and a short summary shown at 
@@ -689,19 +689,19 @@ Find a symbol with grep on this file, then read only that file around the line n
    362   fun checkUpdate()
    373   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
    375   fun onCreate(savedInstanceState: Bundle?)
-   390   fun refresh(keep: Int = -1)  - Rebuilds the groups and the page that shows, and puts focus back on the row that had it.
-   403   fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true)  - Puts the first page or the open group's page in the panel, with focus on the row tagged [focusRow] (else the f
-   411   fun rowViews(v: View, out: ArrayList<View> = ArrayList()  - The views a page tags with their row number (a group's number on the first page), in order.
-   416   fun canFocus(v: View)
-   418   fun scrolling(v: View)
-   421   fun mainPage()  - The groups under their small headings.
-   433   fun groupRow(g: Group, i: Int)
-   445   fun groupPage()  - A group's page (or the Addons page inside it): a back arrow with the title, the line under it, then the rows.
-   477   fun closeSubs()
-   480   fun goBack()  - Up one page: out of an addon, out of the Addons list, out of the group, then out of Settings.
-   488   fun view(r: Row, changed: ()
-   550   fun onBackPressed()
-   552   fun onDestroy()
+   386   fun refresh(keep: Int = -1)  - Rebuilds the groups and the page that shows, and puts focus back on the row that had it.
+   399   fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true)  - Puts the first page or the open group's page in the panel, with focus on the row tagged [focusRow] (else the f
+   407   fun rowViews(v: View, out: ArrayList<View> = ArrayList()  - The views a page tags with their row number (a group's number on the first page), in order.
+   412   fun canFocus(v: View)
+   414   fun scrolling(v: View)
+   417   fun mainPage()  - The groups under their small headings.
+   429   fun groupRow(g: Group, i: Int)
+   441   fun groupPage()  - A group's page (or the Addons page inside it): a back arrow with the title, the line under it, then the rows.
+   467   fun closeSubs()
+   470   fun goBack()  - Up one page: out of an addon, out of the Addons list, out of the group, then out of Settings.
+   478   fun view(r: Row, changed: ()
+   540   fun onBackPressed()
+   542   fun onDestroy()
 
 ## screens/SetupActivity.kt (129 lines) - First run: one full screen per step (Home app, Home button, notifications, addons).
     25 class SetupActivity  - First run: one full screen per step (Home app, Home button, notifications, addons).
@@ -892,7 +892,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     77   fun field(hint: String, initial: String = "", caps: Boolean = false, done: (Stri  - A line to type in.
     93   fun card(title: String, sub: String? = null, trailing: String? = null, selected:  - An option card: a title, an optional line under it, an optional word at the right, a tick when [selected], a b
 
-## ui/SidePanel.kt (67 lines) - A tall rounded panel on the right edge over a dimmed screen: the bell opens in it (Settings is the same panel,
+## ui/SidePanel.kt (83 lines) - A tall rounded panel on the right edge over a dimmed screen: the bell opens in it (Settings is the same panel,
     18 class SidePanel  - A tall rounded panel on the right edge over a dimmed screen: the bell opens in it (Settings is the same panel,
     34   fun show(page: View)
     42   fun dismiss()

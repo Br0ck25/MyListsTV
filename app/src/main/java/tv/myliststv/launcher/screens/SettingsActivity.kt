@@ -375,13 +375,9 @@ class SettingsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val c = this
-        // One rounded panel down the right edge, the same as the bell's, over the dimmed screen. [host] holds the page that shows.
+        // The drawer: [host] holds the page that shows.
         host = android.widget.FrameLayout(c)
-        val panel = android.widget.FrameLayout(c).apply { background = Ui.rounded(c, Ui.CARD, Ui.R_DIALOG); clipToOutline = true; addView(host, android.widget.FrameLayout.LayoutParams(-1, -1)) }
-        val m = Ui.dp(c, SidePanel.MARGIN)
-        val root = android.widget.FrameLayout(c).apply { setBackgroundColor(Ui.SCRIM_SLATE); setPadding(0, m, m, m) }
-        root.addView(panel, android.widget.FrameLayout.LayoutParams(Ui.dp(c, SidePanel.WIDTH), -1, Gravity.END))
-        setContentView(root)
+        setContentView(SidePanel.drawer(c, host))
         refresh()
         if (intent.getStringExtra("open") == "addons") { cat = groups.indexOfFirst { it.name == "Content & Discovery" }.coerceAtLeast(0); open = true; openSub("addons") }
     }
@@ -449,13 +445,7 @@ class SettingsActivity : Activity() {
         val subtitle = sub?.second ?: g.subtitle
         val rs = sub?.third ?: g.rows
         val page = Ui.vbox(me)
-        val back = Ui.hbox(me, 12).apply {
-            tag = -1; isFocusable = true; isClickable = true; background = Ui.menuRowBg(me)
-            setPadding(Ui.dp(me, 12), Ui.dp(me, 8), Ui.dp(me, 14), Ui.dp(me, 8))
-            addView(Ui.iconTile(me, R.drawable.ic_back, 32))
-            addView(Ui.text(me, title, 24f, Ui.TEXT, true, 1), LinearLayout.LayoutParams(0, -2, 1f))
-            setOnClickListener { goBack() }
-        }
+        val back = SidePanel.backRow(me, title) { goBack() }
         page.addView(back, Ui.matchWrap().apply { setMargins(Ui.dp(me, 14), Ui.dp(me, 14), Ui.dp(me, 14), 0) })
         if (subtitle.isNotEmpty()) page.addView(Ui.text(me, subtitle, 14f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { topMargin = Ui.dp(me, 6); leftMargin = Ui.dp(me, 28); rightMargin = Ui.dp(me, 28) })
         val list = Ui.vbox(me).apply { setPadding(Ui.dp(me, 14), Ui.dp(me, 4), Ui.dp(me, 14), Ui.dp(me, 16)) }

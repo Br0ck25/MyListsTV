@@ -49,6 +49,7 @@ class ShotTest {
         fun open(label: String) { var v: View? = all(s.window.decorView).filterIsInstance<android.widget.TextView>().first { it.text.toString() == label }; while (v != null && !v.isClickable) v = v.parent as? View; v!!.performClick(); settle(500) }
         open("Layout"); shot(s, "settings_layout")
         @Suppress("DEPRECATION") s.onBackPressed(); settle(300); open("Content & Discovery"); open("Addons"); shot(s, "settings_addons")
+        val ar = Robolectric.buildActivity(ArrangeActivity::class.java, android.content.Intent().putExtra("what", "rows")).setup().get(); settle(500); shot(ar, "arrange")
         val m = Robolectric.buildActivity(MainActivity::class.java).setup().get(); settle(7000)
         // Focus the second poster so the backdrop and hero show, as they do when the viewer scrolls.
         lay(m); settle(300); lay(m)

@@ -30,12 +30,13 @@ class ArrangeActivity : Activity() {
         super.onCreate(savedInstanceState)
         val apps = intent.getStringExtra("what") == "apps"
         val c = this
-        list = Ui.vbox(c).apply { setPadding(Ui.dp(c, 3), Ui.dp(c, 3), Ui.dp(c, 3), Ui.dp(c, 3)) }
-        val root = Ui.vbox(c).apply { setBackgroundColor(Ui.BG); setPadding(Ui.dp(c, 48), Ui.dp(c, 28), Ui.dp(c, 48), Ui.dp(c, 8)) }
-        root.addView(Ui.text(c, if (apps) "Reorder Apps Row" else "Reorder Home Catalogs", 30f, Ui.TEXT, true))
-        root.addView(Ui.text(c, if (apps) "This controls the order of the apps on Home. The Apps page still shows all of them." else "This controls row order on Home. OK on a handle picks a row up; Up and Down move it.", 14f, Ui.DIM).apply { setPadding(0, Ui.dp(c, 6), 0, Ui.dp(c, 14)) })
-        root.addView(ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false; clipToPadding = false }, LinearLayout.LayoutParams(-1, 0, 1f))
-        setContentView(root)
+        list = Ui.vbox(c).apply { setPadding(Ui.dp(c, 14), Ui.dp(c, 3), Ui.dp(c, 14), Ui.dp(c, 16)) }
+        // The same drawer as Settings: a back arrow with the title, the line under it, then the cards.
+        val page = Ui.vbox(c)
+        page.addView(SidePanel.backRow(c, if (apps) "Reorder Apps Row" else "Reorder Home Catalogs") { onBackPressed() }, Ui.matchWrap().apply { setMargins(Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14), 0) })
+        page.addView(Ui.text(c, if (apps) "This controls the order of the apps on Home. The Apps page still shows all of them." else "This controls row order on Home. OK on a handle picks a row up; Up and Down move it.", 14f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { setMargins(Ui.dp(c, 28), Ui.dp(c, 6), Ui.dp(c, 28), Ui.dp(c, 6)) })
+        page.addView(ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false; clipToPadding = false }, LinearLayout.LayoutParams(-1, 0, 1f))
+        setContentView(SidePanel.drawer(c, page))
         if (apps) Http.background {
             val order = Prefs.appOrder
             val all = AppRepository.load(this).sortedBy { order.indexOf(it.component.packageName).let { i -> if (i < 0) Int.MAX_VALUE else i } }
@@ -57,7 +58,7 @@ class ArrangeActivity : Activity() {
 
     private fun rowFor(item: Item): View {
         val c = this
-        val row = Ui.hbox(c, 12).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(Ui.dp(c, 20), Ui.dp(c, 12), Ui.dp(c, 14), Ui.dp(c, 12)); background = Ui.rounded(c, Ui.CARD, Ui.R_PANEL); tag = item }
+        val row = Ui.hbox(c, 12).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(Ui.dp(c, 20), Ui.dp(c, 12), Ui.dp(c, 14), Ui.dp(c, 12)); background = Ui.rounded(c, Ui.FILL, Ui.R_PANEL); tag = item }
         val words = Ui.vbox(c)
         val name = Ui.text(c, item.name, 16f, Ui.TEXT, false, 1)
         words.addView(name)
@@ -94,7 +95,7 @@ class ArrangeActivity : Activity() {
     private fun refreshCarry() {
         for (i in 0 until list.childCount) {
             val r = list.getChildAt(i)
-            r.background = if (r === carrying) Ui.rounded(this, Ui.CARD, Ui.R_PANEL, Ui.BRAND) else Ui.rounded(this, Ui.CARD, Ui.R_PANEL)
+            r.background = if (r === carrying) Ui.rounded(this, Ui.FILL, Ui.R_PANEL, Ui.BRAND) else Ui.rounded(this, Ui.FILL, Ui.R_PANEL)
         }
     }
 

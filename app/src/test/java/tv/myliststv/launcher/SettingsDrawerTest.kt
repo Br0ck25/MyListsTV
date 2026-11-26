@@ -12,6 +12,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import tv.myliststv.launcher.data.SystemLinks
+import tv.myliststv.launcher.screens.ArrangeActivity
 import tv.myliststv.launcher.screens.SettingsActivity
 
 /** Settings is one drawer: every group is on its first page, and the gear's old pages (Inputs, Android settings) live in it. */
@@ -65,6 +66,14 @@ class SettingsDrawerTest {
         assertTrue("Playback" in texts(a) && "Show Skip intro" !in texts(a))
         assertFalse(a.isFinishing)
         a.onBackPressed()
+        assertTrue(a.isFinishing)
+    }
+
+    @Test fun arrangeIsTheSameDrawerAndBackLeaves() {
+        val a = Robolectric.buildActivity(ArrangeActivity::class.java, android.content.Intent().putExtra("what", "rows")).setup().get(); idle()
+        val t = views(a.window.decorView).filterIsInstance<TextView>().map { it.text.toString() }
+        assertTrue("Reorder Home Catalogs" in t && "Continue Watching" in t)
+        @Suppress("DEPRECATION") a.onBackPressed()
         assertTrue(a.isFinishing)
     }
 }

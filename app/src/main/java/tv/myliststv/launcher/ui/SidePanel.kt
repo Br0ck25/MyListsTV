@@ -57,6 +57,22 @@ class SidePanel(private val act: Activity) {
         /** A page's padding, so every page lines up. */
         fun page(c: Activity): LinearLayout = Ui.vbox(c).apply { setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 16)) }
 
+        /** The whole screen of an activity that is a drawer (Settings, Arrange): a clear window dimmed over what is behind it, with the panel down the right edge holding [page]. */
+        fun drawer(c: Activity, page: View): View {
+            val panel = FrameLayout(c).apply { background = Ui.rounded(c, Ui.CARD, Ui.R_DIALOG); clipToOutline = true; addView(page, FrameLayout.LayoutParams(-1, -1)) }
+            val m = Ui.dp(c, MARGIN)
+            return FrameLayout(c).apply { setBackgroundColor(Ui.SCRIM_SLATE); setPadding(0, m, m, m); addView(panel, FrameLayout.LayoutParams(Ui.dp(c, WIDTH), -1, Gravity.END)) }
+        }
+
+        /** The top row of a drawer page: a back arrow and the title. OK runs [back]. It has no row number, so a page's own rows can be numbered from 0. */
+        fun backRow(c: Activity, title: String, back: () -> Unit): View = Ui.hbox(c, 12).apply {
+            tag = -1; isFocusable = true; isClickable = true; background = Ui.menuRowBg(c)
+            setPadding(Ui.dp(c, 12), Ui.dp(c, 8), Ui.dp(c, 14), Ui.dp(c, 8))
+            addView(Ui.iconTile(c, R.drawable.ic_back, 32))
+            addView(Ui.text(c, title, 24f, Ui.TEXT, true, 1), LinearLayout.LayoutParams(0, -2, 1f))
+            setOnClickListener { back() }
+        }
+
         /** The title line: an optional icon, the title, and an optional control at the right end. */
         fun header(c: Activity, title: String, icon: Int? = null, end: View? = null): View = Ui.hbox(c, 12).apply {
             if (icon != null) addView(Ui.iconTile(c, icon, 32))
