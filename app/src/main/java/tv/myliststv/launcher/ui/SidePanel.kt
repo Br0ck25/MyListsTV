@@ -55,7 +55,7 @@ class SidePanel(private val act: Activity) {
         const val MARGIN = 24
 
         /** A page's padding, so every page lines up. */
-        fun page(c: Activity): LinearLayout = Ui.vbox(c).apply { setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 16)) }
+        fun page(c: Activity): LinearLayout = Ui.vbox(c).apply { setPadding(Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 16)) }
 
         /** The whole screen of an activity that is a drawer (Settings, Arrange): a clear window dimmed over what is behind it, with the panel down the right edge holding [page]. */
         fun drawer(c: Activity, page: View): View {
@@ -75,6 +75,7 @@ class SidePanel(private val act: Activity) {
 
         /** The title line: an optional icon, the title, and an optional control at the right end. */
         fun header(c: Activity, title: String, icon: Int? = null, end: View? = null): View = Ui.hbox(c, 12).apply {
+            setPadding(Ui.dp(c, 12), 0, Ui.dp(c, 12), 0)
             if (icon != null) addView(Ui.iconTile(c, icon, 32))
             addView(Ui.text(c, title, 24f, Ui.TEXT, true, 1), LinearLayout.LayoutParams(0, -2, 1f))
             if (end != null) addView(end)

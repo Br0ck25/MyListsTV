@@ -125,7 +125,7 @@ class SettingsActivity : Activity() {
         Pairing.start { s, why ->
             if (s == null) { Sheet.message(this, "Could not sign in", why ?: "Could not reach My Lists.", Sheet.Act("OK", true)); return@start }
             // Scan the code with a phone camera, or open the link by hand.
-            val sheet = Sheet(this, "Sign in with My Lists", "Scan this with your phone's camera, sign in and tap Link. Or open ${Pairing.linkUrl(s)} and enter the code ${s.userCode}.", 520).cancelable(false)
+            val sheet = Sheet(this, "Sign in with My Lists", "Scan this with your phone's camera, sign in and tap Link. Or open ${Pairing.linkUrl(s)} and enter the code ${s.userCode}.").cancelable(false)
             sheet.image(Qr.bitmap(Pairing.linkFull(s), Ui.dp(this, 190)))
             val cancel = sheet.card("Cancel") { Pairing.cancel(); sheet.dismiss() }
             sheet.show(); cancel.requestFocus()
@@ -265,7 +265,7 @@ class SettingsActivity : Activity() {
 
     /** Manage from phone: a code to scan, with its address, and a way to close. */
     private fun showPhonePopup(addr: String) {
-        val s = Sheet(this, "Add addons from your phone", "Scan with your phone, then paste the addon's link (or a recovery code) on the page that opens.", 480)
+        val s = Sheet(this, "Add addons from your phone", "Scan with your phone, then paste the addon's link (or a recovery code) on the page that opens.")
         s.image(Qr.bitmap(addr, Ui.dp(this, 190)), addr)
         val close = s.card("Close") { s.dismiss() }
         s.show(); close.requestFocus()
@@ -400,7 +400,7 @@ class SettingsActivity : Activity() {
         val page = if (open) groupPage() else mainPage()
         host.removeAllViews(); host.addView(page, android.widget.FrameLayout.LayoutParams(-1, -1))
         if (slide && !Prefs.lite()) { page.translationX = Ui.dp(this, if (forward) 48 else -48).toFloat(); page.alpha = 0f; page.animate().translationX(0f).alpha(1f).setDuration(160).start() }
-        page.post { val rs = rowViews(page).filter { canFocus(it) }; (rs.firstOrNull { it.tag == focusRow } ?: rs.firstOrNull())?.requestFocus() }
+        page.post { val rs = rowViews(page).filter { canFocus(it) }; (rs.firstOrNull { it.tag == focusRow } ?: rs.firstOrNull())?.requestFocus(); window.decorView.invalidate() }   // the first frame of a translucent window can leave its lower part undrawn until something repaints it
     }
 
     /** The views a page tags with their row number (a group's number on the first page), in order. The back row has no number. */

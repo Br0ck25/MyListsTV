@@ -15,7 +15,7 @@ object IconPacks {
     class Pack(val pkg: String, val label: String)
 
     private val ACTIONS = listOf("org.adw.launcher.THEMES", "com.novalauncher.THEME", "com.gau.go.launcherex.theme", "com.anddoes.launcher.THEME")
-    private val COMPONENT = Regex("""ComponentInfo\{([^/]+)/([^}]+)}""")
+    private val COMPONENT = Regex("""ComponentInfo\{([^/]+)/([^}]+)\}""")
 
     fun installed(c: Context): List<Pack> {
         val pm = c.packageManager

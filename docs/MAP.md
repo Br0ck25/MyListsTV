@@ -873,26 +873,26 @@ Find a symbol with grep on this file, then read only that file around the line n
     72   fun start()
     99   fun stop()
 
-## ui/Sheet.kt (156 lines) - The one pop-up of the app (docs/DESIGN.md section 9).
-    26 class Sheet  - The one pop-up of the app (docs/DESIGN.md section 9).
-    28   class Act  - One button of [message].
-    34   fun setTitle(t: CharSequence)
-    46   fun show()
-    47   fun dismiss()
-    48   fun clear()
-    50   fun onDismiss(run: ()  - Runs when the sheet goes away, however it goes.
-    51   fun cancelable(on: Boolean)
-    54   fun focusIndex()  - Index among the cards of the one that has focus, so a redraw can put it back.
-    55   fun focusAt(i: Int)
-    56   fun cards()
-    59   fun label(t: String)  - A small heading over a group of cards.
-    62   fun box(v: View)  - A box that is not a button: whatever view is given, on a quiet card.
-    65   fun text(msg: CharSequence)  - A paragraph of words (a message, an explanation).
-    68   fun image(bmp: Bitmap, caption: String? = null)  - A code to scan (black on white, whatever the theme), with its address under it.
-    77   fun field(hint: String, initial: String = "", caps: Boolean = false, done: (Stri  - A line to type in.
-    93   fun card(title: String, sub: String? = null, trailing: String? = null, selected:  - An option card: a title, an optional line under it, an optional word at the right, a tick when [selected], a b
+## ui/Sheet.kt (167 lines) - The one pop-up of the app (docs/DESIGN.md section 9).
+    27 class Sheet  - The one pop-up of the app (docs/DESIGN.md section 9).
+    29   class Act  - One button of [message].
+    35   fun setTitle(t: CharSequence)
+    50   fun show()
+    55   fun dismiss()
+    56   fun clear()
+    58   fun onDismiss(run: ()  - Runs when the sheet goes away, however it goes.
+    59   fun cancelable(on: Boolean)
+    62   fun focusIndex()  - Index among the cards of the one that has focus, so a redraw can put it back.
+    63   fun focusAt(i: Int)
+    64   fun cards()
+    67   fun label(t: String)  - A small heading over a group of cards.
+    70   fun box(v: View)  - A box that is not a button: whatever view is given, on a quiet card.
+    73   fun text(msg: CharSequence)  - A paragraph of words (a message, an explanation).
+    76   fun image(bmp: Bitmap, caption: String? = null)  - A code to scan (black on white, whatever the theme), with its address under it.
+    85   fun field(hint: String, initial: String = "", caps: Boolean = false, done: (Stri  - A line to type in.
+   101   fun card(title: String, sub: String? = null, trailing: String? = null, selected:  - An option card: a title, an optional line under it, an optional word at the right, a tick when [selected], a b
 
-## ui/SidePanel.kt (83 lines) - A tall rounded panel on the right edge over a dimmed screen: the bell opens in it (Settings is the same panel,
+## ui/SidePanel.kt (84 lines) - A tall rounded panel on the right edge over a dimmed screen: the bell opens in it (Settings is the same panel,
     18 class SidePanel  - A tall rounded panel on the right edge over a dimmed screen: the bell opens in it (Settings is the same panel,
     34   fun show(page: View)
     42   fun dismiss()
