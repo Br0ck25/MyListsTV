@@ -44,10 +44,12 @@ object Ui {
     const val OVERLAY = 0xE6000000.toInt()     // dims everything behind a slate or an error
     const val SIDE_GLASS = 0xE01C1C1E.toInt()  // the hidden side bar: the card colour, a little see-through
     const val BRAND_LINE = 0x800A84FF.toInt()  // brand outline on a banner
+    const val BRAND_SOFT = 0x2B0A84FF          // soft blue fill inside the blue ring of a focused menu row
     const val R_PILL = 999
     const val R_CARD = 14
     const val R_PANEL = 16
     const val R_DIALOG = 20
+    const val R_TILE = 10                      // the small rounded square behind a menu row's icon
 
     /** The three dark fades laid over artwork so text stays readable: from the left, from the bottom, from the top, and a short one behind card text. */
     private fun fade(o: GradientDrawable.Orientation, vararg colors: Int): Drawable = GradientDrawable(o, colors)
@@ -59,9 +61,9 @@ object Ui {
     fun rounded(c: Context, color: Int, radius: Int, outline: Int = CLEAR): Drawable =
         GradientDrawable().apply { setColor(color); cornerRadius = dpf(c, radius.toFloat()); if (outline != CLEAR) setStroke(dp(c, 1), outline) }
 
-    /** The look of a focusable row or panel: rounded CARD fill, clipped to its corners, white focus ring at the same radius. */
+    /** The look of a focusable row or panel: rounded CARD fill, clipped to its corners, the blue menu ring at the same radius while focused. */
     fun rowStyle(c: Context, v: View, radius: Int = R_PANEL, fill: Int = CARD) {
-        v.background = rounded(c, fill, radius); v.clipToOutline = true; v.foreground = focusBg(c, radius, 0x22FFFFFF)
+        v.background = rounded(c, fill, radius); v.clipToOutline = true; v.foreground = menuRowBg(c, radius, selectedToo = false)
     }
 
     /**
@@ -83,6 +85,26 @@ object Ui {
             addState(intArrayOf(), ColorDrawable(Color.TRANSPARENT))
         }
     }
+
+    /** A menu row (settings, side bar, pop-up cards): a blue ring on a soft blue fill while focused (and selected, unless [selectedToo] is off), otherwise [normal]. */
+    fun menuRowBg(c: Context, radius: Int = R_PANEL, normal: Int = CLEAR, selectedToo: Boolean = true): Drawable {
+        val shape = { color: Int, ring: Int -> GradientDrawable().apply { setColor(color); cornerRadius = dpf(c, radius.toFloat()); if (ring != CLEAR) setStroke(dp(c, 2), ring) } }
+        return StateListDrawable().apply {
+            addState(intArrayOf(android.R.attr.state_focused), shape(BRAND_SOFT, BRAND))
+            if (selectedToo) addState(intArrayOf(android.R.attr.state_selected), shape(BRAND_SOFT, BRAND))
+            addState(intArrayOf(), shape(normal, CLEAR))
+        }
+    }
+
+    /** The icon of a menu row: [icon] in white on a small rounded square. */
+    fun iconTile(c: Context, icon: Int, size: Int = 36): View = android.widget.ImageView(c).apply {
+        setImageResource(icon); setColorFilter(TEXT); background = rounded(c, FILL, R_TILE)
+        val p = dp(c, size / 6 + 3); setPadding(p, p, p, p)
+        layoutParams = LinearLayout.LayoutParams(dp(c, size), dp(c, size))
+    }
+
+    /** A small blue heading over a group of menu rows. */
+    fun sectionLabel(c: Context, t: String): TextView = text(c, t, 14f, BRAND, true)
 
     /** A round icon button for the top bar: a white ring while focused. */
     fun iconButton(c: Context, icon: Int, desc: String, onClick: () -> Unit): android.widget.ImageView =

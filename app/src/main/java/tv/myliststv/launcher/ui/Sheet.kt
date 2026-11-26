@@ -95,8 +95,8 @@ class Sheet(val act: Activity, title: String, subtitle: String? = null, private 
         val v = Ui.hbox(c).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(Ui.dp(c, 14), Ui.dp(c, 10), Ui.dp(c, 14), Ui.dp(c, 10))
-            Ui.rowStyle(c, this, Ui.R_CARD, Ui.BG)
-            if (highlighted) background = Ui.rounded(c, Ui.BG, Ui.R_CARD, Ui.BRAND)
+            background = Ui.rounded(c, Ui.BG, Ui.R_PANEL, if (highlighted) Ui.BRAND else Ui.CLEAR); clipToOutline = true
+            foreground = Ui.menuRowBg(c, Ui.R_PANEL, selectedToo = false)   // the same blue ring as the menus while focused
             isFocusable = true; isClickable = true; setOnClickListener { onClick() }
         }
         val mid = Ui.vbox(c)

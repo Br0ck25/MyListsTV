@@ -32,6 +32,13 @@
         <item name="android:windowMinWidthMajor">0%</item>
         <item name="android:windowMinWidthMinor">0%</item>
     </style>
+    <!-- Settings: an activity whose window is clear, so the screen behind it shows through the dimming it draws itself. -->
+    <style name="Theme.MyListsTV.Drawer" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:colorAccent">@color/brand</item>
+    </style>
     <!-- An activity shown as a centred modal over the page behind it. -->
     <style name="Theme.MyListsTV.Modal" parent="@android:style/Theme.Material.Dialog.NoActionBar">
         <item name="android:windowBackground">@android:color/transparent</item>

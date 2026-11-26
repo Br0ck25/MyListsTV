@@ -4,7 +4,7 @@
 > Decision (owner asked, assistant decided): **use the My Lists palette** from the website's design system (`My-Lists-Addon/docs/DESIGN_SYSTEM.md`, dark values), with larger rounded shapes in the spirit of Projectivy and Material "Monet" panels. The site and the TV then look like one product, and every colour pair below was already checked for contrast (5:1 or better against white text).
 
 ## 1. Look in one paragraph
-True-black canvas, soft dark-grey rounded panels, white text, one blue brand colour. Everything focusable is rounded; buttons, tabs and toggles are full pills. Focus is always a white ring (and a small scale-up when not in lite mode). Blue means "on, active or primary" and is drawn as an outline for a selection. No gradients except the dark fade behind text on artwork. No second accent colour.
+True-black canvas, soft dark-grey rounded panels, white text, one blue brand colour. Everything focusable is rounded; buttons, tabs and toggles are full pills. Focus on a card or button is a white ring (and a small scale-up when not in lite mode). Focus on a menu row (Settings, the side bar, pop-up options) is a blue ring on a faint blue fill. Blue means "on, active or primary" and is drawn as an outline for a selection. No gradients except the dark fade behind text on artwork. No second accent colour.
 
 ## 2. Tokens
 All sizes are in design units for a 960-wide screen. `Ui.dp()` scales them by the real screen width, so the same numbers look right on every TV.
@@ -23,6 +23,7 @@ All sizes are in design units for a 960-wide screen. `Ui.dp()` scales them by th
 | `GOOD` | `#30D158` | Success text, "Cached" |
 | `WARN` | `#FF9F0A` | Warnings |
 | `BAD` | `#FF453A` | Errors, destructive actions |
+| `BRAND_SOFT` | `#2B0A84FF` | Faint blue fill inside the blue ring of a focused menu row |
 | `LINE` | `#24FFFFFF` | 1-unit outlines and dividers |
 Rules: text on a filled colour uses `BRAND_FILL` with `TEXT`; never put white text on `GOOD`, `WARN` or `BAD` fills. Do not write a hex colour in a screen: use a token.
 
@@ -32,6 +33,7 @@ Rules: text on a filled colour uses `BRAND_FILL` with `TEXT`; never put white te
 | `R_CARD` | 14 | Posters, wide cards, app tiles |
 | `R_PANEL` | 16 | Settings rows, addon rows, panels, side panels |
 | `R_DIALOG` | 20 | Dialogs |
+| `R_TILE` | 10 | The small rounded square behind a menu row's icon |
 | pill | full | Buttons, tabs, chips, toggles, banners |
 
 ### 2.3 Spacing and type
@@ -39,7 +41,8 @@ Spacing steps: 4, 8, 12, 16, 24, 32. Row padding 16 × 12. Gap between rows 8. S
 Text sizes (the only ones allowed): 11 caption, 12 and 13 small, 14 body, 15 control, 16 row title, 20 and 22 section, 24 and 26 heading, 30 hero, 34 display. Weights: regular for body, bold for controls, titles and labels.
 
 ## 3. Components
-- **Focus.** White 2-unit ring at the component's own radius, soft white fill (≈13%), text stays white. Never a solid white or solid blue block. Never remove it.
+- **Focus.** On a card or button: white 2-unit ring at the component's own radius, soft white fill (≈13%), text stays white. On a menu row (`Ui.menuRowBg`, also what `Ui.rowStyle` draws): 2-unit brand-blue ring on `BRAND_SOFT`. Never a solid white or solid blue block. Never remove it.
+- **Menu row.** An icon on a small rounded square (`Ui.iconTile`), a bold label, an optional muted line under it, and the value, toggle or `›` at the right. Small blue headings (`Ui.sectionLabel`) group rows.
 - **Selected (the open tab, the open Settings group, the chosen chip).** A 2-unit brand-blue outline on a faint fill, never a solid blue block. Cards also scale 1.06 unless lite mode is on.
 - **Card (`Card`).** Rounded `R_CARD`, `CARD` fill, artwork fills it, dark fade behind any text on artwork.
 - **Pill button (`Ui.button`).** `1AFFFFFF` fill, `TEXT` label; focused = white fill, black label. Primary action may use `BRAND_FILL`.
@@ -58,7 +61,7 @@ Text sizes (the only ones allowed): 11 caption, 12 and 13 small, 14 body, 15 con
 3. One control per row, on the right. Label bold on the left, one line of muted help under it (omit if the label says it all).
 4. Changes apply at once. There is no Save button.
 5. **Back** goes up one level and never loses a change. **Hold OK** on a row or card opens its context menu as a `Sheet.menu`. The launcher home never closes on Back.
-6. **Settings is a split menu inside one rounded panel** (groups with chevrons on the left, dark rows on the right). The groups (General, Playback, Home, Backup, Performance, About) run down the left; the rows of the group under the focus show on the right and change as focus moves down the list. Right enters the rows, Back returns to the groups. Most used first. Advanced-only rows appear only in Advanced mode, directly under their group.
+6. **Settings is a drawer**: one rounded panel down the right edge over the dimmed screen, with no logo or date. It opens on the groups under small headings (You, Home, Watching, This TV); each group is a menu row with an icon, its name, a short summary and a `›`. OK opens the group's page, which slides in (no slide in lite mode) with a back arrow and the group's name on top; Back or Left goes up one page, then leaves. Inside a page the headings group the rows; Addons and each addon are pages one level deeper. The gear in the top bar opens it directly. Most used first. Advanced-only rows appear only in Advanced mode, directly under their group. A new group must also be added to `sections` in `SettingsActivity`, or it is not shown (`SettingsDrawerTest` checks).
    The top bar has no logo or app name: the tabs start at the left edge.
 7. Destructive rows (remove, clear, reset) sit last in their group, and always confirm.
 8. Order of focus is top to bottom, left to right. A screen always puts focus on its first useful control when opened.
@@ -90,7 +93,7 @@ Plain words, sentence case, no jargon (say "source", not "stream resolver"; "add
 ## 9. Dialogs and top bar
 - **One pop-up: `ui/Sheet.kt`.** Every menu, question, message, confirmation, text entry and "please wait" is a `Sheet`: a rounded card (`R_DIALOG`, `ELEVATED` ring) with a 24 title, a 14 line under it, and a list of option cards (`card`). Use the helper that fits: `Sheet.menu` (a list of choices), `Sheet.message` (words, an optional QR code, buttons as cards), `Sheet.ask` (one line of text), `Sheet.confirm` (the safe choice first), `Sheet.busy`. Build one by hand with `card`, `label`, `box`, `text`, `image` and `field` only when none fits.
 - The first card has the focus; a primary action is outlined in the brand colour (`highlighted`), never filled; a chosen value gets a tick (`selected`). Cards have a title and at most one line under it.
-- The right-hand panels (notifications, the gear) are `ui/SidePanel.kt`. Those two files are the only places a pop-up is built. Never use `AlertDialog`, `Dialog`, `PopupMenu` or `Toast`; `DesignGuardTest.popUpsAreSheetsOrSidePanels` fails if one appears.
+- The right-hand panel (notifications) is `ui/SidePanel.kt`; Settings is the same panel drawn by `screens/SettingsActivity.kt`. `Sheet.kt` and `SidePanel.kt` are the only places a pop-up is built. Never use `AlertDialog`, `Dialog`, `PopupMenu` or `Toast`; `DesignGuardTest.popUpsAreSheetsOrSidePanels` fails if one appears.
 - Short messages at the bottom of the screen are `Pop.toast` (ui/Pop.kt), drawn by the app with no icon (the system toast shows an app icon the TV keeps from an older version).
 - The same title offers the same menu everywhere (`ui/TitleMenu.kt`: Go to details, Add to or Remove from Library, Mark as watched or unwatched). Add to that one place, not to a screen.
 - The top bar has the tabs on the left and, on the right, the profile chip (who is watching), then round icon buttons (`Ui.iconButton`): notifications and settings, then the clock. Search is a page in the tab row or side bar, not a button. New bar actions are icon buttons, not text pills.

@@ -8,7 +8,7 @@ import android.media.tv.TvInputManager
 import android.provider.Settings
 import tv.myliststv.launcher.ui.Pop
 
-/** The TV's own settings pages (one list for Settings and for the gear) and its video inputs (HDMI and the like). */
+/** The TV's own settings pages (the Android settings group of Settings) and its video inputs (HDMI and the like). */
 object SystemLinks {
     val pages = listOf(
         "All settings" to Settings.ACTION_SETTINGS, "Wi-Fi and network" to Settings.ACTION_WIFI_SETTINGS, "Display" to Settings.ACTION_DISPLAY_SETTINGS,

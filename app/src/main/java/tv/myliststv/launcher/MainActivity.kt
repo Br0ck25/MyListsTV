@@ -103,7 +103,7 @@ class MainActivity : Activity() {
         fun card(pkg: String, app: String, time: Long, title: String, text: String, open: () -> Unit, clear: () -> Unit) {
             val row = Ui.hbox(c, 10).apply { gravity = Gravity.CENTER_VERTICAL }
             val body = Ui.vbox(c).apply {
-                setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); Ui.rowStyle(c, this, fill = Ui.ELEVATED); isFocusable = true; isClickable = true
+                setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); background = Ui.menuRowBg(c, normal = Ui.ELEVATED); isFocusable = true; isClickable = true
                 setOnClickListener { open(); panel.dismiss() }
                 val top = Ui.hbox(c, 8)
                 top.addView(android.widget.ImageView(c).apply { try { setImageDrawable(if (pkg.isEmpty()) getDrawable(R.drawable.ic_launcher) else packageManager.getApplicationIcon(pkg)) } catch (_: Exception) { } }, LinearLayout.LayoutParams(Ui.dp(c, 18), Ui.dp(c, 18)))
@@ -122,36 +122,6 @@ class MainActivity : Activity() {
         if (!allowed) list.addView(Ui.button(c, "Show the TV's own notifications too") {
             try { startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) { Pop.toast(c, "This TV has no such setting. See Settings, Launcher setup, for the phone steps.", true) }
         }, Ui.wrap().apply { topMargin = Ui.dp(c, 8) })
-    }
-
-    /** The gear: Apps, Inputs, Launcher settings (the full settings) and Android settings, in the same right-hand panel. */
-    private fun showSettingsPanel() {
-        val c = this
-        val panel = SidePanel(c)
-        val page = SidePanel.page(c)
-        page.addView(SidePanel.header(c, "Settings"))
-        fun item(icon: Int, label: String, go: () -> Unit) = page.addView(SidePanel.item(c, icon, label, go), Ui.matchWrap().apply { topMargin = Ui.dp(c, 12) })
-        item(R.drawable.ic_apps, "Apps") { panel.push(appsPage(panel)) }
-        item(R.drawable.ic_tv, "Inputs") { panel.push(SystemPanel.inputs(c, panel)) }
-        item(R.drawable.ic_home, "Launcher settings") { panel.dismiss(); startActivity(Intent(c, SettingsActivity::class.java)) }
-        item(R.drawable.ic_settings, "Android settings") { panel.push(SystemPanel.androidSettings(c, panel)) }
-        panel.show(page)
-    }
-
-    /** Every app as a banner with its name under it, two across; OK opens it, hold OK for its menu. */
-    private fun appsPage(panel: SidePanel): View {
-        val c = this
-        val page = SidePanel.page(c)
-        page.addView(SidePanel.header(c, "Apps"))
-        val grid = androidx.recyclerview.widget.RecyclerView(c).apply {
-            layoutManager = androidx.recyclerview.widget.GridLayoutManager(c, 2); itemAnimator = null; clipToPadding = false; setPadding(0, Ui.dp(c, 4), 0, Ui.dp(c, 8))
-        }
-        page.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = Ui.dp(c, 10) })
-        Http.background {
-            val apps = AppRepository.load(c)
-            Http.post { grid.adapter = AppGridAdapter(c, apps, { panel.dismiss(); launch(it) }, { appMenu(it) }) }
-        }
-        return page
     }
 
     private var backdropJob: Runnable? = null
@@ -222,7 +192,7 @@ class MainActivity : Activity() {
             addView(Ui.iconButton(this@MainActivity, R.drawable.ic_bell, "Notifications") { showNotices() }, FrameLayout.LayoutParams(icon, icon))
             addView(bellBadge, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, Ui.dp(this@MainActivity, 16), Gravity.TOP or Gravity.END))
         }
-        settingsBtn = Ui.iconButton(this, R.drawable.ic_settings, "Settings") { showSettingsPanel() }
+        settingsBtn = Ui.iconButton(this, R.drawable.ic_settings, "Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }
         if (navStyle == 0) topBar.addView(profileChip(), LinearLayout.LayoutParams(-2, icon).apply { rightMargin = Ui.dp(this@MainActivity, 8) })
         else side.addView(profileChip(), 0, LinearLayout.LayoutParams(-1, icon).apply { bottomMargin = Ui.dp(this@MainActivity, 10) })
         topBar.addView(bellBtn, LinearLayout.LayoutParams(icon, icon));  topBar.addView(settingsBtn, LinearLayout.LayoutParams(icon, icon))
@@ -279,11 +249,11 @@ class MainActivity : Activity() {
         if (::profileName.isInitialized) profileName.visibility = if (open) View.VISIBLE else View.GONE
         // Slim: no pills, just the icons; the one that is focused gets a ring. Open: the names, and the open page outlined.
         sideItems().forEach {
-            it.background = if (open) Ui.pillBg(this, Ui.CLEAR) else Ui.focusBg(this, Ui.R_PILL, Ui.FOCUS_FILL)
+            it.background = Ui.menuRowBg(this, selectedToo = open)
             it.setPadding(Ui.dp(this, if (open) 16 else 18), Ui.dp(this, 12), Ui.dp(this, 16), Ui.dp(this, 12))
         }
         profileChipView?.apply {
-            background = if (open) Ui.pillBg(this@MainActivity) else Ui.focusBg(this@MainActivity, Ui.R_PILL, Ui.FOCUS_FILL)
+            background = Ui.menuRowBg(this@MainActivity, normal = if (open) Ui.FILL else Ui.CLEAR)
             (this as LinearLayout).gravity = if (open) Gravity.CENTER_VERTICAL else Gravity.CENTER
             setPadding(Ui.dp(this@MainActivity, if (open) 6 else 0), Ui.dp(this@MainActivity, 5), Ui.dp(this@MainActivity, if (open) 16 else 0), Ui.dp(this@MainActivity, 5))
         }
@@ -304,11 +274,12 @@ class MainActivity : Activity() {
         text = t; label = t; Ui.size(this, if (navStyle != 0) 20f else 15f); typeface = android.graphics.Typeface.DEFAULT_BOLD
         val v = if (navStyle != 0) 12 else 8
         setPadding(Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, v), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, v))
-        background = Ui.pillBg(this@MainActivity, Ui.CLEAR); isFocusable = true; isClickable = true
-        // The side bar shows an icon before each name, in the same colour as the name.
+        background = if (navStyle != 0) Ui.menuRowBg(this@MainActivity) else Ui.pillBg(this@MainActivity, Ui.CLEAR); isFocusable = true; isClickable = true
+        // The side bar shows an icon before each name, on a small rounded square, in the same colour as the name.
         if (navStyle != 0) {
-            val d = getDrawable(tabIcons[tabs.indexOf(t).coerceAtLeast(0)])!!.mutate(); val s = Ui.dp(this@MainActivity, 22)
-            d.setBounds(0, 0, s, s); setCompoundDrawables(d, null, null, null); compoundDrawablePadding = Ui.dp(this@MainActivity, 14); gravity = Gravity.CENTER_VERTICAL
+            val d = getDrawable(tabIcons[tabs.indexOf(t).coerceAtLeast(0)])!!.mutate(); val s = Ui.dp(this@MainActivity, 34); val inset = Ui.dp(this@MainActivity, 7)
+            val tile = android.graphics.drawable.LayerDrawable(arrayOf(Ui.rounded(this@MainActivity, Ui.FILL, Ui.R_TILE), d)).apply { setLayerInset(1, inset, inset, inset, inset); setBounds(0, 0, s, s) }
+            setCompoundDrawables(tile, null, null, null); compoundDrawablePadding = Ui.dp(this@MainActivity, 14); gravity = Gravity.CENTER_VERTICAL
         }
         setTextColor(Ui.DIM)
     }
