@@ -3,7 +3,7 @@ package tv.myliststv.launcher.ui
 import tv.myliststv.launcher.*
 
 import android.app.Activity
-import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Context
 import android.graphics.Bitmap
 import android.view.Gravity
@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -19,31 +20,41 @@ import android.widget.TextView
 
 /**
  * The one pop-up of the app (docs/DESIGN.md section 9). Every menu, question, message, confirmation and text entry is a Sheet: a
- * rounded card with a title, a line under it, and a scrolling list of option cards (a message, a picture or a text field can sit
+ * see-through rounded card that slides in from the right edge, with a title, a line under it, and a scrolling list of option cards (a message, a picture or a text field can sit
  * among them). Nothing else may use `AlertDialog.Builder` or build its own dialog; DesignGuardTest checks that. Pick the helper that
  * fits ([menu], [message], [ask], [confirm], [busy]) or build one by hand with [card], [label], [box], [text], [image] and [field].
  */
-class Sheet(val act: Activity, title: String, subtitle: String? = null, private val width: Int = 480) {
+class Sheet(val act: Activity, title: String, subtitle: String? = null) {
     /** One button of [message]. */
     class Act(val label: String, val primary: Boolean = false, val run: () -> Unit = {})
 
     val list = Ui.vbox(act).apply { setPadding(Ui.dp(act, 3), Ui.dp(act, 3), Ui.dp(act, 3), Ui.dp(act, 3)) }
-    val dialog: AlertDialog
+    val dialog: Dialog
+    private val panel: FrameLayout
     private var onClose: (() -> Unit)? = null
     private val titleView = Ui.text(act, title, 24f, Ui.TEXT, true)
     fun setTitle(t: CharSequence) { titleView.text = t }
 
     init {
         val c = act
-        val body = Ui.vbox(c).apply { setPadding(Ui.dp(c, 22), Ui.dp(c, 20), Ui.dp(c, 22), Ui.dp(c, 16)) }
-        body.addView(titleView)
-        if (!subtitle.isNullOrBlank()) body.addView(Ui.text(c, subtitle, 14f, Ui.DIM).apply { setLineSpacing(0f, 1.15f) }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 6) })
-        body.addView(ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false; clipToPadding = false }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 10) })
-        dialog = AlertDialog.Builder(c).setView(body).create()
+        val body = Ui.vbox(c).apply { setPadding(Ui.dp(c, 11), Ui.dp(c, 18), Ui.dp(c, 11), Ui.dp(c, 12)) }
+        body.addView(titleView, Ui.matchWrap().apply { leftMargin = Ui.dp(c, 15) })
+        if (!subtitle.isNullOrBlank()) body.addView(Ui.text(c, subtitle, 14f, Ui.DIM).apply { setLineSpacing(0f, 1.15f) }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 6); leftMargin = Ui.dp(c, 15) })
+        body.addView(ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false; clipToPadding = false }, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = Ui.dp(c, 10) })
+        // The same glass, corners and rows as Settings, against the right edge, centred top to bottom.
+        panel = FrameLayout(c).apply { background = Ui.rounded(c, Ui.GLASS, Ui.R_DIALOG); clipToOutline = true; addView(body, FrameLayout.LayoutParams(-1, -2)) }
+        val m = Ui.dp(c, SidePanel.MARGIN)
+        val root = FrameLayout(c).apply { setPadding(0, m, m, m); addView(panel, FrameLayout.LayoutParams(-1, -2)) }
+        dialog = Dialog(c, R.style.Theme_MyListsTV_Panel).apply { setContentView(root) }
         dialog.setOnDismissListener { onClose?.invoke() }
     }
 
-    fun show(): Sheet { dialog.show(); dialog.window?.setLayout(Ui.dp(act, width), ViewGroup.LayoutParams.WRAP_CONTENT); return this }
+    fun show(): Sheet {
+        dialog.show()
+        dialog.window?.apply { setGravity(Gravity.END or Gravity.CENTER_VERTICAL); setLayout(Ui.dp(act, SidePanel.WIDTH + SidePanel.MARGIN), ViewGroup.LayoutParams.WRAP_CONTENT) }
+        SidePanel.slideIn(panel)
+        return this
+    }
     fun dismiss() = dialog.dismiss()
     fun clear() = list.removeAllViews()
     /** Runs when the sheet goes away, however it goes. */
@@ -56,13 +67,13 @@ class Sheet(val act: Activity, title: String, subtitle: String? = null, private 
     private fun cards() = (0 until list.childCount).map { list.getChildAt(it) }.filter { it.isFocusable }
 
     /** A small heading over a group of cards. */
-    fun label(t: String) = list.addView(Ui.text(act, t, 13f, Ui.DIM, true), Ui.matchWrap().apply { topMargin = Ui.dp(act, 10); leftMargin = Ui.dp(act, 2) })
+    fun label(t: String) = list.addView(Ui.text(act, t, 13f, Ui.DIM, true), Ui.matchWrap().apply { topMargin = Ui.dp(act, 10); leftMargin = Ui.dp(act, 12) })
 
     /** A box that is not a button: whatever view is given, on a quiet card. */
     fun box(v: View): View { v.background = Ui.rounded(act, Ui.BG, Ui.R_CARD, Ui.FILL_STRONG); list.addView(v, Ui.matchWrap().apply { topMargin = Ui.dp(act, 8) }); return v }
 
     /** A paragraph of words (a message, an explanation). */
-    fun text(msg: CharSequence): TextView = Ui.text(act, msg, 15f, Ui.TEXT2).apply { setLineSpacing(0f, 1.15f) }.also { list.addView(it, Ui.matchWrap().apply { topMargin = Ui.dp(act, 8); bottomMargin = Ui.dp(act, 4) }) }
+    fun text(msg: CharSequence): TextView = Ui.text(act, msg, 15f, Ui.TEXT2).apply { setLineSpacing(0f, 1.15f) }.also { list.addView(it, Ui.matchWrap().apply { topMargin = Ui.dp(act, 8); bottomMargin = Ui.dp(act, 4); leftMargin = Ui.dp(act, 12); rightMargin = Ui.dp(act, 12) }) }
 
     /** A code to scan (black on white, whatever the theme), with its address under it. */
     fun image(bmp: Bitmap, caption: String? = null) {
@@ -94,18 +105,18 @@ class Sheet(val act: Activity, title: String, subtitle: String? = null, private 
         val c = act
         val v = Ui.hbox(c).apply {
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(Ui.dp(c, 14), Ui.dp(c, 10), Ui.dp(c, 14), Ui.dp(c, 10))
-            background = Ui.rounded(c, Ui.BG, Ui.R_PANEL, if (highlighted) Ui.BRAND else Ui.CLEAR); clipToOutline = true
+            setPadding(Ui.dp(c, 12), Ui.dp(c, 12), Ui.dp(c, 14), Ui.dp(c, 12))
+            background = Ui.rounded(c, Ui.CLEAR, Ui.R_PANEL, if (highlighted) Ui.BRAND else Ui.CLEAR); clipToOutline = true
             foreground = Ui.menuRowBg(c, Ui.R_PANEL, selectedToo = false)   // the same blue ring as the menus while focused
             isFocusable = true; isClickable = true; setOnClickListener { onClick() }
         }
         val mid = Ui.vbox(c)
-        mid.addView(Ui.text(c, title, 15f, if (selected || highlighted) Ui.BRAND else Ui.TEXT))
+        mid.addView(Ui.text(c, title, 16f, if (selected || highlighted) Ui.BRAND else Ui.TEXT, true))
         if (!sub.isNullOrBlank()) mid.addView(Ui.text(c, sub, 13f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 2) })
         v.addView(mid, LinearLayout.LayoutParams(0, -2, 1f))
         if (!trailing.isNullOrBlank()) v.addView(Ui.text(c, trailing, 13f, Ui.DIM, true), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = Ui.dp(c, 12) })
         if (selected) v.addView(ImageView(c).apply { setImageResource(R.drawable.ic_check); setColorFilter(Ui.BRAND) }, LinearLayout.LayoutParams(Ui.dp(c, 18), Ui.dp(c, 18)).apply { leftMargin = Ui.dp(c, 10) })
-        list.addView(v, Ui.matchWrap().apply { topMargin = Ui.dp(c, 6) })
+        list.addView(v, Ui.matchWrap().apply { topMargin = Ui.dp(c, 2) })
         return v
     }
 
@@ -120,7 +131,7 @@ class Sheet(val act: Activity, title: String, subtitle: String? = null, private 
 
         /** A message with buttons as cards under it (the first has the focus; a primary one is outlined). An [image] such as a QR code sits above the buttons. */
         fun message(act: Activity, title: String, message: CharSequence, vararg acts: Act, image: Bitmap? = null, cancelable: Boolean = true): Sheet {
-            val s = Sheet(act, title, null, 520).cancelable(cancelable)
+            val s = Sheet(act, title, null).cancelable(cancelable)
             if (message.isNotEmpty()) s.text(message)
             if (image != null) s.image(image)
             val first = acts.map { a -> s.card(a.label, highlighted = a.primary) { s.dismiss(); a.run() } }.firstOrNull()
@@ -134,7 +145,7 @@ class Sheet(val act: Activity, title: String, subtitle: String? = null, private 
 
         /** One line of text to type, then [ok] saves. */
         fun ask(act: Activity, title: String, hint: String, ok: String, message: String? = null, caps: Boolean = false, initial: String = "", onOk: (String) -> Unit): Sheet {
-            val s = Sheet(act, title, message, 520)
+            val s = Sheet(act, title, message)
             lateinit var e: EditText
             val save = { s.dismiss(); onOk(e.text.toString()) }
             e = s.field(hint, initial, caps) { save() }
@@ -146,7 +157,7 @@ class Sheet(val act: Activity, title: String, subtitle: String? = null, private 
 
         /** "Please wait": a line and a way out. [onCancel] runs when it is cancelled. */
         fun busy(act: Activity, message: String, onCancel: () -> Unit): Sheet {
-            val s = Sheet(act, message, null, 420)
+            val s = Sheet(act, message, null)
             val cancel = s.card("Cancel") { onCancel(); s.dismiss() }
             s.dialog.setOnCancelListener { onCancel() }   // Back
             s.show(); cancel.requestFocus()

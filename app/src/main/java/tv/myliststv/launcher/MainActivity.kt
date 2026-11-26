@@ -24,6 +24,9 @@ import android.widget.Toast
 import tv.myliststv.launcher.data.*
 import tv.myliststv.launcher.ui.*
 
+/** Asks ProfilesActivity (the "who is watching" screen) which profile to switch to. */
+private const val PROFILE_REQUEST = 52
+
 /**
  * The home screen. Plain Views only: a top bar with tabs, and one screen at a time below it.
  * Screens are rebuilt when selected, because their data comes from the cache and a screen left in memory costs RAM.
@@ -77,13 +80,14 @@ class MainActivity : Activity() {
         setOnClickListener { pickProfile() }
     }
 
-    private fun pickProfile() {
-        val l = Profiles.all()
-        Sheet.menu(this, "Who is watching?", null, l.map { p ->
-            (p.name + if (p.kids) " (kids)" else "") to {
-                Profiles.switchTo(this, p.id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { dropPages(); select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }; Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
-            }
-        })
+
+
+    /** "Who's watching?": a whole screen of round avatars; the choice comes back to [onActivityResult]. */
+    private fun pickProfile() = startActivityForResult(Intent(this, ProfilesActivity::class.java), PROFILE_REQUEST)
+
+    private fun switchProfile(id: String, force: Boolean) {
+        if (id == Profiles.activeId && !force) return
+        Profiles.switchTo(this, id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { dropPages(); select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }; Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
     }
 
     /** The bell: a panel down the right edge. New-episode alerts for your Library first, then the TV's own notifications when access is given. */
@@ -106,7 +110,7 @@ class MainActivity : Activity() {
         fun card(pkg: String, app: String, time: Long, title: String, text: String, open: () -> Unit, clear: () -> Unit) {
             val row = Ui.hbox(c, 10).apply { gravity = Gravity.CENTER_VERTICAL }
             val body = Ui.vbox(c).apply {
-                setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); background = Ui.menuRowBg(c, normal = Ui.ELEVATED); isFocusable = true; isClickable = true
+                setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); background = Ui.menuRowBg(c); isFocusable = true; isClickable = true
                 setOnClickListener { open(); panel.dismiss() }
                 val top = Ui.hbox(c, 8)
                 top.addView(android.widget.ImageView(c).apply { try { setImageDrawable(if (pkg.isEmpty()) getDrawable(R.drawable.ic_launcher) else packageManager.getApplicationIcon(pkg)) } catch (_: Exception) { } }, LinearLayout.LayoutParams(Ui.dp(c, 18), Ui.dp(c, 18)))
@@ -185,7 +189,7 @@ class MainActivity : Activity() {
         }
         side = Ui.vbox(this).apply {
             val p = Ui.dp(this@MainActivity, 10); setPadding(p, Ui.dp(this@MainActivity, 16), p, p)
-            background = Ui.rounded(this@MainActivity, Ui.SIDE_GLASS, Ui.R_DIALOG)
+            background = Ui.rounded(this@MainActivity, Ui.GLASS, Ui.R_DIALOG)
             visibility = if (navStyle == 1) View.VISIBLE else View.GONE
         }
         tabs.forEachIndexed { i, t ->
@@ -256,7 +260,7 @@ class MainActivity : Activity() {
         if (navStyle != 1 || !::side.isInitialized) return
         sideOpen = open
         side.layoutParams = (side.layoutParams as FrameLayout.LayoutParams).apply { width = if (open) sideWidth else slimWidth }
-        side.background = if (open) Ui.rounded(this, Ui.SIDE_GLASS, Ui.R_DIALOG) else android.graphics.drawable.ColorDrawable(Ui.CLEAR)
+        side.background = if (open) Ui.rounded(this, Ui.GLASS, Ui.R_DIALOG) else android.graphics.drawable.ColorDrawable(Ui.CLEAR)
         sideItems().forEach { it.showLabel(open, Ui.dp(this, 14)) }
         if (::profileName.isInitialized) profileName.visibility = if (open) View.VISIBLE else View.GONE
         // Slim: no pills, just the icons; the one that is focused gets a ring. Open: the names, and the open page outlined.
@@ -387,7 +391,10 @@ class MainActivity : Activity() {
     }
 
     private val pictures = PicturePicker(this, 42)
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) { super.onActivityResult(requestCode, resultCode, data); pictures.result(requestCode, resultCode, data) }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data); pictures.result(requestCode, resultCode, data)
+        if (requestCode == PROFILE_REQUEST && resultCode == RESULT_OK) data?.getStringExtra("id")?.let { switchProfile(it, data.getBooleanExtra("force", false)) }
+    }
 
     /** A picture of the owner's own for one app (an icon pack changes them all, in Settings). */
     private fun iconMenu(a: AppEntry) {

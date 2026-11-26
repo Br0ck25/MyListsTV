@@ -87,6 +87,8 @@
         </service>
         <activity android:name=".screens.SettingsActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" android:theme="@style/Theme.MyListsTV.Drawer" />
+        <activity android:name=".screens.ProfilesActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|fontScale" android:exported="false" android:screenOrientation="landscape" android:theme="@style/Theme.MyListsTV" />
         <activity android:name=".screens.TrailerActivity" android:exported="false" android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|keyboardHidden|keyboard|smallestScreenSize|screenLayout|uiMode"
             android:theme="@style/Theme.MyListsTV" />

@@ -51,7 +51,7 @@ object Ui {
     const val QR_DARK = 0xFF000000.toInt()      // a QR code must be black on white to scan, whatever the theme
     const val QR_LIGHT = 0xFFFFFFFF.toInt()
     const val OVERLAY = 0xE6000000.toInt()     // dims everything behind a slate or an error
-    const val SIDE_GLASS = 0xE01C1C1E.toInt()  // the hidden side bar: the card colour, a little see-through
+    const val GLASS = 0xD91C1C1E.toInt()       // every panel that slides in (Settings, pop-ups, the side bar, the player's panel): the card colour, a little see-through
     val BRAND_LINE get() = (BRAND and 0x00FFFFFF) or 0x80000000.toInt()   // highlight outline on a banner
     val BRAND_SOFT get() = (BRAND and 0x00FFFFFF) or 0x2B000000          // soft fill inside the ring of whatever has focus
     val FOCUS_FILL get() = BRAND_SOFT
@@ -112,6 +112,22 @@ object Ui {
             addState(intArrayOf(), ColorDrawable(Color.TRANSPARENT))
         }
     }
+
+    /** The colours a profile's round avatar can have, each one dark enough to carry a white letter. A profile keeps the one its id picks. */
+    private val AVATARS = listOf(0xFF2F6FDE.toInt(), 0xFF0E8A8A.toInt(), 0xFFB86B00.toInt(), 0xFF2E8B3F.toInt(), 0xFFC2335A.toInt(), 0xFF7B45C9.toInt())
+    fun avatarColor(id: String): Int = AVATARS[(id.hashCode() and 0x7fffffff) % AVATARS.size]
+
+    /** A filled circle. */
+    fun oval(color: Int): Drawable = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) }
+
+    /** The highlight ring around a round thing while it has focus. */
+    fun ovalFocusBg(c: Context): Drawable {
+        val ring = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(CLEAR); setStroke(dp(c, 3), BRAND) }
+        return StateListDrawable().apply { addState(intArrayOf(android.R.attr.state_focused), ring); addState(intArrayOf(), ColorDrawable(CLEAR)) }
+    }
+
+    /** A wash of the highlight colour fading to black, behind a whole-screen page. */
+    fun wash(): Drawable = fade(GradientDrawable.Orientation.TOP_BOTTOM, (BRAND and 0x00FFFFFF) or 0x59000000, BG)
 
     /** A menu row (settings, side bar, pop-up cards): a blue ring on a soft blue fill while focused (and selected, unless [selectedToo] is off), otherwise [normal]. */
     fun menuRowBg(c: Context, radius: Int = R_PANEL, normal: Int = CLEAR, selectedToo: Boolean = true): Drawable {

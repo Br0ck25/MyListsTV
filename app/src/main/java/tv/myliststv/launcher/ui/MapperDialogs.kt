@@ -59,7 +59,7 @@ object MapperDialogs {
     /** Press the button on the remote (it listens for ten seconds), or choose it from the known buttons. */
     fun add(act: Activity, changed: () -> Unit) {
         val handler = Handler(Looper.getMainLooper())
-        val s = Sheet(act, "Add Button Mapping", "Press the physical remote button you want to configure.", 460)
+        val s = Sheet(act, "Add Button Mapping", "Press the physical remote button you want to configure.")
         val c = act
         val remote = ImageView(c).apply { setImageResource(R.drawable.ic_remote); setColorFilter(Ui.BRAND) }
         val status = Ui.text(c, "Listening for remote button press… (10s)", 16f, Ui.TEXT).apply { gravity = Gravity.CENTER }
@@ -90,7 +90,7 @@ object MapperDialogs {
     }
 
     private fun timedOut(act: Activity, changed: () -> Unit) {
-        val s = Sheet(act, "No Button Detected", "No key event was received before the capture timeout expired.", 460)
+        val s = Sheet(act, "No Button Detected", "No key event was received before the capture timeout expired.")
         s.box(Ui.text(act, "If you pressed a branded shortcut button, your TV or remote firmware may reserve that key at the system level and not expose it to Android apps. Turning on the Home button fallback allows global key filtering for buttons that Android exposes.", 13f, Ui.DIM).apply { setLineSpacing(0f, 1.1f); setPadding(Ui.dp(act, 14), Ui.dp(act, 12), Ui.dp(act, 14), Ui.dp(act, 12)) })
         val retry = s.card("Try Detecting Again", "Start another 10-second button capture window") { s.dismiss(); add(act, changed) }
         s.card("Choose from Known Remote Buttons", "Pick a standard Android TV remote button from the catalog") { s.dismiss(); known(act, changed) }
@@ -99,7 +99,7 @@ object MapperDialogs {
     }
 
     private fun reserved(act: Activity, changed: () -> Unit) {
-        val s = Sheet(act, "System-Reserved Button", "Volume, Power, Back, Home and the arrows stay system-controlled so normal TV operation and remote navigation are never disrupted.", 460)
+        val s = Sheet(act, "System-Reserved Button", "Volume, Power, Back, Home and the arrows stay system-controlled so normal TV operation and remote navigation are never disrupted.")
         val again = s.card("Detect Another Button", "Press a different remote button") { s.dismiss(); add(act, changed) }
         s.card("Cancel", "Close without saving") { s.dismiss() }
         s.show(); again.requestFocus()
@@ -107,7 +107,7 @@ object MapperDialogs {
 
     /** The known buttons, by kind. */
     private fun known(act: Activity, changed: () -> Unit) {
-        val s = Sheet(act, "Select Remote Button", "Choose a supported remote button category.", 480)
+        val s = Sheet(act, "Select Remote Button", "Choose a supported remote button category.")
         var first: View? = null
         ButtonMap.CATALOG.forEach { (group, buttons) ->
             s.label(group)
@@ -124,7 +124,7 @@ object MapperDialogs {
         fun name(p: String) = draft[p]?.let { ButtonMap.actionName(act, it) } ?: "Not Assigned"
         lateinit var open: () -> Unit
         open = {
-            val s = Sheet(act, "Configure ${ButtonMap.keyName(key)}", "Key code: $key • Category: ${categoryOf(key)}", 480)
+            val s = Sheet(act, "Configure ${ButtonMap.keyName(key)}", "Key code: $key • Category: ${categoryOf(key)}")
             s.box(Ui.vbox(act).apply {
                 setPadding(Ui.dp(act, 14), Ui.dp(act, 12), Ui.dp(act, 14), Ui.dp(act, 12))
                 addView(Ui.text(act, "Status: ${ButtonMap.badge(act, key)}", 15f, Ui.TEXT, true))
@@ -150,7 +150,7 @@ object MapperDialogs {
     fun edit(act: Activity, key: Int, changed: () -> Unit) {
         val home = key == ButtonMap.HOME
         val shown = if (home) "Home" else ButtonMap.keyName(key)
-        val s = Sheet(act, "Edit $shown", (if (home) "" else "KeyCode $key • ") + ButtonMap.badge(act, key), 480)
+        val s = Sheet(act, "Edit $shown", (if (home) "" else "KeyCode $key • ") + ButtonMap.badge(act, key))
         s.dialog.setOnDismissListener { changed() }
         lateinit var render: () -> Unit
         render = {
@@ -184,7 +184,7 @@ object MapperDialogs {
 
     /** A yes or no. Cancel has the focus first, so a stray OK keeps things as they are. */
     fun confirm(act: Activity, title: String, message: String, confirmText: String, onConfirm: () -> Unit): Sheet {
-        val s = Sheet(act, title, message, 440)
+        val s = Sheet(act, title, message)
         val cancel = s.card("Cancel", "Keep things as they are") { s.dismiss() }
         s.card(confirmText, null, null) { s.dismiss(); onConfirm() }
         s.show(); cancel.requestFocus()
@@ -197,7 +197,7 @@ object MapperDialogs {
     private fun pickAction(act: Activity, key: Int, press: String, current: String?, done: (String?) -> Unit) {
         val home = key == ButtonMap.HOME
         val gesture = pressTitle(press)
-        val s = Sheet(act, "${if (home) "Home" else ButtonMap.keyName(key)} — $gesture", "Select an action for this button gesture.", 480)
+        val s = Sheet(act, "${if (home) "Home" else ButtonMap.keyName(key)} — $gesture", "Select an action for this button gesture.")
         s.label("Other")
         val first = if (home) s.card("Restore Default", "Reset to default (${ButtonMap.actionName(act, ButtonMap.homeAction(press) ?: "home")})", selected = current == null) { s.dismiss(); done(null) }
         else s.card("Do Nothing (Not Assigned)", "Leave this press type unassigned", selected = current == null) { s.dismiss(); done(null) }
@@ -211,7 +211,7 @@ object MapperDialogs {
             Http.background {
                 val apps = AppRepository.load(act)
                 Http.post {
-                    val a = Sheet(act, "Select App", "Choose an app to launch.", 480)
+                    val a = Sheet(act, "Select App", "Choose an app to launch.")
                     var top: View? = null
                     apps.forEach { app -> val pkg = app.component.packageName; val v = a.card(app.label, pkg, selected = current == "app:$pkg") { a.dismiss(); done("app:$pkg") }; if (top == null) top = v }
                     a.show(); top?.requestFocus()

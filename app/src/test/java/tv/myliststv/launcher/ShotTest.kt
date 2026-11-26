@@ -49,6 +49,11 @@ class ShotTest {
         fun open(label: String) { var v: View? = all(s.window.decorView).filterIsInstance<android.widget.TextView>().first { it.text.toString() == label }; while (v != null && !v.isClickable) v = v.parent as? View; v!!.performClick(); settle(500) }
         open("Layout"); shot(s, "settings_layout")
         @Suppress("DEPRECATION") s.onBackPressed(); settle(300); open("Content & Discovery"); open("Addons"); shot(s, "settings_addons")
+        tv.myliststv.launcher.data.Profiles.add("Jenn", false); tv.myliststv.launcher.data.Profiles.add("Kid", true)
+        val pr = Robolectric.buildActivity(ProfilesActivity::class.java).setup().get(); settle(400); shot(pr, "profiles")
+        val host = Robolectric.buildActivity(Activity::class.java).setup().get()
+        tv.myliststv.launcher.ui.Sheet.confirm(host, "Sign out of My Lists?", "Home goes back to the default catalogs. Your other addons stay.", "Sign out", "Keep signed in") { }; settle(500)
+        org.robolectric.shadows.ShadowDialog.getLatestDialog().window!!.decorView.let { v -> v.measure(View.MeasureSpec.makeMeasureSpec(848, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.AT_MOST)); v.layout(0, 0, 848, v.measuredHeight); val b = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888); val cv = Canvas(b); cv.drawColor(0xFF555555.toInt()); cv.translate(1072f, (1080 - v.measuredHeight) / 2f); v.draw(cv); File(dir, "sheet.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
         val ar = Robolectric.buildActivity(ArrangeActivity::class.java, android.content.Intent().putExtra("what", "rows")).setup().get(); settle(500); shot(ar, "arrange")
         val m = Robolectric.buildActivity(MainActivity::class.java).setup().get(); settle(7000)
         // Focus the second poster so the backdrop and hero show, as they do when the viewer scrolls.

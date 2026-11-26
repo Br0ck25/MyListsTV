@@ -171,7 +171,7 @@ class PlayerActivity : Activity() {
         root.addView(slate, FrameLayout.LayoutParams(-1, -1))
 
         panel = Ui.vbox(c).apply {
-            background = Ui.rounded(c, Ui.SIDE_GLASS, Ui.R_DIALOG); visibility = View.GONE
+            background = Ui.rounded(c, Ui.GLASS, Ui.R_DIALOG); visibility = View.GONE
             setPadding(Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 20), Ui.dp(c, 12))
         }
         panelTitle = Ui.text(c, "", 22f, Ui.TEXT, true)
