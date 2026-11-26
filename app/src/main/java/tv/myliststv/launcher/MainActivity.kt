@@ -24,6 +24,9 @@ import android.widget.Toast
 import tv.myliststv.launcher.data.*
 import tv.myliststv.launcher.ui.*
 
+/** Asks ProfilesActivity (the "who is watching" screen) which profile to switch to. */
+private const val PROFILE_REQUEST = 52
+
 /**
  * The home screen. Plain Views only: a top bar with tabs, and one screen at a time below it.
  * Screens are rebuilt when selected, because their data comes from the cache and a screen left in memory costs RAM.
@@ -77,13 +80,14 @@ class MainActivity : Activity() {
         setOnClickListener { pickProfile() }
     }
 
-    private fun pickProfile() {
-        val l = Profiles.all()
-        Sheet.menu(this, "Who is watching?", null, l.map { p ->
-            (p.name + if (p.kids) " (kids)" else "") to {
-                Profiles.switchTo(this, p.id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { dropPages(); select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }; Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
-            }
-        })
+
+
+    /** "Who's watching?": a whole screen of round avatars; the choice comes back to [onActivityResult]. */
+    private fun pickProfile() = startActivityForResult(Intent(this, ProfilesActivity::class.java), PROFILE_REQUEST)
+
+    private fun switchProfile(id: String, force: Boolean) {
+        if (id == Profiles.activeId && !force) return
+        Profiles.switchTo(this, id); updateProfile(); AddonStore.needsRefresh = false; AddonStore.load { dropPages(); select(0, force = true) }; Library.pull { }; SetupSync.pull { reloadAddons() }; Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
     }
 
     /** The bell: a panel down the right edge. New-episode alerts for your Library first, then the TV's own notifications when access is given. */
@@ -387,7 +391,10 @@ class MainActivity : Activity() {
     }
 
     private val pictures = PicturePicker(this, 42)
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) { super.onActivityResult(requestCode, resultCode, data); pictures.result(requestCode, resultCode, data) }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data); pictures.result(requestCode, resultCode, data)
+        if (requestCode == PROFILE_REQUEST && resultCode == RESULT_OK) data?.getStringExtra("id")?.let { switchProfile(it, data.getBooleanExtra("force", false)) }
+    }
 
     /** A picture of the owner's own for one app (an icon pack changes them all, in Settings). */
     private fun iconMenu(a: AppEntry) {

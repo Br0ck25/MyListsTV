@@ -22,6 +22,7 @@ Start here, then `grep -n <name> docs/MAP.md` for the exact file and line. Rules
 | Watched ticks, new-episode alerts | `data/Watched.kt`, `data/Alerts.kt`, `screens/DetailsActivity.kt`, `MainActivity.kt` (`showNotices`) |
 | Share addons between profiles | `data/Profiles.kt` (`addonSource`), `data/AddonStore.kt` (`saved`), `screens/SettingsActivity.kt` (`shareMenu`) |
 | Profiles, kids filter, watch history | `data/Profiles.kt`, `data/WatchStore.kt` |
+| The "Who's watching?" screen (round avatars; chip, Home double-press and start-up open it) | `screens/ProfilesActivity.kt`, `MainActivity.kt` (`pickProfile`, `switchProfile`) |
 | Remote button mapper, Home button | `data/ButtonMap.kt`, `services/HomeButtonService.kt`, `data/HomeSetup.kt` |
 | Settings groups Inputs (HDMI) and Android settings shortcuts | `screens/SettingsActivity.kt` (`rows`), `data/SystemLinks.kt` |
 | Wallpaper, picking a picture from the device | `data/Pictures.kt`, `ui/PicturePicker.kt`, `MainActivity.kt` (`idleBackdrop`), `screens/SettingsActivity.kt` (`wallpaperMenu`) |
