@@ -44,7 +44,7 @@ class StreamsActivity : Activity() {
 
     private fun show(streams: List<StreamItem>, st: List<StreamResolver.AddonStatus>, done: Boolean) {
         val max = Prefs.effectiveMaxResolution()
-        val ranked = StreamRank.sorted(streams, max)
+        val ranked = DeviceRank.forThisBox(StreamRank.sorted(streams, max))
         val ok = st.count { it.ok }
         status.text = (if (done) "" else "Still looking…  ") + "${ranked.size} sources from $ok of ${st.size} addons" +
             st.filter { !it.ok }.joinToString("") { "   · ${it.name} did not answer" }

@@ -54,9 +54,12 @@ dependencies {
 }
 
 dependencies {
-    implementation("androidx.media3:media3-exoplayer:1.4.1")
-    implementation("androidx.media3:media3-exoplayer-hls:1.4.1")
-    implementation("androidx.media3:media3-ui:1.4.1")
+    implementation("androidx.media3:media3-exoplayer:1.5.0")
+    implementation("androidx.media3:media3-exoplayer-hls:1.5.0")
+    implementation("androidx.media3:media3-exoplayer-dash:1.5.0")
+    implementation("androidx.media3:media3-ui:1.5.0")
+    // Software sound decoders (DTS, TrueHD, E-AC3 and more) for what the TV's own chips cannot play. Jellyfin builds this against each Media3 release.
+    implementation("org.jellyfin.media3:media3-ffmpeg-decoder:1.5.0+1")
 }
 
 dependencies {
