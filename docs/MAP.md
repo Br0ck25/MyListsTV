@@ -638,82 +638,82 @@ Find a symbol with grep on this file, then read only that file around the line n
    351   fun onResume()  - Coming back from the player: the tick and the Next button move on.
    359   fun onDestroy()
 
-## screens/PlayerActivity.kt (990 lines) - Full-screen player.
+## screens/PlayerActivity.kt (993 lines) - Full-screen player.
     36 class PlayerActivity  - Full-screen player.
     98   fun onCreate(savedInstanceState: Bundle?)
    113   fun offerResume(at: Long, go: (Long)  - Left part way: "Resume 12:34" or "Start over", picking Resume by itself after eight seconds.
-   130   fun chooseResume(go: (Long)
-   139   fun buildUi()
-   255   fun resolveFirst()  - Finds the streams for the title the details page started, picks the best (2.5 s after the first arrive, or whe
-   287   fun refreshTitle()
-   301   fun buildPlayer()
-   332   fun playerHasVideo()
-   335   fun begin(s: StreamItem, pos: Long, msg: String)  - Starts a stream for a new video: asks subtitle addons first (3 s at most), then plays.
-   342   fun subMime(url: String)
-   348   fun startStream(s: StreamItem, positionMs: Long, message: String)
-   371   fun withSubtitles(list: List<Sub>, delay: Long, then: (List<Sub>)  - The addon subtitles moved by [delay] ms (saved files, so the player reads them like any others); the original 
-   387   fun onFirstFrame()
-   403   fun onStartupTimeout()
-   408   fun onError(e: PlaybackException)
-   424   fun failed(reason: String, http: Int?, kind: PlayErrors.Kind)  - One place for every failure: refresh an expired link, else try the next source, else show the error screen.
-   442   fun refreshLink(positionMs: Long)  - Fetches the same source again from its addon (it may hand out a fresh link) and resumes where it stopped.
-   462   fun onEnded()
-   470   fun upNext()  - When an episode ends: "Next episode in 5" with OK to start now and Back to stop.
-   484   fun cancelCountdown(playNow: Boolean)
-   489   fun playNextEpisode(manual: Boolean)
-   498   fun playEpisode(next: Video)  - Plays [next] with the best source, preferring the one that played the last episode (same binge group, else the
-   521   fun panelOpen()
-   522   fun errorOpen()
-   524   fun openPanel(title: String)
-   532   fun closePanel()
-   540   fun item(label: String, sub: String?, tag: String?, tagColor: Int = Ui.GOOD, onC
-   555   fun openSources()
-   562   fun renderSources()
-   583   fun chip(label: String, onClick: ()
-   585   fun reloadSources()
-   600   fun switchTo(s: StreamItem)  - Manual switch: keeps the viewer's place, and the app stops choosing for them.
-   610   fun openTrackPanel(type: Int)
-   643   fun openEpisodes()  - Every episode of the show, by season; OK plays that one (with the best source), the one playing now has a tick
-   661   fun applyZoom()  - Draws the picture wider or taller than the fit, and moves it; the subtitles are kept the right shape and on th
-   672   fun saveZoom()
-   674   fun openZoom()
-   676   fun signed(v: Int)
-   678   fun renderZoom()
-   690   fun adjustZoom(dir: Int, repeat: Int)
-   698   fun fillZoom()
-   704   fun openSubDelay()
-   715   fun openSubDelayRefresh()
-   717   fun openSubStyle()
-   728   fun cycleTrack(type: Int)  - One press of the Subtitles or Audio key on the remote: the next track (subtitles: ...
-   746   fun toggleStats()
-   753   fun reportText()  - The text to send when something would not play: this box, the app, the source (its link with the secrets cut o
-   766   fun openReport()
-   778   fun openSpeed()
-   787   fun openInfo()
-   801   fun openExternal()  - Hands the stream to another video app at this place, and when it comes back picks up where that app stopped.
-   811   fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
-   826   fun showSlate(msg: String)  - The loading screen shows the title's own backdrop behind a dark fade.
-   832   fun hideSlate()
-   833   fun showError(msg: String)
-   834   fun hideError()
-   836   fun bannerShow(text: String)
-   842   fun showControls()
-   843   fun hideBarNow()
-   844   fun scheduleHide()
-   846   fun fmt(ms: Long)
-   848   fun togglePlay()
-   851   fun skipTarget()  - The segment under the playhead, or null; also what the skip button says and does.
-   854   fun placeSkip()  - The skip button sits just above the control bar while it shows, and low in the corner while it is hidden.
-   860   fun updateSkip()
-   872   fun doSkip(s: Segments.Seg)
-   876   fun updateProgress()
-   893   fun saveProgress(force: Boolean, ended: Boolean = false)
-   911   fun dispatchKeyEvent(e: KeyEvent)
-   948   fun seekStep(e: KeyEvent, dir: Int)  - Holding the key seeks faster: 10 s, then 20 s, then 40 s per step.
-   953   fun seekBy(deltaMs: Long)
-   963   fun onBackPressed()
-   974   fun onStop()
-   981   fun onDestroy()
+   133   fun chooseResume(go: (Long)
+   142   fun buildUi()
+   258   fun resolveFirst()  - Finds the streams for the title the details page started, picks the best (2.5 s after the first arrive, or whe
+   290   fun refreshTitle()
+   304   fun buildPlayer()
+   335   fun playerHasVideo()
+   338   fun begin(s: StreamItem, pos: Long, msg: String)  - Starts a stream for a new video: asks subtitle addons first (3 s at most), then plays.
+   345   fun subMime(url: String)
+   351   fun startStream(s: StreamItem, positionMs: Long, message: String)
+   374   fun withSubtitles(list: List<Sub>, delay: Long, then: (List<Sub>)  - The addon subtitles moved by [delay] ms (saved files, so the player reads them like any others); the original 
+   390   fun onFirstFrame()
+   406   fun onStartupTimeout()
+   411   fun onError(e: PlaybackException)
+   427   fun failed(reason: String, http: Int?, kind: PlayErrors.Kind)  - One place for every failure: refresh an expired link, else try the next source, else show the error screen.
+   445   fun refreshLink(positionMs: Long)  - Fetches the same source again from its addon (it may hand out a fresh link) and resumes where it stopped.
+   465   fun onEnded()
+   473   fun upNext()  - When an episode ends: "Next episode in 5" with OK to start now and Back to stop.
+   487   fun cancelCountdown(playNow: Boolean)
+   492   fun playNextEpisode(manual: Boolean)
+   501   fun playEpisode(next: Video)  - Plays [next] with the best source, preferring the one that played the last episode (same binge group, else the
+   524   fun panelOpen()
+   525   fun errorOpen()
+   527   fun openPanel(title: String)
+   535   fun closePanel()
+   543   fun item(label: String, sub: String?, tag: String?, tagColor: Int = Ui.GOOD, onC
+   558   fun openSources()
+   565   fun renderSources()
+   586   fun chip(label: String, onClick: ()
+   588   fun reloadSources()
+   603   fun switchTo(s: StreamItem)  - Manual switch: keeps the viewer's place, and the app stops choosing for them.
+   613   fun openTrackPanel(type: Int)
+   646   fun openEpisodes()  - Every episode of the show, by season; OK plays that one (with the best source), the one playing now has a tick
+   664   fun applyZoom()  - Draws the picture wider or taller than the fit, and moves it; the subtitles are kept the right shape and on th
+   675   fun saveZoom()
+   677   fun openZoom()
+   679   fun signed(v: Int)
+   681   fun renderZoom()
+   693   fun adjustZoom(dir: Int, repeat: Int)
+   701   fun fillZoom()
+   707   fun openSubDelay()
+   718   fun openSubDelayRefresh()
+   720   fun openSubStyle()
+   731   fun cycleTrack(type: Int)  - One press of the Subtitles or Audio key on the remote: the next track (subtitles: ...
+   749   fun toggleStats()
+   756   fun reportText()  - The text to send when something would not play: this box, the app, the source (its link with the secrets cut o
+   769   fun openReport()
+   781   fun openSpeed()
+   790   fun openInfo()
+   804   fun openExternal()  - Hands the stream to another video app at this place, and when it comes back picks up where that app stopped.
+   814   fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
+   829   fun showSlate(msg: String)  - The loading screen shows the title's own backdrop behind a dark fade.
+   835   fun hideSlate()
+   836   fun showError(msg: String)
+   837   fun hideError()
+   839   fun bannerShow(text: String)
+   845   fun showControls()
+   846   fun hideBarNow()
+   847   fun scheduleHide()
+   849   fun fmt(ms: Long)
+   851   fun togglePlay()
+   854   fun skipTarget()  - The segment under the playhead, or null; also what the skip button says and does.
+   857   fun placeSkip()  - The skip button sits just above the control bar while it shows, and low in the corner while it is hidden.
+   863   fun updateSkip()
+   875   fun doSkip(s: Segments.Seg)
+   879   fun updateProgress()
+   896   fun saveProgress(force: Boolean, ended: Boolean = false)
+   914   fun dispatchKeyEvent(e: KeyEvent)
+   951   fun seekStep(e: KeyEvent, dir: Int)  - Holding the key seeks faster: 10 s, then 20 s, then 40 s per step.
+   956   fun seekBy(deltaMs: Long)
+   966   fun onBackPressed()
+   977   fun onStop()
+   984   fun onDestroy()
 
 ## screens/ProfilesActivity.kt (108 lines) - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
     21 class ProfilesActivity  - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
