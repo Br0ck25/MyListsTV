@@ -324,7 +324,7 @@ class DetailsActivity : Activity() {
             if (started) return
             started = true; dismissBusy()
             val max = Prefs.effectiveMaxResolution()
-            val ranked = StreamRank.sorted(StreamRank.playable(latest, max), max)
+            val ranked = DeviceRank.forThisBox(StreamRank.sorted(StreamRank.playable(latest, max), max))
             if (ranked.isEmpty()) noStreams(videoId, statuses) else startPlayer(videoId, v, ranked, ranked.first(), auto = true)
         }
         val s = StreamResolver.Session(

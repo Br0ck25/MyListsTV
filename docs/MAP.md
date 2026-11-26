@@ -199,6 +199,15 @@ Find a symbol with grep on this file, then read only that file around the line n
     24   fun safeMode(c: Context)
     25   fun clear(c: Context)
 
+## data/DeviceCaps.kt (110 lines) - What this box and its screen can show, read once.
+    11 class DeviceCaps  - What this box and its screen can show, read once.
+    64 class StreamTraits  - What a stream's own text says about how it is encoded.
+    80 object DeviceRank  - Ranks streams by whether this box and screen can actually show them, so a file that cannot play is not the fir
+    86   fun penalty(t: StreamTraits, caps: DeviceCaps)  - 0 = fine; larger = worse.
+    96   fun forThisBox(ranked: List<StreamItem>)  - [sorted] for this box and screen, or the list as it is when the viewer turned the setting off.
+   102   fun penaltyOf(s: StreamItem, caps: DeviceCaps)
+   108   fun sorted(ranked: List<StreamItem>, caps: DeviceCaps)  - Stable: only files that probably will not play here move down; everything else keeps the order the addons and 
+
 ## data/EpisodesLeft.kt (39 lines) - What a Continue Watching card says about where you are: episodes still to watch, time left, or when the next o
      7 object EpisodesLeft  - What a Continue Watching card says about where you are: episodes still to watch, time left, or when the next o
      9   class Info  - [left]: aired episodes still to watch, counting the one you are on.
@@ -350,6 +359,22 @@ Find a symbol with grep on this file, then read only that file around the line n
      7   fun describe(httpStatus: Int?, kind: Kind)
     19   fun worthTryingAnotherSource(httpStatus: Int?, kind: Kind)  - True when a different source is likely to help, so fallback should run.
 
+## data/PlayerPrefs.kt (64 lines) - Settings that belong to the video player only, kept apart from [Prefs] so the player's choices have one home.
+     8 object PlayerPrefs  - Settings that belong to the video player only, kept apart from [Prefs] so the player's choices have one home.
+     9   fun sp()
+    12   var passthrough  - Send Dolby and DTS to the TV or receiver as they are (on), or always decode here and send plain sound (off).
+    17   var softwareAudio  - "Auto": the software decoder is used only for sound the TV's own chips cannot play.
+    22   var subSize  - Subtitle size in percent of the normal size.
+    27   var subBackground  - "Shadow" (text with an outline only), "Dim" (a see-through box) or "Solid".
+    32   fun subDelay(metaId: String?)  - How far to move a title's addon subtitles, in ms (positive = later).
+    33   fun setSubDelay(metaId: String?, ms: Long)
+    36   var bufferSec  - 0 = Auto, otherwise seconds of video to keep ahead.
+    41   var frameRate  - "Off", "Seamless" (only when the TV can switch without a blank screen) or "Always" (switch the display mode to
+    46   var displayHdr  - "Auto" trusts what the TV reports; "HDR" and "SDR" are for a TV that reports wrongly.
+    51   var askResume  - Offer to resume or start over when a title was left part way.
+    56   var stats  - The live numbers (codec, bitrate, dropped frames) over the picture.
+    61   var rankByDevice  - The first-choice rank: sources this TV is least likely to play drop down the list.
+
 ## data/Prefs.kt (217 lines) - All user settings in one place.
      8 object Prefs  - All user settings in one place.
     17   fun bump()  - Tells Home to rebuild when it is next shown, for a change that is not a saved setting (a picked wallpaper or i
@@ -496,6 +521,18 @@ Find a symbol with grep on this file, then read only that file around the line n
     23   fun providers(type: String, videoId: String)
     30   fun fetch(type: String, videoId: String, lang: String, cb: (List<Sub>)  - Asks every subtitle addon (3 s each, in parallel).
 
+## data/SubtitleTools.kt (66 lines) - Moving a subtitle file's times earlier or later (SubRip, WebVTT and SubStation), as text in, text out.
+     6 object SubtitleTools  - Moving a subtitle file's times earlier or later (SubRip, WebVTT and SubStation), as text in, text out.
+    12   fun shift(text: String, deltaMs: Long, url: String)
+    22   fun shiftCues(text: String, deltaMs: Long)  - SubRip and WebVTT: only lines with an arrow are timings, so the words themselves are never touched.
+    34   fun shiftAss(text: String, deltaMs: Long)
+    39   fun frac(s: String)
+    41   fun assTime(s: String, deltaMs: Long)
+    49   fun label(ms: Long)  - The label for the delay: "+0.5 s", "-1.2 s" or "No delay".
+    53 object PlayerReport  - The text a viewer can send when something would not play: what failed and what this box is, with nothing that 
+    55   fun redact(url: String)  - A link with its query, credentials and long token-like path parts removed.
+    65   fun build(lines: List<Pair<String, String>>)
+
 ## data/SystemLinks.kt (37 lines) - The TV's own settings pages (the Android settings group of Settings) and its video inputs (HDMI and the like).
     12 object SystemLinks  - The TV's own settings pages (the Android settings group of Settings) and its video inputs (HDMI and the like).
     20   fun open(act: Activity, action: String)  - Opens one of [pages]; a TV that lacks that page gets its main settings, and one with none says so.
@@ -597,62 +634,73 @@ Find a symbol with grep on this file, then read only that file around the line n
    377   fun onResume()  - Coming back from the player: the tick and the Next button move on.
    384   fun onDestroy()
 
-## screens/PlayerActivity.kt (722 lines) - Full-screen player.
+## screens/PlayerActivity.kt (899 lines) - Full-screen player.
     36 class PlayerActivity  - Full-screen player.
-    85   fun onCreate(savedInstanceState: Bundle?)
-   100   fun buildUi()
-   202   fun refreshTitle()
-   215   fun buildPlayer()
-   249   fun playerHasVideo()
-   252   fun begin(s: StreamItem, pos: Long, msg: String)  - Starts a stream for a new video: asks subtitle addons first (3 s at most), then plays.
-   259   fun subMime(url: String)
-   265   fun startStream(s: StreamItem, positionMs: Long, message: String)
-   287   fun onFirstFrame()
-   301   fun onStartupTimeout()
-   306   fun onError(e: PlaybackException)
-   321   fun failed(reason: String, http: Int?, kind: PlayErrors.Kind)  - One place for every failure: refresh an expired link, else try the next source, else show the error screen.
-   339   fun refreshLink(positionMs: Long)  - Fetches the same source again from its addon (it may hand out a fresh link) and resumes where it stopped.
-   359   fun onEnded()
-   367   fun upNext()  - When an episode ends: "Next episode in 5" with OK to start now and Back to stop.
-   381   fun cancelCountdown(playNow: Boolean)
-   386   fun playNextEpisode(manual: Boolean)
-   395   fun playEpisode(next: Video)  - Plays [next] with the best source, preferring the one that played the last episode (same binge group, else the
-   418   fun panelOpen()
-   419   fun errorOpen()
-   421   fun openPanel(title: String)
-   429   fun closePanel()
-   435   fun item(label: String, sub: String?, tag: String?, tagColor: Int = Ui.GOOD, onC
-   450   fun openSources()
-   457   fun renderSources()
-   478   fun chip(label: String, onClick: ()
-   480   fun reloadSources()
-   495   fun switchTo(s: StreamItem)  - Manual switch: keeps the viewer's place, and the app stops choosing for them.
-   505   fun openTrackPanel(type: Int)
-   534   fun openEpisodes()  - Every episode of the show, by season; OK plays that one (with the best source), the one playing now has a tick
-   551   fun openSpeed()
-   560   fun openInfo()
-   571   fun openExternal()
-   580   fun showSlate(msg: String)  - The loading screen shows the title's own backdrop behind a dark fade.
-   586   fun hideSlate()
-   587   fun showError(msg: String)
-   588   fun hideError()
-   590   fun bannerShow(text: String)
-   596   fun showControls()
-   597   fun scheduleHide()
-   599   fun fmt(ms: Long)
-   601   fun togglePlay()
-   604   fun skipTarget()  - The segment under the playhead, or null; also what the skip button says and does.
-   607   fun placeSkip()  - The skip button sits just above the control bar while it shows, and low in the corner while it is hidden.
-   613   fun updateSkip()
-   620   fun doSkip(s: Segments.Seg)
-   624   fun updateProgress()
-   639   fun saveProgress(force: Boolean, ended: Boolean = false)
-   657   fun dispatchKeyEvent(e: KeyEvent)
-   687   fun seekStep(e: KeyEvent, dir: Int)  - Holding the key seeks faster: 10 s, then 20 s, then 40 s per step.
-   692   fun seekBy(deltaMs: Long)
-   699   fun onBackPressed()
-   708   fun onStop()
-   715   fun onDestroy()
+    96   fun onCreate(savedInstanceState: Bundle?)
+   110   fun offerResume(at: Long, go: (Long)  - Left part way: "Resume 12:34" or "Start over", picking Resume by itself after eight seconds.
+   127   fun chooseResume(go: (Long)
+   136   fun buildUi()
+   253   fun refreshTitle()
+   266   fun buildPlayer()
+   297   fun playerHasVideo()
+   300   fun begin(s: StreamItem, pos: Long, msg: String)  - Starts a stream for a new video: asks subtitle addons first (3 s at most), then plays.
+   307   fun subMime(url: String)
+   313   fun startStream(s: StreamItem, positionMs: Long, message: String)
+   336   fun withSubtitles(list: List<Sub>, delay: Long, then: (List<Sub>)  - The addon subtitles moved by [delay] ms (saved files, so the player reads them like any others); the original 
+   352   fun onFirstFrame()
+   367   fun onStartupTimeout()
+   372   fun onError(e: PlaybackException)
+   388   fun failed(reason: String, http: Int?, kind: PlayErrors.Kind)  - One place for every failure: refresh an expired link, else try the next source, else show the error screen.
+   406   fun refreshLink(positionMs: Long)  - Fetches the same source again from its addon (it may hand out a fresh link) and resumes where it stopped.
+   426   fun onEnded()
+   434   fun upNext()  - When an episode ends: "Next episode in 5" with OK to start now and Back to stop.
+   448   fun cancelCountdown(playNow: Boolean)
+   453   fun playNextEpisode(manual: Boolean)
+   462   fun playEpisode(next: Video)  - Plays [next] with the best source, preferring the one that played the last episode (same binge group, else the
+   485   fun panelOpen()
+   486   fun errorOpen()
+   488   fun openPanel(title: String)
+   496   fun closePanel()
+   504   fun item(label: String, sub: String?, tag: String?, tagColor: Int = Ui.GOOD, onC
+   519   fun openSources()
+   526   fun renderSources()
+   547   fun chip(label: String, onClick: ()
+   549   fun reloadSources()
+   564   fun switchTo(s: StreamItem)  - Manual switch: keeps the viewer's place, and the app stops choosing for them.
+   574   fun openTrackPanel(type: Int)
+   607   fun openEpisodes()  - Every episode of the show, by season; OK plays that one (with the best source), the one playing now has a tick
+   624   fun openSubDelay()
+   635   fun openSubDelayRefresh()
+   637   fun openSubStyle()
+   648   fun cycleTrack(type: Int)  - One press of the Subtitles or Audio key on the remote: the next track (subtitles: ...
+   666   fun toggleStats()
+   673   fun reportText()  - The text to send when something would not play: this box, the app, the source (its link with the secrets cut o
+   686   fun openReport()
+   698   fun openSpeed()
+   707   fun openInfo()
+   721   fun openExternal()  - Hands the stream to another video app at this place, and when it comes back picks up where that app stopped.
+   731   fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
+   746   fun showSlate(msg: String)  - The loading screen shows the title's own backdrop behind a dark fade.
+   752   fun hideSlate()
+   753   fun showError(msg: String)
+   754   fun hideError()
+   756   fun bannerShow(text: String)
+   762   fun showControls()
+   763   fun scheduleHide()
+   765   fun fmt(ms: Long)
+   767   fun togglePlay()
+   770   fun skipTarget()  - The segment under the playhead, or null; also what the skip button says and does.
+   773   fun placeSkip()  - The skip button sits just above the control bar while it shows, and low in the corner while it is hidden.
+   779   fun updateSkip()
+   786   fun doSkip(s: Segments.Seg)
+   790   fun updateProgress()
+   807   fun saveProgress(force: Boolean, ended: Boolean = false)
+   825   fun dispatchKeyEvent(e: KeyEvent)
+   858   fun seekStep(e: KeyEvent, dir: Int)  - Holding the key seeks faster: 10 s, then 20 s, then 40 s per step.
+   863   fun seekBy(deltaMs: Long)
+   873   fun onBackPressed()
+   883   fun onStop()
+   890   fun onDestroy()
 
 ## screens/ProfilesActivity.kt (108 lines) - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
     21 class ProfilesActivity  - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
@@ -667,7 +715,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    104   fun askName(kids: Boolean)
    107   fun onBackPressed()
 
-## screens/SettingsActivity.kt (543 lines) - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
+## screens/SettingsActivity.kt (556 lines) - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
     28 class SettingsActivity  - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
     33   fun card(title: String)  - A card inside a group (kind S): its title, then the rows that follow it up to the next card.
     36   fun header(t: String, subtitle: String = "", icon: Int = 0, value: ()  - A group of the settings list: its name, the line under the page title, its icon, and a short summary shown at 
@@ -691,31 +739,31 @@ Find a symbol with grep on this file, then read only that file around the line n
    123   fun signIn()
    141   fun signOut()
    143   fun rows()
-   257   fun subPage()
-   267   fun showPhonePopup(addr: String)  - Manage from phone: a code to scan, with its address, and a way to close.
-   274   fun addonName(url: String)
-   276   fun provides(a: Addon)
-   287   fun addonsChanged()  - Reloads the addons, tells Home to reload, and redraws this page.
-   289   fun installAddon(link: String)
-   295   fun addonsRows()
-   322   fun addonRows(url: String)
-   337   fun profileRows()
-   362   fun checkUpdate()
-   373   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
-   375   fun onCreate(savedInstanceState: Bundle?)
-   386   fun refresh(keep: Int = -1)  - Rebuilds the groups and the page that shows, and puts focus back on the row that had it.
-   399   fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true)  - Puts the first page or the open group's page in the panel, with focus on the row tagged [focusRow] (else the f
-   407   fun rowViews(v: View, out: ArrayList<View> = ArrayList()  - The views a page tags with their row number (a group's number on the first page), in order.
-   412   fun canFocus(v: View)
-   414   fun scrolling(v: View)
-   417   fun mainPage()  - The groups under their small headings.
-   429   fun groupRow(g: Group, i: Int)
-   441   fun groupPage()  - A group's page (or the Addons page inside it): a back arrow with the title, the line under it, then the rows.
-   467   fun closeSubs()
-   470   fun goBack()  - Up one page: out of an addon, out of the Addons list, out of the group, then out of Settings.
-   478   fun view(r: Row, changed: ()
-   540   fun onBackPressed()
-   542   fun onDestroy()
+   270   fun subPage()
+   280   fun showPhonePopup(addr: String)  - Manage from phone: a code to scan, with its address, and a way to close.
+   287   fun addonName(url: String)
+   289   fun provides(a: Addon)
+   300   fun addonsChanged()  - Reloads the addons, tells Home to reload, and redraws this page.
+   302   fun installAddon(link: String)
+   308   fun addonsRows()
+   335   fun addonRows(url: String)
+   350   fun profileRows()
+   375   fun checkUpdate()
+   386   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
+   388   fun onCreate(savedInstanceState: Bundle?)
+   399   fun refresh(keep: Int = -1)  - Rebuilds the groups and the page that shows, and puts focus back on the row that had it.
+   412   fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true)  - Puts the first page or the open group's page in the panel, with focus on the row tagged [focusRow] (else the f
+   420   fun rowViews(v: View, out: ArrayList<View> = ArrayList()  - The views a page tags with their row number (a group's number on the first page), in order.
+   425   fun canFocus(v: View)
+   427   fun scrolling(v: View)
+   430   fun mainPage()  - The groups under their small headings.
+   442   fun groupRow(g: Group, i: Int)
+   454   fun groupPage()  - A group's page (or the Addons page inside it): a back arrow with the title, the line under it, then the rows.
+   480   fun closeSubs()
+   483   fun goBack()  - Up one page: out of an addon, out of the Addons list, out of the group, then out of Settings.
+   491   fun view(r: Row, changed: ()
+   553   fun onBackPressed()
+   555   fun onDestroy()
 
 ## screens/SetupActivity.kt (129 lines) - First run: one full screen per step (Home app, Home button, notifications, addons).
     25 class SetupActivity  - First run: one full screen per step (Home app, Home button, notifications, addons).
@@ -862,6 +910,37 @@ Find a symbol with grep on this file, then read only that file around the line n
 
 ## ui/PlaySession.kt (19 lines) - What the player needs, handed over in memory because a stream list is too big and too short-lived for an inten
      7 object PlaySession  - What the player needs, handed over in memory because a stream list is too big and too short-lived for an inten
+
+## ui/PlayerEngine.kt (145 lines) - The parts of the player that read the viewer's settings: decoders, buffer, network, subtitle look, and the dis
+    29 object PlayerEngine  - The parts of the player that read the viewer's settings: decoders, buffer, network, subtitle look, and the dis
+    42   fun renderers(c: Context)
+    50   fun bufferPlan(sec: Int, lite: Boolean)  - How much video to keep ahead: (milliseconds, bytes).
+    57   fun loadControl()
+    70   fun mediaSourceFactory(c: Context, headers: Map<String, String>)  - Files and streams over HTTP (and the subtitle files saved on the box).
+    81   fun styleSubtitles(v: SubtitleView)  - Subtitle size and background from the settings.
+    94   class Mode
+   100   fun chooseMode(modes: List<Mode>, current: Mode, fps: Float)  - The display mode whose refresh rate is a whole multiple of the film's frame rate (24 fps on 24 or 48 Hz, 23.97
+   111   fun matchFrameRate(a: Activity, fps: Float)  - Switches the screen to a mode matching [fps] when the setting is "Always".
+   123   fun restoreDisplay(a: Activity)  - Puts the screen back the way it was.
+   130   fun applyColorMode(a: Activity)  - "SDR" asks Android for a standard-range screen, so an HDR film is mapped down by the decoder; "HDR" asks for t
+   140   fun frameRateStrategy()  - What the frame-rate setting tells ExoPlayer to do on its own.
+
+## ui/PlayerExtras.kt (84 lines) - Collects what the player says about itself (decoders, dropped frames, network speed) and writes it as lines fo
+    18 class PlayerStats  - Collects what the player says about itself (decoders, dropped frames, network speed) and writes it as lines fo
+    24   fun reset()
+    26   fun onDroppedVideoFrames(eventTime: AnalyticsListener.EventTime, droppedFrames: 
+    27   fun onVideoDecoderInitialized(eventTime: AnalyticsListener.EventTime, decoderNam
+    28   fun onAudioDecoderInitialized(eventTime: AnalyticsListener.EventTime, decoderNam
+    29   fun onBandwidthEstimate(eventTime: AnalyticsListener.EventTime, totalLoadTimeMs:
+    31   fun codec(mime: String?)
+    32   fun soft(name: String)
+    34   fun lines(p: ExoPlayer)
+    51   fun overlay(p: ExoPlayer)  - What the overlay shows: short lines, one fact each.
+    55 class SeekMarks  - Small tick marks on the progress bar, where an intro, recap or credits start.
+    61   fun onDraw(canvas: Canvas)
+    67 object ExternalPlayer  - Handing a stream to another video app (VLC, MX Player, Just Player and the like), with the place to start from
+    68   fun intent(url: String, title: String, positionMs: Long)
+    75   fun stoppedAt(extras: Map<String, Any?>)  - The place the other app stopped at, in ms, from the extras it sent back (they use several names and number typ
 
 ## ui/Pop.kt (44 lines) - A short message at the bottom of the screen, drawn by the app itself.
     18 object Pop  - A short message at the bottom of the screen, drawn by the app itself.
