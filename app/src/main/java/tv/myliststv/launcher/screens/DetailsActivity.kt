@@ -44,8 +44,6 @@ class DetailsActivity : Activity() {
     private var buttonsSig = ""
     private var tabsSig = ""
     private var focusedOnce = false
-    private var busy: Sheet? = null
-    private var session: StreamResolver.Session? = null
     private val lite get() = Prefs.lite()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -310,35 +308,18 @@ class DetailsActivity : Activity() {
 
     private fun videoFor(id: String): Video? = meta.videos.firstOrNull { it.id == id }
 
-    /** Finds streams, picks the best, and starts the player. With auto-pick off it opens the stream list instead. */
+    /** Starts the player at once; it shows the title's artwork while it finds the best source. With auto-pick off it opens the stream list instead. */
     private fun playVideo(videoId: String) {
         if (!Prefs.autoPick) { reveal(); openSources(videoId); return }
         val v = videoFor(videoId)
-        showBusy("Finding the best source\u2026")
-        var started = false
-        var latest: List<StreamItem> = emptyList()
-        var statuses: List<StreamResolver.AddonStatus> = emptyList()
-        var timerSet = false
-        // Do not wait for the slowest addon: pick 2.5 s after the first sources arrive, or when every addon has answered.
-        fun pick() {
-            if (started) return
-            started = true; dismissBusy()
-            val max = Prefs.effectiveMaxResolution()
-            val ranked = DeviceRank.forThisBox(StreamRank.sorted(StreamRank.playable(latest, max), max))
-            if (ranked.isEmpty()) noStreams(videoId, statuses) else startPlayer(videoId, v, ranked, ranked.first(), auto = true)
+        val resume = WatchStore.forMeta(meta.id)
+        PlaySession.apply {
+            this.meta = this@DetailsActivity.meta; this.videoId = videoId
+            season = v?.season ?: -1; episode = v?.episode ?: -1; episodeTitle = v?.title
+            ranked = emptyList(); current = null; autoSelected = true; noStreams = null; resolving = true
+            resumeMs = if (resume != null && resume.videoId == videoId && resume.fraction in 0.02f..0.93f) resume.positionMs else 0L
         }
-        val s = StreamResolver.Session(
-            onUpdate = { list, st ->
-                latest = list; statuses = st
-                if (!started && list.isNotEmpty()) {
-                    busy?.setTitle("Found ${list.size} sources\u2026")
-                    if (!timerSet) { timerSet = true; Http.postDelayed(2500) { pick() } }
-                }
-            },
-            onDone = { list, st -> latest = list; statuses = st; pick() },
-        )
-        session = s
-        StreamResolver.resolve(StreamResolver.typeFor(meta.type, meta.id, videoId), videoId, StreamResolver.DEFAULT_TIMEOUT_MS, s)
+        startActivity(Intent(this, PlayerActivity::class.java))
     }
 
     private fun openSources(videoId: String) {
@@ -350,7 +331,7 @@ class DetailsActivity : Activity() {
         PlaySession.apply {
             this.meta = this@DetailsActivity.meta; this.videoId = videoId
             season = v?.season ?: -1; episode = v?.episode ?: -1; episodeTitle = v?.title
-            this.ranked = ranked; current = pick; autoSelected = auto
+            this.ranked = ranked; current = pick; autoSelected = auto; resolving = false
             resumeMs = if (resume != null && resume.videoId == videoId && resume.fraction in 0.02f..0.93f) resume.positionMs else 0L
         }
         startActivity(Intent(this, PlayerActivity::class.java))
@@ -366,22 +347,16 @@ class DetailsActivity : Activity() {
             Sheet.Act("Try again", true) { playVideo(videoId) }, Sheet.Act("See all sources") { openSources(videoId) }, Sheet.Act("Close"))
     }
 
-    private fun showBusy(msg: String) {
-        dismissBusy()
-        busy = Sheet.busy(this, msg) { session?.cancelled = true; reveal() }
-    }
-
-    private fun dismissBusy() { busy?.dismiss(); busy = null }
-
     /** Coming back from the player: the tick and the Next button move on. */
     override fun onResume() {
         super.onResume()
         if (resumedOnce) reveal()   // back from the player: now show the details page
+        PlaySession.noStreams?.let { st -> PlaySession.noStreams = null; noStreams(PlaySession.videoId, st) }   // the player found nothing: say why
         resumedOnce = true
         if (::meta.isInitialized && ::buttons.isInitialized) { tabsSig = ""; render() }
     }
 
-    override fun onDestroy() { session?.cancelled = true; dismissBusy(); super.onDestroy() }
+    override fun onDestroy() { super.onDestroy() }
 
     /** A round photo (looked up by name), the name and the role. */
     private inner class PersonAdapter(private val list: List<Pair<String, String>>) : RecyclerView.Adapter<PersonAdapter.H>() {

@@ -5,7 +5,36 @@ import android.content.SharedPreferences
 import tv.myliststv.launcher.App
 
 /** Settings that belong to the video player only, kept apart from [Prefs] so the player's choices have one home. */
+/**
+ * Manual zoom: how wide and how tall the picture is drawn (percent of the normal fit) and how far it is moved sideways and up or down
+ * (percent of the screen). The normal picture is 100, 100, 0, 0.
+ */
+data class Zoom(val w: Int = 100, val h: Int = 100, val x: Int = 0, val y: Int = 0) {
+    val isDefault get() = this == Zoom()
+    fun clamped() = Zoom(w.coerceIn(MIN, MAX), h.coerceIn(MIN, MAX), x.coerceIn(-POS, POS), y.coerceIn(-POS, POS))
+    fun encode() = "$w,$h,$x,$y"
+
+    companion object {
+        const val MIN = 50; const val MAX = 250; const val POS = 50
+        fun decode(s: String?): Zoom = s?.split(',')?.mapNotNull { it.trim().toIntOrNull() }?.takeIf { it.size == 4 }?.let { Zoom(it[0], it[1], it[2], it[3]).clamped() } ?: Zoom()
+
+        /** The same factor on both sides that makes a picture of aspect [video] cover a screen of aspect [screen] (a 2.39:1 film on a 16:9 screen, or the reverse). */
+        fun fill(video: Float, screen: Float): Zoom {
+            if (video <= 0f || screen <= 0f) return Zoom()
+            val f = maxOf(video / screen, screen / video)
+            return Zoom((f * 100).toInt(), (f * 100).toInt()).clamped()
+        }
+    }
+}
+
 object PlayerPrefs {
+    /** Each title keeps its own zoom: a scope film needs it, the next show does not. */
+    fun zoom(metaId: String?): Zoom = if (metaId == null) Zoom() else Zoom.decode(sp().getString("zoom_$metaId", null))
+    fun setZoom(metaId: String?, z: Zoom) {
+        if (metaId == null) return
+        if (z.isDefault) sp().edit().remove("zoom_$metaId").apply() else sp().edit().putString("zoom_$metaId", z.clamped().encode()).apply()
+    }
+
     private fun sp(): SharedPreferences = App.instance.getSharedPreferences("player", Context.MODE_PRIVATE)
 
     /** Send Dolby and DTS to the TV or receiver as they are (on), or always decode here and send plain sound (off). */

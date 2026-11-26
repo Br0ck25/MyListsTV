@@ -86,7 +86,7 @@ class StreamsActivity : Activity() {
         PlaySession.apply {
             this.meta = this@StreamsActivity.meta; this.videoId = this@StreamsActivity.videoId
             season = v?.season ?: -1; episode = v?.episode ?: -1; episodeTitle = v?.title
-            this.ranked = ranked; current = s; autoSelected = false
+            this.ranked = ranked; current = s; autoSelected = false; resolving = false
             resumeMs = if (resume != null && resume.videoId == videoId && resume.fraction in 0.02f..0.93f) resume.positionMs else 0L
         }
         startActivity(Intent(this, PlayerActivity::class.java))

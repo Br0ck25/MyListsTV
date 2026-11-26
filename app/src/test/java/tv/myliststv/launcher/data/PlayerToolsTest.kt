@@ -107,4 +107,21 @@ class PlayerToolsTest {
         assertNull(ExternalPlayer.stoppedAt(mapOf("position" to 0)))
         assertNull(ExternalPlayer.stoppedAt(emptyMap()))
     }
+
+    // ---- manual zoom
+    @Test fun zoomRoundTripsAndStaysInRange() {
+        val z = Zoom(120, 110, -5, 8)
+        assertEquals(z, Zoom.decode(z.encode()))
+        assertEquals(Zoom(), Zoom.decode(null)); assertEquals(Zoom(), Zoom.decode("garbage")); assertEquals(Zoom(), Zoom.decode("1,2,3"))
+        assertEquals(Zoom(250, 50, 50, -50), Zoom(900, 1, 80, -80).clamped())
+        assertTrue(Zoom().isDefault); assertFalse(Zoom(101, 100, 0, 0).isDefault)
+    }
+
+    @Test fun fillScalesBothSidesTheSame() {
+        val scope = Zoom.fill(2.39f, 16f / 9f)    // a wide film on a 16:9 screen has bars top and bottom
+        assertEquals(scope.w, scope.h)
+        assertEquals(134, scope.w)
+        assertEquals(Zoom(), Zoom.fill(0f, 1.78f))
+        assertEquals(Zoom.fill(1.33f, 1.78f).w, 133)    // a 4:3 picture has bars at the sides
+    }
 }
