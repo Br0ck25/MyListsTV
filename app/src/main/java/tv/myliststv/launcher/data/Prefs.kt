@@ -112,6 +112,11 @@ object Prefs {
         get() = sp.getInt("navStyle", 0)
         set(v) { sp.edit().putInt("navStyle", v).apply(); epoch++ }
 
+    /** The highlight colour: a place in [tv.myliststv.launcher.ui.Ui.ACCENTS] (the focus ring, selections, toggles, primary buttons). 0 is blue. */
+    var accent: Int
+        get() = sp.getInt("accent", 0)
+        set(v) { sp.edit().putInt("accent", v).apply(); epoch++ }
+
     /** Remote button rules, see ButtonMap. */
     var buttonMap: String
         get() = sp.getString("buttonMap", "") ?: ""

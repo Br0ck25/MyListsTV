@@ -4,7 +4,7 @@
 > Decision (owner asked, assistant decided): **use the My Lists palette** from the website's design system (`My-Lists-Addon/docs/DESIGN_SYSTEM.md`, dark values), with larger rounded shapes in the spirit of Projectivy and Material "Monet" panels. The site and the TV then look like one product, and every colour pair below was already checked for contrast (5:1 or better against white text).
 
 ## 1. Look in one paragraph
-True-black canvas, soft dark-grey rounded panels, white text, one blue brand colour. Everything focusable is rounded; buttons, tabs and toggles are full pills. Focus on a card or button is a white ring (and a small scale-up when not in lite mode). Focus on a menu row (Settings, the side bar, pop-up options) is a blue ring on a faint blue fill. Blue means "on, active or primary" and is drawn as an outline for a selection. No gradients except the dark fade behind text on artwork. No second accent colour.
+True-black canvas, soft dark-grey rounded panels, white text, one highlight colour (blue unless the owner picks another in Settings, Layout, Highlight colour). Everything focusable is rounded; buttons, tabs and toggles are full pills. Focus is always the highlight-colour ring, on a faint fill of the same colour for rows and pills. A focused card also rises: it grows 15% above its neighbours and casts a glow in the highlight colour (no growing in lite mode), and the screen behind Home takes a soft tint of the focused title's backdrop. The highlight colour means "on, active or primary" and is drawn as an outline for a selection. No gradients except the dark fade behind text on artwork. No second accent colour.
 
 ## 2. Tokens
 All sizes are in design units for a 960-wide screen. `Ui.dp()` scales them by the real screen width, so the same numbers look right on every TV.
@@ -18,12 +18,12 @@ All sizes are in design units for a 960-wide screen. `Ui.dp()` scales them by th
 | `TEXT` | `#FFFFFF` | Titles and body |
 | `TEXT2` | `#EBEBF5` | Secondary body, button labels |
 | `DIM` | `#AEAEB2` | Hints, meta text, placeholders |
-| `BRAND` | `#0A84FF` | Active state, primary button fill, progress, toggle on, meta accents |
-| `BRAND_FILL` | `#0A64D8` | Fills that carry white text (≥ 5:1) |
+| `BRAND` | `#0A84FF` (default) | The highlight colour: the focus ring, active state, progress, toggle on, meta accents. Follows `Ui.ACCENTS` and `Prefs.accent` |
+| `BRAND_FILL` | `#0A64D8` (default) | Fills that carry white text (≥ 5:1); each accent has its own |
 | `GOOD` | `#30D158` | Success text, "Cached" |
 | `WARN` | `#FF9F0A` | Warnings |
 | `BAD` | `#FF453A` | Errors, destructive actions |
-| `BRAND_SOFT` | `#2B0A84FF` | Faint blue fill inside the blue ring of a focused menu row |
+| `BRAND_SOFT` | `BRAND` at 17% | Faint fill inside the ring of whatever has focus (also `FOCUS_FILL`) |
 | `LINE` | `#24FFFFFF` | 1-unit outlines and dividers |
 Rules: text on a filled colour uses `BRAND_FILL` with `TEXT`; never put white text on `GOOD`, `WARN` or `BAD` fills. Do not write a hex colour in a screen: use a token.
 
@@ -41,11 +41,11 @@ Spacing steps: 4, 8, 12, 16, 24, 32. Row padding 16 × 12. Gap between rows 8. S
 Text sizes (the only ones allowed): 11 caption, 12 and 13 small, 14 body, 15 control, 16 row title, 20 and 22 section, 24 and 26 heading, 30 hero, 34 display. Weights: regular for body, bold for controls, titles and labels.
 
 ## 3. Components
-- **Focus.** On a card or button: white 2-unit ring at the component's own radius, soft white fill (≈13%), text stays white. On a menu row (`Ui.menuRowBg`, also what `Ui.rowStyle` draws): 2-unit brand-blue ring on `BRAND_SOFT`. Never a solid white or solid blue block. Never remove it.
+- **Focus.** A 2-unit highlight-colour ring at the component's own radius (`Ui.focusBg`, `Ui.pillBg`, `Ui.menuRowBg`, `Ui.rowStyle`), on a soft fill for rows and pills; text stays white. Never a solid block. Never remove it. A card also lifts (see section 1).
 - **Menu row.** An icon on a small rounded square (`Ui.iconTile`), a bold label, an optional muted line under it, and the value, toggle or `›` at the right. Small blue headings (`Ui.sectionLabel`) group rows.
 - **Selected (the open tab, the open Settings group, the chosen chip).** A 2-unit brand-blue outline on a faint fill, never a solid blue block. Cards also scale 1.06 unless lite mode is on.
 - **Card (`Card`).** Rounded `R_CARD`, `CARD` fill, artwork fills it, dark fade behind any text on artwork.
-- **Pill button (`Ui.button`).** `1AFFFFFF` fill, `TEXT` label; focused = white fill, black label. Primary action may use `BRAND_FILL`.
+- **Pill button (`Ui.button`).** `1AFFFFFF` fill, `TEXT` label; focused = highlight ring on a soft fill. Primary action may use `BRAND_FILL`.
 - **Toggle (`Toggle`).** 40 × 22 pill, white knob. Off: `#39393D` track. On: `BRAND` track. Only for on/off. Changes apply immediately.
 - **Choice row.** Value shown in a pill on the right with ‹ › hints. OK cycles forward, Left/Right step either way. More than 6 values opens a list dialog instead.
 - **Action row.** Label and a `›` on the right. Never shows a value. Destructive actions ask first with Keep / Remove.

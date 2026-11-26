@@ -43,6 +43,8 @@ class MainActivity : Activity() {
     private var ready = false
     private lateinit var bg: ImageView
     private lateinit var scrims: List<View>
+    /** The glow over the backdrop: the room takes on the focused title's colours. */
+    private lateinit var tint: View
     private lateinit var bellBtn: View
     private lateinit var side: LinearLayout
     private lateinit var clock: TextView
@@ -51,6 +53,7 @@ class MainActivity : Activity() {
     /** True while an app is being moved with the D-pad (hold OK on an app, Move). */
     private var moving = false
     private val navStyle = Prefs.navStyle
+    private val accent = Prefs.accent
     private val sideWidth get() = Ui.dp(this, 200)
     private lateinit var bellBadge: TextView
     private var backdropUrl: String? = null
@@ -131,20 +134,27 @@ class MainActivity : Activity() {
         if (url == "") { if (Pictures.wallpaperFile(this).exists()) idleBackdrop(); return }    // "" means no title: show the wallpaper
         if (url == null || url == backdropUrl) return
         backdropJob?.let { handler.removeCallbacks(it) }
-        backdropJob = Runnable { backdropUrl = url; ImageLoader.load(bg, url, Ui.dp(this, if (Prefs.lite()) 640 else 960), Ui.dp(this, if (Prefs.lite()) 360 else 540), fade = !Prefs.lite()) }.also { handler.postDelayed(it, 250) }
+        backdropJob = Runnable { backdropUrl = url; ImageLoader.load(bg, url, Ui.dp(this, if (Prefs.lite()) 640 else 960), Ui.dp(this, if (Prefs.lite()) 360 else 540), fade = !Prefs.lite()) { ok -> if (ok) glowFromBackdrop() } }.also { handler.postDelayed(it, 250) }
+    }
+
+    /** Tints the room with the colour of the backdrop that just arrived. */
+    private fun glowFromBackdrop() {
+        val bmp = (bg.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap ?: return
+        tint.background = Ui.glow(this, Ui.ambient(bmp))
+        if (!Prefs.lite()) { tint.alpha = 0f; tint.animate().alpha(1f).setDuration(300).start() }
     }
 
     private fun showBackdrop(on: Boolean) {
         val wall = Pictures.wallpaperFile(this).exists()
         val v = if (on || wall) View.VISIBLE else View.GONE
-        bg.visibility = v; scrims.forEach { it.visibility = v }
+        bg.visibility = v; tint.visibility = v; scrims.forEach { it.visibility = v }
         if (!on) { backdropJob?.let { handler.removeCallbacks(it) }; backdropUrl = null; bg.setImageDrawable(null) }
         if (wall && bg.drawable == null) idleBackdrop()
     }
 
     /** No title is highlighted: the owner's wallpaper, if they picked one. */
     private fun idleBackdrop() {
-        backdropJob?.let { handler.removeCallbacks(it) }; backdropUrl = null
+        backdropJob?.let { handler.removeCallbacks(it) }; backdropUrl = null; tint.background = null
         val f = Pictures.wallpaperFile(this).takeIf { it.exists() } ?: return
         Http.background {
             val bmp = try { android.graphics.BitmapFactory.decodeFile(f.path, android.graphics.BitmapFactory.Options().apply { inPreferredConfig = android.graphics.Bitmap.Config.RGB_565 }) } catch (_: Throwable) { null }
@@ -162,7 +172,9 @@ class MainActivity : Activity() {
             View(this).apply { background = Ui.scrimLeft() },
             View(this).apply { background = Ui.scrimBottom() },
         )
+        tint = View(this)
         root.addView(bg, FrameLayout.LayoutParams(-1, -1))
+        root.addView(tint, FrameLayout.LayoutParams(-1, -1))
         root.addView(scrims[0], FrameLayout.LayoutParams(-1, -1))
         root.addView(scrims[1], FrameLayout.LayoutParams(-1, Ui.dp(this, 420), Gravity.BOTTOM))
         content = FrameLayout(this).apply { setPadding(0, Ui.dp(this@MainActivity, 64), 0, 0) }
@@ -408,7 +420,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         if (::clock.isInitialized) { handler.removeCallbacks(clockTick); clockTick.run() }
         super.onResume()
-        if (Prefs.navStyle != navStyle) { recreate(); return }
+        if (Prefs.navStyle != navStyle || Prefs.accent != accent) { recreate(); return }
         if (ready) {
             Alerts.check { if (::bellBadge.isInitialized) updateBell() }
             syncAccount()

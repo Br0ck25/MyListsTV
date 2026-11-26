@@ -157,6 +157,7 @@ class SettingsActivity : Activity() {
         add(toggle("Show cast, logos and episodes from Cinemeta", "Asks Cinemeta, the standard Stremio metadata addon, for details your catalog addon lacks.", { Prefs.extraDetails }, { Prefs.extraDetails = it }))
         add(toggle("Landscape posters", "Show catalog items as landscape pictures instead of tall posters.", { Prefs.horizontalPosters }, { Prefs.horizontalPosters = it }))
         add(choice("Navigation", "Where Home, Movies, Series and the other pages are listed. Hidden opens with Left.", listOf(0, 1, 2), { Prefs.navStyle }, { Prefs.navStyle = it }, { listOf("Top bar", "Side bar", "Hidden side bar")[it] }))
+        add(choice("Highlight colour", "The ring around what is selected, and toggles, tabs and main buttons.", Ui.ACCENTS.indices.toList(), { Prefs.accent }, { Prefs.accent = it }, { Ui.ACCENTS[it].name }))
         add(choice("Card size", "Posters, wide cards and app tiles grow or shrink together.", listOf(-1, 0, 1, 2, 3), { Prefs.cardSize }, { Prefs.cardSize = it }, { listOf("Extra small", "Small", "Medium", "Large", "Extra large")[it + 1] }))
         IconPacks.installed(this@SettingsActivity).let { packs ->
             add(choice("Icon pack", if (packs.isEmpty()) "Install an icon pack (Nova, ADW or Apex format) from the Play Store, then pick it here." else "Changes the icon of every app it covers. Hold OK on an app to change just that one.", listOf("") + packs.map { it.pkg }, { Prefs.iconPack }, { Prefs.iconPack = it }, { p -> packs.firstOrNull { it.pkg == p }?.label ?: "Default" }))
