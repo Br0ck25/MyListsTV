@@ -9,7 +9,6 @@ import tv.myliststv.launcher.data.*
 
 /** "Library" as a page: every saved title in a grid, with All, Movies and Series filters. OK opens it, hold OK removes it. */
 class LibraryScreen(private val act: Activity, private val onMeta: (Meta) -> Unit, private val onBackdrop: (String?) -> Unit = {}) {
-    private val title = Ui.text(act, "", 24f, Ui.TEXT, true)
     private val empty = Ui.text(act, "Nothing saved yet. Press + on a title's page to keep it here.", 14f, Ui.DIM, false, 3)
     private val pills = Ui.hbox(act, 8)
     private val grid = RecyclerView(act)
@@ -17,9 +16,8 @@ class LibraryScreen(private val act: Activity, private val onMeta: (Meta) -> Uni
     private val wide = Prefs.horizontalPosters
 
     val view: View = Ui.vbox(act).also {
-        title.setPadding(Ui.dp(act, 48), Ui.dp(act, 10), Ui.dp(act, 48), Ui.dp(act, 6))
-        it.addView(title, Ui.matchWrap())
-        pills.setPadding(Ui.dp(act, 42), 0, Ui.dp(act, 42), Ui.dp(act, 6))
+        // No page title: the Library tab already says where you are, as it does on Movies and Series.
+        pills.setPadding(Ui.dp(act, 42), Ui.dp(act, 14), Ui.dp(act, 42), Ui.dp(act, 6))
         it.addView(pills, Ui.matchWrap())
         empty.setPadding(Ui.dp(act, 48), Ui.dp(act, 12), Ui.dp(act, 48), 0)
         it.addView(empty, Ui.matchWrap())
@@ -42,7 +40,6 @@ class LibraryScreen(private val act: Activity, private val onMeta: (Meta) -> Uni
     private fun show() {
         val all = Library.all().filter { Profiles.allows(it) }
         val items = all.filter { filter == null || it.type == filter }
-        title.text = "Library" + if (all.isNotEmpty()) "  ·  ${all.size}" else ""
         empty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
         pills.visibility = if (all.isEmpty()) View.GONE else View.VISIBLE
         val models = items.map { if (wide) CardModel(it.name, it.background ?: it.poster, null, payload = it, done = Watched.titleDone(it)) else CardModel(it.name, it.poster, payload = it, done = Watched.titleDone(it)) }

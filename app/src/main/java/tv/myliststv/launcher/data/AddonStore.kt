@@ -7,8 +7,10 @@ import org.json.JSONObject
 
 /** The user's installed addons, kept as a list of manifest URLs. Manifests themselves live in the HTTP cache. */
 object AddonStore {
-    /** The guest default: the public My Lists catalog (trending, popular, box office, search). */
-    const val DEFAULT_URL = "https://mylistsaddon.com/nuvio-default/manifest.json"
+    /** The guest default: the public My Lists addon link, whose lists the owner chooses on mylistsaddon.com (admin: Default addon link). */
+    const val DEFAULT_URL = "https://mylistsaddon.com/manifest.json"
+    /** What the default was before it moved: a list saved with it is read as the new default. */
+    private const val OLD_DEFAULT_URL = "https://mylistsaddon.com/nuvio-default/manifest.json"
 
     data class Saved(val url: String, val enabled: Boolean)
 
@@ -33,8 +35,8 @@ object AddonStore {
         val raw = sp.getString(Profiles.key("list", id), null)?.let { Secure.unwrap(it) } ?: return listOf(Saved(DEFAULT_URL, true))
         return try {
             val a = JSONArray(raw)
-            (0 until a.length()).mapNotNull { i -> a.optJSONObject(i)?.let { Saved(it.optString("url"), it.optBoolean("on", true)) } }
-                .filter { it.url.isNotEmpty() }
+            (0 until a.length()).mapNotNull { i -> a.optJSONObject(i)?.let { Saved(it.optString("url").let { u -> if (u == OLD_DEFAULT_URL) DEFAULT_URL else u }, it.optBoolean("on", true)) } }
+                .filter { it.url.isNotEmpty() }.distinctBy { it.url }
         } catch (_: Exception) { emptyList() }
     }
 

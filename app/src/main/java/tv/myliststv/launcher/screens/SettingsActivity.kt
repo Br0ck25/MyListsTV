@@ -405,15 +405,23 @@ class SettingsActivity : Activity() {
             h?.let { add(Group(it.label, it.desc, it.icon, it.value(), cur)) }
         }
         cat = cat.coerceIn(0, groups.size - 1)
-        show(if (keep >= 0) keep else focused)
+        // A toggle redraws the page, so keep it where it was: the same scroll, no jump back to the top or a slide.
+        val scrolls = scrollViews(host).map { it.scrollY }
+        show(if (keep >= 0) keep else focused, scrolls = scrolls)
     }
 
     /** Puts the first page or the open group's page in the panel, with focus on the row tagged [focusRow] (else the first row). A page slides in from the side unless the box is in lite mode. */
-    private fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true) {
+    private fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true, scrolls: List<Int> = emptyList()) {
         val page = if (open) groupPage() else mainPage()
         host.removeAllViews(); host.addView(page, android.widget.FrameLayout.LayoutParams(-1, -1))
         if (slide && !Prefs.lite()) { page.translationX = Ui.dp(this, if (forward) 48 else -48).toFloat(); page.alpha = 0f; page.animate().translationX(0f).alpha(1f).setDuration(160).start() }
-        page.post { val rs = rowViews(page).filter { canFocus(it) }; (rs.firstOrNull { it.tag == focusRow } ?: rs.firstOrNull())?.requestFocus(); window.decorView.invalidate() }   // the first frame of a translucent window can leave its lower part undrawn until something repaints it
+        page.post { scrollViews(page).forEachIndexed { i, sv -> scrolls.getOrNull(i)?.let { y -> sv.scrollTo(0, y) } }; val rs = rowViews(page).filter { canFocus(it) }; (rs.firstOrNull { it.tag == focusRow } ?: rs.firstOrNull())?.requestFocus(); window.decorView.invalidate() }   // the first frame of a translucent window can leave its lower part undrawn until something repaints it
+    }
+
+    private fun scrollViews(v: View, out: ArrayList<ScrollView> = ArrayList()): List<ScrollView> {
+        if (v is ScrollView) out += v
+        if (v is ViewGroup) for (i in 0 until v.childCount) scrollViews(v.getChildAt(i), out)
+        return out
     }
 
     /** The views a page tags with their row number (a group's number on the first page), in order. The back row has no number. */
