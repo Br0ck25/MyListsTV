@@ -3,7 +3,7 @@ package tv.myliststv.launcher.ui
 import tv.myliststv.launcher.*
 
 import android.app.Activity
-import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Context
 import android.graphics.Bitmap
 import android.view.Gravity
@@ -20,7 +20,7 @@ import android.widget.TextView
 
 /**
  * The one pop-up of the app (docs/DESIGN.md section 9). Every menu, question, message, confirmation and text entry is a Sheet: a
- * rounded card with a title, a line under it, and a scrolling list of option cards (a message, a picture or a text field can sit
+ * see-through rounded card that slides in from the right edge, with a title, a line under it, and a scrolling list of option cards (a message, a picture or a text field can sit
  * among them). Nothing else may use `AlertDialog.Builder` or build its own dialog; DesignGuardTest checks that. Pick the helper that
  * fits ([menu], [message], [ask], [confirm], [busy]) or build one by hand with [card], [label], [box], [text], [image] and [field].
  */
@@ -29,7 +29,8 @@ class Sheet(val act: Activity, title: String, subtitle: String? = null) {
     class Act(val label: String, val primary: Boolean = false, val run: () -> Unit = {})
 
     val list = Ui.vbox(act).apply { setPadding(Ui.dp(act, 3), Ui.dp(act, 3), Ui.dp(act, 3), Ui.dp(act, 3)) }
-    val dialog: AlertDialog
+    val dialog: Dialog
+    private val panel: FrameLayout
     private var onClose: (() -> Unit)? = null
     private val titleView = Ui.text(act, title, 24f, Ui.TEXT, true)
     fun setTitle(t: CharSequence) { titleView.text = t }
@@ -40,16 +41,18 @@ class Sheet(val act: Activity, title: String, subtitle: String? = null) {
         body.addView(titleView, Ui.matchWrap().apply { leftMargin = Ui.dp(c, 15) })
         if (!subtitle.isNullOrBlank()) body.addView(Ui.text(c, subtitle, 14f, Ui.DIM).apply { setLineSpacing(0f, 1.15f) }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 6); leftMargin = Ui.dp(c, 15) })
         body.addView(ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false; clipToPadding = false }, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = Ui.dp(c, 10) })
-        // The same card colour, corners and rows as Settings, centred on the screen.
-        val panel = FrameLayout(c).apply { background = Ui.rounded(c, Ui.CARD, Ui.R_DIALOG); clipToOutline = true; addView(body, FrameLayout.LayoutParams(-1, -2)) }
-        val root = panel
-        dialog = AlertDialog.Builder(c).setView(root).create()
+        // The same glass, corners and rows as Settings, against the right edge, centred top to bottom.
+        panel = FrameLayout(c).apply { background = Ui.rounded(c, Ui.GLASS, Ui.R_DIALOG); clipToOutline = true; addView(body, FrameLayout.LayoutParams(-1, -2)) }
+        val m = Ui.dp(c, SidePanel.MARGIN)
+        val root = FrameLayout(c).apply { setPadding(0, m, m, m); addView(panel, FrameLayout.LayoutParams(-1, -2)) }
+        dialog = Dialog(c, R.style.Theme_MyListsTV_Panel).apply { setContentView(root) }
         dialog.setOnDismissListener { onClose?.invoke() }
     }
 
     fun show(): Sheet {
         dialog.show()
-        dialog.window?.apply { setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Ui.CLEAR)); setLayout(Ui.dp(act, WIDTH), ViewGroup.LayoutParams.WRAP_CONTENT) }
+        dialog.window?.apply { setGravity(Gravity.END or Gravity.CENTER_VERTICAL); setLayout(Ui.dp(act, SidePanel.WIDTH + SidePanel.MARGIN), ViewGroup.LayoutParams.WRAP_CONTENT) }
+        SidePanel.slideIn(panel)
         return this
     }
     fun dismiss() = dialog.dismiss()
@@ -64,13 +67,13 @@ class Sheet(val act: Activity, title: String, subtitle: String? = null) {
     private fun cards() = (0 until list.childCount).map { list.getChildAt(it) }.filter { it.isFocusable }
 
     /** A small heading over a group of cards. */
-    fun label(t: String) = list.addView(Ui.text(act, t, 13f, Ui.DIM, true), Ui.matchWrap().apply { topMargin = Ui.dp(act, 10); leftMargin = Ui.dp(act, 2) })
+    fun label(t: String) = list.addView(Ui.text(act, t, 13f, Ui.DIM, true), Ui.matchWrap().apply { topMargin = Ui.dp(act, 10); leftMargin = Ui.dp(act, 12) })
 
     /** A box that is not a button: whatever view is given, on a quiet card. */
     fun box(v: View): View { v.background = Ui.rounded(act, Ui.BG, Ui.R_CARD, Ui.FILL_STRONG); list.addView(v, Ui.matchWrap().apply { topMargin = Ui.dp(act, 8) }); return v }
 
     /** A paragraph of words (a message, an explanation). */
-    fun text(msg: CharSequence): TextView = Ui.text(act, msg, 15f, Ui.TEXT2).apply { setLineSpacing(0f, 1.15f) }.also { list.addView(it, Ui.matchWrap().apply { topMargin = Ui.dp(act, 8); bottomMargin = Ui.dp(act, 4) }) }
+    fun text(msg: CharSequence): TextView = Ui.text(act, msg, 15f, Ui.TEXT2).apply { setLineSpacing(0f, 1.15f) }.also { list.addView(it, Ui.matchWrap().apply { topMargin = Ui.dp(act, 8); bottomMargin = Ui.dp(act, 4); leftMargin = Ui.dp(act, 12); rightMargin = Ui.dp(act, 12) }) }
 
     /** A code to scan (black on white, whatever the theme), with its address under it. */
     fun image(bmp: Bitmap, caption: String? = null) {
@@ -118,9 +121,6 @@ class Sheet(val act: Activity, title: String, subtitle: String? = null) {
     }
 
     companion object {
-        /** Width of every sheet, in design units. */
-        const val WIDTH = 480
-
         /** A list of choices. Each runs and the sheet closes. The first has the focus. */
         fun menu(act: Activity, title: String, subtitle: String? = null, items: List<Pair<String, () -> Unit>>): Sheet {
             val s = Sheet(act, title, subtitle)

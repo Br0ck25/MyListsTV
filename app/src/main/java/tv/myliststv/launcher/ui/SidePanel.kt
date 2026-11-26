@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import tv.myliststv.launcher.data.Prefs
 
 /**
  * A tall rounded panel on the right edge over a dimmed screen: the bell opens in it (Settings is the same panel, drawn by its own screen).
@@ -25,7 +26,7 @@ class SidePanel(private val act: Activity) {
             setGravity(Gravity.END or Gravity.TOP)
             setLayout(Ui.dp(act, WIDTH + MARGIN), act.resources.displayMetrics.heightPixels)   // a dialog window only wraps its content unless it is given the height
         }
-        frame.background = Ui.rounded(act, Ui.CARD, Ui.R_DIALOG)
+        frame.background = Ui.rounded(act, Ui.GLASS, Ui.R_DIALOG)
         frame.clipToOutline = true
         val root = FrameLayout(act).apply { setPadding(0, Ui.dp(act, MARGIN), Ui.dp(act, MARGIN), Ui.dp(act, MARGIN)); addView(frame, FrameLayout.LayoutParams(-1, -1)) }
         dialog.setContentView(root)
@@ -34,6 +35,7 @@ class SidePanel(private val act: Activity) {
     fun show(page: View) {
         frame.removeAllViews(); frame.addView(page)
         dialog.show()
+        slideIn(frame)
         // The size is set once the dialog is showing: setting it earlier is overridden when the content is attached.
         dialog.window!!.setLayout(Ui.dp(act, WIDTH + MARGIN), act.resources.displayMetrics.heightPixels)
         focusFirst(page)
@@ -51,15 +53,23 @@ class SidePanel(private val act: Activity) {
 
     companion object {
         /** Panel width and the gap around it, in design units. */
-        const val WIDTH = 420
+        const val WIDTH = 400
         const val MARGIN = 24
+
+        /** Slides a panel in from the right edge of the screen (not in lite mode). Every panel and pop-up opens this way. */
+        fun slideIn(v: View) {
+            if (Prefs.lite()) return
+            v.translationX = Ui.dpf(v.context, (WIDTH + MARGIN).toFloat())
+            v.animate().translationX(0f).setDuration(220).start()
+        }
 
         /** A page's padding, so every page lines up. */
         fun page(c: Activity): LinearLayout = Ui.vbox(c).apply { setPadding(Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 16)) }
 
         /** The whole screen of an activity that is a drawer (Settings, Arrange): a clear window dimmed over what is behind it, with the panel down the right edge holding [page]. */
         fun drawer(c: Activity, page: View): View {
-            val panel = FrameLayout(c).apply { background = Ui.rounded(c, Ui.CARD, Ui.R_DIALOG); clipToOutline = true; addView(page, FrameLayout.LayoutParams(-1, -1)) }
+            val panel = FrameLayout(c).apply { background = Ui.rounded(c, Ui.GLASS, Ui.R_DIALOG); clipToOutline = true; addView(page, FrameLayout.LayoutParams(-1, -1)) }
+            slideIn(panel)
             val m = Ui.dp(c, MARGIN)
             return FrameLayout(c).apply { setBackgroundColor(Ui.SCRIM_SLATE); setPadding(0, m, m, m); addView(panel, FrameLayout.LayoutParams(Ui.dp(c, WIDTH), -1, Gravity.END)) }
         }

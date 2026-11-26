@@ -876,29 +876,29 @@ Find a symbol with grep on this file, then read only that file around the line n
 ## ui/Sheet.kt (167 lines) - The one pop-up of the app (docs/DESIGN.md section 9).
     27 class Sheet  - The one pop-up of the app (docs/DESIGN.md section 9).
     29   class Act  - One button of [message].
-    35   fun setTitle(t: CharSequence)
-    50   fun show()
-    55   fun dismiss()
-    56   fun clear()
-    58   fun onDismiss(run: ()  - Runs when the sheet goes away, however it goes.
-    59   fun cancelable(on: Boolean)
-    62   fun focusIndex()  - Index among the cards of the one that has focus, so a redraw can put it back.
-    63   fun focusAt(i: Int)
-    64   fun cards()
-    67   fun label(t: String)  - A small heading over a group of cards.
-    70   fun box(v: View)  - A box that is not a button: whatever view is given, on a quiet card.
-    73   fun text(msg: CharSequence)  - A paragraph of words (a message, an explanation).
-    76   fun image(bmp: Bitmap, caption: String? = null)  - A code to scan (black on white, whatever the theme), with its address under it.
-    85   fun field(hint: String, initial: String = "", caps: Boolean = false, done: (Stri  - A line to type in.
-   101   fun card(title: String, sub: String? = null, trailing: String? = null, selected:  - An option card: a title, an optional line under it, an optional word at the right, a tick when [selected], a b
+    36   fun setTitle(t: CharSequence)
+    52   fun show()
+    58   fun dismiss()
+    59   fun clear()
+    61   fun onDismiss(run: ()  - Runs when the sheet goes away, however it goes.
+    62   fun cancelable(on: Boolean)
+    65   fun focusIndex()  - Index among the cards of the one that has focus, so a redraw can put it back.
+    66   fun focusAt(i: Int)
+    67   fun cards()
+    70   fun label(t: String)  - A small heading over a group of cards.
+    73   fun box(v: View)  - A box that is not a button: whatever view is given, on a quiet card.
+    76   fun text(msg: CharSequence)  - A paragraph of words (a message, an explanation).
+    79   fun image(bmp: Bitmap, caption: String? = null)  - A code to scan (black on white, whatever the theme), with its address under it.
+    88   fun field(hint: String, initial: String = "", caps: Boolean = false, done: (Stri  - A line to type in.
+   104   fun card(title: String, sub: String? = null, trailing: String? = null, selected:  - An option card: a title, an optional line under it, an optional word at the right, a tick when [selected], a b
 
-## ui/SidePanel.kt (84 lines) - A tall rounded panel on the right edge over a dimmed screen: the bell opens in it (Settings is the same panel,
-    18 class SidePanel  - A tall rounded panel on the right edge over a dimmed screen: the bell opens in it (Settings is the same panel,
-    34   fun show(page: View)
-    42   fun dismiss()
-    43   fun onDismiss(run: ()
-    45   fun focusables(v: View, out: ArrayList<View> = ArrayList()
-    50   fun focusFirst(page: View)
+## ui/SidePanel.kt (94 lines) - A tall rounded panel on the right edge over a dimmed screen: the bell opens in it (Settings is the same panel,
+    19 class SidePanel  - A tall rounded panel on the right edge over a dimmed screen: the bell opens in it (Settings is the same panel,
+    35   fun show(page: View)
+    44   fun dismiss()
+    45   fun onDismiss(run: ()
+    47   fun focusables(v: View, out: ArrayList<View> = ArrayList()
+    52   fun focusFirst(page: View)
 
 ## ui/TitleMenu.kt (32 lines) - Hold OK on a poster or tile: Go to details, add to or remove from the Library, mark as watched or not.
      8 object TitleMenu  - Hold OK on a poster or tile: Go to details, add to or remove from the Library, mark as watched or not.

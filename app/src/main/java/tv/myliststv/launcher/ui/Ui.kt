@@ -51,7 +51,7 @@ object Ui {
     const val QR_DARK = 0xFF000000.toInt()      // a QR code must be black on white to scan, whatever the theme
     const val QR_LIGHT = 0xFFFFFFFF.toInt()
     const val OVERLAY = 0xE6000000.toInt()     // dims everything behind a slate or an error
-    const val SIDE_GLASS = 0xE01C1C1E.toInt()  // the player's side panel over the picture: the card colour, a little see-through
+    const val GLASS = 0xD91C1C1E.toInt()       // every panel that slides in (Settings, pop-ups, the side bar, the player's panel): the card colour, a little see-through
     val BRAND_LINE get() = (BRAND and 0x00FFFFFF) or 0x80000000.toInt()   // highlight outline on a banner
     val BRAND_SOFT get() = (BRAND and 0x00FFFFFF) or 0x2B000000          // soft fill inside the ring of whatever has focus
     val FOCUS_FILL get() = BRAND_SOFT
