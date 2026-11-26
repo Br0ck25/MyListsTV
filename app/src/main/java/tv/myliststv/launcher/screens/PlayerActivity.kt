@@ -88,6 +88,8 @@ class PlayerActivity : Activity() {
     private var delayAtOpen = 0L
     private var resumeTick: Runnable? = null
     private var externalFrom = 0L
+    private var zoom = Zoom()
+    private var zoomFocus = 0
 
     private val hideControls = Runnable { if (!panelOpen() && player.isPlaying && !controls.hasFocus()) bottom.visibility = View.GONE }
     private val startupTimeout = Runnable { onStartupTimeout() }
@@ -96,9 +98,10 @@ class PlayerActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // After the app was restarted by Android there is no session to play: go back instead of crashing.
-        current = PlaySession.current ?: run { finish(); return }
         if (PlaySession.meta == null) { finish(); return }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (PlaySession.resolving) { buildUi(); buildPlayer(); showSlate("Finding the best source…"); resolveFirst(); return }
+        current = PlaySession.current ?: run { finish(); return }
         buildUi()
         buildPlayer()
         fallback = SourceFallback(PlaySession.ranked, Prefs.fallbackTries)
@@ -175,6 +178,7 @@ class PlayerActivity : Activity() {
         icon(R.drawable.ic_audio, "Audio") { openTrackPanel(C.TRACK_TYPE_AUDIO) }
         icon(R.drawable.ic_source, "Sources") { openSources() }
         if (series) icon(R.drawable.ic_episodes, "Episodes") { openEpisodes() }
+        icon(R.drawable.ic_zoom, "Zoom") { openZoom() }
         icon(R.drawable.ic_info, "Stream info") { openInfo() }
         controls.addView(View(c), LinearLayout.LayoutParams(0, 1, 1f))
         controls.addView(timeText)
@@ -192,11 +196,8 @@ class PlayerActivity : Activity() {
         }
         root.addView(banner, FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = Ui.dp(c, 28) })
         // Skip intro / recap / credits: shown only while inside one of those; OK skips it.
-        skipBtn = Ui.text(c, "", 16f, Ui.TEXT, true).apply {
-            setPadding(Ui.dp(c, 22), Ui.dp(c, 11), Ui.dp(c, 22), Ui.dp(c, 11)); visibility = View.GONE
-            background = Ui.rounded(c, Ui.ELEVATED, Ui.R_PILL)
-        }
-        root.addView(skipBtn, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END).apply { bottomMargin = Ui.dp(c, 48); rightMargin = Ui.dp(c, 48) })
+        skipBtn = Ui.button(c, "", primary = true) { skipTarget()?.let { doSkip(it) }; hideBarNow() }.apply { visibility = View.GONE; Ui.size(this, 16f) }
+        root.addView(skipBtn, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.START).apply { bottomMargin = Ui.dp(c, 48); leftMargin = Ui.dp(c, 48) })
         bottom.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> placeSkip(); topInfo.visibility = bottom.visibility }
         // Live numbers over the picture (settings or the Stream info panel), and the time a seek lands on.
         statsText = Ui.text(c, "", 12f, Ui.TEXT, false).apply {
@@ -250,7 +251,41 @@ class PlayerActivity : Activity() {
         refreshTitle()
     }
 
+    /** Finds the streams for the title the details page started, picks the best (2.5 s after the first arrive, or when every addon has answered) and plays it. */
+    private fun resolveFirst() {
+        val videoId = PlaySession.videoId
+        var started = false
+        var latest: List<StreamItem> = emptyList()
+        var statuses: List<StreamResolver.AddonStatus> = emptyList()
+        var timerSet = false
+        fun pick() {
+            if (started || isFinishing) return
+            started = true
+            val max = Prefs.effectiveMaxResolution()
+            val ranked = DeviceRank.forThisBox(StreamRank.sorted(StreamRank.playable(latest, max), max))
+            PlaySession.resolving = false
+            if (ranked.isEmpty()) { PlaySession.noStreams = statuses; finish(); return }
+            PlaySession.ranked = ranked; PlaySession.current = ranked.first(); PlaySession.autoSelected = true
+            current = ranked.first(); autoSelected = true
+            fallback = SourceFallback(ranked, Prefs.fallbackTries); fallback!!.markTried(current)
+            offerResume(PlaySession.resumeMs) { pos -> begin(current, pos, "Starting stream via ${current.addonName}…") }
+        }
+        val sess = StreamResolver.Session(
+            onUpdate = { list, st ->
+                latest = list; statuses = st
+                if (!started && list.isNotEmpty()) {
+                    slateText.text = "Found ${list.size} sources…"
+                    if (!timerSet) { timerSet = true; Http.postDelayed(2500) { pick() } }
+                }
+            },
+            onDone = { list, st -> latest = list; statuses = st; pick() },
+        )
+        resolveSession = sess
+        StreamResolver.resolve(StreamResolver.typeFor(PlaySession.meta!!.type, PlaySession.meta!!.id, videoId), videoId, StreamResolver.DEFAULT_TIMEOUT_MS, sess)
+    }
+
     private fun refreshTitle() {
+        if (!::current.isInitialized) return
         val m = PlaySession.meta!!
         titleText.text = m.name
         val parts = ArrayList<String>()
@@ -357,6 +392,7 @@ class PlayerActivity : Activity() {
         gotFirstFrame = true
         handler.removeCallbacks(startupTimeout)
         PlayerEngine.matchFrameRate(this, player.videoFormat?.frameRate ?: 0f)?.let { bannerShow(it) }
+        zoom = PlayerPrefs.zoom(PlaySession.meta?.id); applyZoom()
         val vid = PlaySession.videoId
         if (Prefs.skipIntro) Segments.load(vid) { if (vid == PlaySession.videoId) segs = it }
         hideSlate()
@@ -621,6 +657,50 @@ class PlayerActivity : Activity() {
         fillList()
     }
 
+    /** Draws the picture wider or taller than the fit, and moves it; the subtitles are kept the right shape and on the screen. */
+    private fun applyZoom() {
+        val sx = zoom.w / 100f; val sy = zoom.h / 100f
+        val tx = zoom.x / 100f * root.width; val ty = zoom.y / 100f * root.height
+        playerView.pivotX = root.width / 2f; playerView.pivotY = root.height / 2f
+        playerView.scaleX = sx; playerView.scaleY = sy; playerView.translationX = tx; playerView.translationY = ty
+        playerView.subtitleView?.let { sv ->
+            sv.pivotX = root.width / 2f; sv.pivotY = root.height / 2f
+            sv.scaleX = 1f / sx; sv.scaleY = 1f / sy; sv.translationX = -tx / sx; sv.translationY = -ty / sy
+        }
+    }
+
+    private fun saveZoom() { zoom = zoom.clamped(); PlayerPrefs.setZoom(PlaySession.meta?.id, zoom); applyZoom() }
+
+    private fun openZoom() { openPanel("Zoom"); zoomFocus = 0; renderZoom() }
+
+    private fun signed(v: Int) = if (v > 0) "+$v%" else "$v%"
+
+    private fun renderZoom() {
+        panelList.removeAllViews()
+        panelList.addView(Ui.text(this, "Left and right change the value. OK puts it back to normal. Kept for this title.", 13f, Ui.DIM), Ui.wrap().apply { bottomMargin = Ui.dp(this@PlayerActivity, 8) })
+        listOf("Width" to "${zoom.w}%", "Height" to "${zoom.h}%", "Position left / right" to signed(zoom.x), "Position up / down" to signed(zoom.y)).forEachIndexed { i, (label, value) ->
+            panelList.addView(item(label, null, value, Ui.DIM) {
+                zoom = when (i) { 0 -> zoom.copy(w = 100); 1 -> zoom.copy(h = 100); 2 -> zoom.copy(x = 0); else -> zoom.copy(y = 0) }; zoomFocus = i; saveZoom(); renderZoom() })
+        }
+        panelList.addView(item("Fill the screen", "The same on both sides, so the black bars go.", null) { fillZoom() })
+        panelList.addView(item("Reset all", null, null) { zoom = Zoom(); zoomFocus = 0; saveZoom(); renderZoom() })
+        panelList.getChildAt(1 + zoomFocus.coerceIn(0, 5))?.requestFocus()
+    }
+
+    private fun adjustZoom(dir: Int, repeat: Int) {
+        val row = (0 until panelList.childCount).indexOfFirst { panelList.getChildAt(it).hasFocus() } - 1
+        if (row !in 0..3) return
+        val step = (if (repeat < 5) 1 else if (repeat < 15) 2 else 5) * dir
+        zoom = when (row) { 0 -> zoom.copy(w = zoom.w + step); 1 -> zoom.copy(h = zoom.h + step); 2 -> zoom.copy(x = zoom.x + step); else -> zoom.copy(y = zoom.y + step) }
+        zoomFocus = row; saveZoom(); renderZoom()
+    }
+
+    private fun fillZoom() {
+        val f = player.videoFormat
+        val video = if (f != null && f.height > 0) f.width * f.pixelWidthHeightRatio / f.height else 0f
+        zoom = Zoom.fill(video, root.width.toFloat() / root.height.coerceAtLeast(1)); zoomFocus = 4; saveZoom(); renderZoom()
+    }
+
     private fun openSubDelay() {
         openPanel("Subtitle delay")
         delayAtOpen = delayMs
@@ -760,6 +840,7 @@ class PlayerActivity : Activity() {
     private val bannerHide = Runnable { banner.visibility = View.GONE }
 
     private fun showControls() { if (slate.visibility != View.VISIBLE) bottom.visibility = View.VISIBLE; scheduleHide() }
+    private fun hideBarNow() { handler.removeCallbacks(hideControls); bottom.visibility = View.GONE; root.requestFocus() }
     private fun scheduleHide() { handler.removeCallbacks(hideControls); handler.postDelayed(hideControls, 5000) }
 
     private fun fmt(ms: Long): String { val s = ms / 1000; return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s % 3600 / 60, s % 60) else "%d:%02d".format(s / 60, s % 60) }
@@ -779,8 +860,13 @@ class PlayerActivity : Activity() {
     private fun updateSkip() {
         val s = skipTarget()
         placeSkip()
+        val was = skipBtn.visibility == View.VISIBLE
         skipBtn.visibility = if (s == null) View.GONE else View.VISIBLE
-        if (s != null) skipBtn.text = when (s.kind) { "intro" -> "Skip intro"; "recap" -> "Skip recap"; else -> if (PlaySession.meta?.type == "series" && Prefs.autoplayNext) "Next episode" else "Skip credits" } + "   \u00b7   OK"
+        if (s != null) {
+            skipBtn.text = when (s.kind) { "intro" -> "Skip intro"; "recap" -> "Skip recap"; else -> if (PlaySession.meta?.type == "series" && Prefs.autoplayNext) "Next episode" else "Skip credits" }
+            // It appears already highlighted, so OK skips it. The control bar stays out of the way unless the viewer opens it.
+            if (!was && !controls.hasFocus() && !panelOpen()) skipBtn.requestFocus()
+        } else if (was && skipBtn.hasFocus()) root.requestFocus()
     }
 
     private fun doSkip(s: Segments.Seg) {
@@ -823,6 +909,7 @@ class PlayerActivity : Activity() {
     // ---------------------------------------------------------------- keys and lifecycle
 
     override fun dispatchKeyEvent(e: KeyEvent): Boolean {
+        if (PlaySession.resolving) return super.dispatchKeyEvent(e)
         if (countdown != null && e.action == KeyEvent.ACTION_DOWN) {
             if (e.keyCode == KeyEvent.KEYCODE_BACK) { cancelCountdown(false); return true }
             if (e.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || e.keyCode == KeyEvent.KEYCODE_ENTER) { cancelCountdown(true); return true }
@@ -839,10 +926,13 @@ class PlayerActivity : Activity() {
                 KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> { seekBy(30_000); return true }
                 KeyEvent.KEYCODE_MEDIA_REWIND -> { seekBy(-30_000); return true }
             }
+            if (panelOpen() && panelKind == "Zoom" && (e.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || e.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)) { adjustZoom(if (e.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) 1 else -1, e.repeatCount); return true }
             if (panelOpen() || errorOpen() || slate.visibility == View.VISIBLE) return super.dispatchKeyEvent(e)
             val inControls = controls.hasFocus()
             if (!inControls) {
-                showControls()
+                // OK on the skip button skips, and nothing else happens: no control bar.
+                if (skipBtn.visibility == View.VISIBLE && (e.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || e.keyCode == KeyEvent.KEYCODE_ENTER)) { skipTarget()?.let { doSkip(it) }; hideBarNow(); return true }
+                if (e.keyCode != KeyEvent.KEYCODE_BACK) showControls()   // Back closes the bar, so it must not open it first
                 when (e.keyCode) {
                     KeyEvent.KEYCODE_DPAD_LEFT -> { seekStep(e, -1); return true }
                     KeyEvent.KEYCODE_DPAD_RIGHT -> { seekStep(e, 1); return true }
@@ -872,10 +962,11 @@ class PlayerActivity : Activity() {
     @Deprecated("Back closes the panel, then the controls, then the player.")
     override fun onBackPressed() {
         when {
+            PlaySession.resolving -> { resolveSession?.cancelled = true; PlaySession.resolving = false; finish() }
             resumeBox.visibility == View.VISIBLE -> finish()
             panelOpen() -> closePanel()
             errorOpen() -> finish()
-            controls.hasFocus() -> { root.requestFocus(); scheduleHide() }
+            bottom.visibility == View.VISIBLE -> hideBarNow()   // the bar first; Back again leaves
             else -> { saveProgress(force = true); finish() }
         }
     }
