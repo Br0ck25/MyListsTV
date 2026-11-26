@@ -716,7 +716,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    977   fun onStop()
    984   fun onDestroy()
 
-## screens/ProfileEditActivity.kt (159 lines) - A whole screen for making a profile (or changing one): a big preview that follows what you pick, the name, a k
+## screens/ProfileEditActivity.kt (161 lines) - A whole screen for making a profile (or changing one): a big preview that follows what you pick, the name, a k
     27 class ProfileEditActivity  - A whole screen for making a profile (or changing one): a big preview that follows what you pick, the name, a k
     47   fun onCreate(savedInstanceState: Bundle?)
     69   fun left()
@@ -726,7 +726,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    113   fun pick(a: Avatars.Avatar)
    120   fun showGroup(g: String?)  - The filter chips ("All" and each group) and the picture grid under them.
    137   fun tile(a: Avatars.Avatar)
-   153   fun save()
+   155   fun save()
 
 ## screens/ProfilesActivity.kt (118 lines) - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
     23 class ProfilesActivity  - "Who's watching?": the profiles as round avatars across the middle of a whole screen.

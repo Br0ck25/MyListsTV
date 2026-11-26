@@ -100,7 +100,7 @@ class ProfileEditActivity : Activity() {
         col.addView(Ui.text(c, "Choose a picture", 20f, Ui.TEXT, true), Ui.wrap())
         chips = Ui.hbox(c, 10).apply { clipChildren = false }
         col.addView(chips, Ui.wrap().apply { topMargin = Ui.dp(c, 14); bottomMargin = Ui.dp(c, 8) })
-        grid = Ui.vbox(c).apply { clipChildren = false; setPadding(Ui.dp(c, 18), Ui.dp(c, 14), Ui.dp(c, 18), Ui.dp(c, 28)) }
+        grid = Ui.vbox(c).apply { clipChildren = false; clipToPadding = false; setPadding(Ui.dp(c, 18), Ui.dp(c, 14), Ui.dp(c, 18), Ui.dp(c, 28)) }
         col.addView(ScrollView(c).apply { isVerticalScrollBarEnabled = false; clipToPadding = false;   // clips at its own edge, so scrolled rows never draw over the chips
                  addView(grid) }, LinearLayout.LayoutParams(-1, 0, 1f))
         return col
@@ -138,8 +138,10 @@ class ProfileEditActivity : Activity() {
         val c = this
         val size = 84
         val frame = FrameLayout(c).apply {
-            isFocusable = true; isClickable = true; foreground = Ui.ovalFocusBg(c)
+            isFocusable = true; isClickable = true
             addView(ImageView(c).apply { setImageDrawable(Avatars.drawable(a.id)) }, FrameLayout.LayoutParams(Ui.dp(c, size - 10), Ui.dp(c, size - 10), Gravity.CENTER))
+            // The ring is its own layer (it follows the tile's focus), so the tick added after it stays on top.
+            addView(View(c).apply { background = Ui.ovalFocusBg(c); isDuplicateParentStateEnabled = true }, FrameLayout.LayoutParams(-1, -1))
             setOnClickListener { pick(a) }
             setOnFocusChangeListener { _, f -> if (f) focusedName.text = a.name else focusedName.text = Avatars.byId(chosen)?.name ?: " " }
         }
