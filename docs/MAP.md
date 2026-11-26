@@ -741,7 +741,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    112   fun addMenu()  - A whole Create profile screen (name, kids, pictures), not a pop-up.
    117   fun onBackPressed()
 
-## screens/SettingsActivity.kt (564 lines) - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
+## screens/SettingsActivity.kt (600 lines) - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
     28 class SettingsActivity  - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
     33   fun card(title: String)  - A card inside a group (kind S): its title, then the rows that follow it up to the next card.
     36   fun header(t: String, subtitle: String = "", icon: Int = 0, value: ()  - A group of the settings list: its name, the line under the page title, its icon, and a short summary shown at 
@@ -777,20 +777,23 @@ Find a symbol with grep on this file, then read only that file around the line n
    375   fun checkUpdate()
    386   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
    388   fun onCreate(savedInstanceState: Bundle?)
-   399   fun refresh(keep: Int = -1)  - Rebuilds the groups and the page that shows, and puts focus back on the row that had it.
-   414   fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true, scrolls  - Puts the first page or the open group's page in the panel, with focus on the row tagged [focusRow] (else the f
-   421   fun scrollViews(v: View, out: ArrayList<ScrollView> = ArrayList()
-   428   fun rowViews(v: View, out: ArrayList<View> = ArrayList()  - The views a page tags with their row number (a group's number on the first page), in order.
-   433   fun canFocus(v: View)
-   435   fun scrolling(v: View)
-   438   fun mainPage()  - The groups under their small headings.
-   450   fun groupRow(g: Group, i: Int)
-   462   fun groupPage()  - A group's page (or the Addons page inside it): a back arrow with the title, the line under it, then the rows.
-   488   fun closeSubs()
-   491   fun goBack()  - Up one page: out of an addon, out of the Addons list, out of the group, then out of Settings.
-   499   fun view(r: Row, changed: ()
-   561   fun onBackPressed()
-   563   fun onDestroy()
+   398   fun regroup()
+   414   fun sameShape(a: List<Row>, b: List<Row>)  - The two pages show the same rows in the same order: only values differ, so they can be changed where they are.
+   424   fun softRefresh(row: Int)  - After a toggle or choice: change that page's values where they stand, so nothing is rebuilt, flashes or loses 
+   434   fun refresh(keep: Int = -1)  - Rebuilds the groups and the page that shows, and puts focus back on the row that had it.
+   443   fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true, scrolls  - Puts the first page or the open group's page in the panel, with focus on the row tagged [focusRow] (else the f
+   450   fun scrollViews(v: View, out: ArrayList<ScrollView> = ArrayList()
+   457   fun rowViews(v: View, out: ArrayList<View> = ArrayList()  - The views a page tags with their row number (a group's number on the first page), in order.
+   462   fun canFocus(v: View)
+   464   fun scrolling(v: View)
+   467   fun mainPage()  - The groups under their small headings.
+   479   fun groupRow(g: Group, i: Int)
+   491   fun groupPage()  - A group's page (or the Addons page inside it): a back arrow with the title, the line under it, then the rows.
+   524   fun closeSubs()
+   527   fun goBack()  - Up one page: out of an addon, out of the Addons list, out of the group, then out of Settings.
+   535   fun view(r: Row, changed: ()
+   597   fun onBackPressed()
+   599   fun onDestroy()
 
 ## screens/SetupActivity.kt (129 lines) - First run: one full screen per step (Home app, Home button, notifications, addons).
     25 class SetupActivity  - First run: one full screen per step (Home app, Home button, notifications, addons).

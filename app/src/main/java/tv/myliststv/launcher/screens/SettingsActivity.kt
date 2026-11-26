@@ -395,9 +395,7 @@ class SettingsActivity : Activity() {
         if (intent.getStringExtra("open") == "addons") { cat = groups.indexOfFirst { it.name == "Content & Discovery" }.coerceAtLeast(0); open = true; openSub("addons") }
     }
 
-    /** Rebuilds the groups and the page that shows, and puts focus back on the row that had it. [keep] is the row to focus instead. */
-    private fun refresh(keep: Int = -1) {
-        val focused = host.findFocus()?.let { f -> var v: View? = f; while (v != null && v.tag !is Int) v = v.parent as? View; (v?.tag as? Int) ?: -1 } ?: -1
+    private fun regroup() {
         val all = rows()
         groups = buildList {
             var h: Row? = null; var cur = ArrayList<Row>()
@@ -405,6 +403,37 @@ class SettingsActivity : Activity() {
             h?.let { add(Group(it.label, it.desc, it.icon, it.value(), cur)) }
         }
         cat = cat.coerceIn(0, groups.size - 1)
+    }
+
+    /** The rows of the page on screen, and what redraws each one's value in place. */
+    private var pageRows: List<Row> = emptyList()
+    private val live = HashMap<Int, (Row) -> Unit>()
+    private var pageId: String? = null   // which sub-page the rows above belong to
+
+    /** The two pages show the same rows in the same order: only values differ, so they can be changed where they are. */
+    private fun sameShape(a: List<Row>, b: List<Row>) = a.size == b.size && a.indices.all { i ->
+        val x = a[i]; val y = b[i]
+        x.kind == y.kind && x.label == y.label && x.desc == y.desc && x.kind != 'Q' &&
+            (x.kind != 'A' || x.value().isEmpty() == y.value().isEmpty()) && (x.kind != 'I' || x.value() == y.value())
+    }
+
+    /**
+     * After a toggle or choice: change that page's values where they stand, so nothing is rebuilt, flashes or loses focus.
+     * If the change added or removed a row (or changed anything else about the page's shape) the page is rebuilt as before.
+     */
+    private fun softRefresh(row: Int) {
+        if (!open || pageId != subStack.lastOrNull()) { refresh(keep = row); return }
+        regroup()
+        val now = subPage()?.third ?: groups[cat].rows
+        if (!sameShape(pageRows, now)) { refresh(keep = row); return }
+        pageRows = now
+        now.forEachIndexed { i, r -> live[i]?.invoke(r) }
+    }
+
+    /** Rebuilds the groups and the page that shows, and puts focus back on the row that had it. [keep] is the row to focus instead. */
+    private fun refresh(keep: Int = -1) {
+        val focused = host.findFocus()?.let { f -> var v: View? = f; while (v != null && v.tag !is Int) v = v.parent as? View; (v?.tag as? Int) ?: -1 } ?: -1
+        regroup()
         // A toggle redraws the page, so keep it where it was: the same scroll, no jump back to the top or a slide.
         val scrolls = scrollViews(host).map { it.scrollY }
         show(if (keep >= 0) keep else focused, scrolls = scrolls)
@@ -470,6 +499,7 @@ class SettingsActivity : Activity() {
         page.addView(back, Ui.matchWrap().apply { setMargins(Ui.dp(me, 14), Ui.dp(me, 14), Ui.dp(me, 14), 0) })
         if (subtitle.isNotEmpty()) page.addView(Ui.text(me, subtitle, 14f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { topMargin = Ui.dp(me, 6); leftMargin = Ui.dp(me, 28); rightMargin = Ui.dp(me, 28) })
         val list = Ui.vbox(me).apply { setPadding(Ui.dp(me, 14), Ui.dp(me, 4), Ui.dp(me, 14), Ui.dp(me, 16)) }
+        pageRows = rs; live.clear(); pageId = subStack.lastOrNull()
         rs.forEachIndexed { i, r ->
             if (r.kind == 'S') {
                 // A heading over the rows that follow it, up to the next heading.
@@ -477,8 +507,14 @@ class SettingsActivity : Activity() {
                 else list.addView(View(me), Ui.matchWrap().apply { height = Ui.dp(me, 6) })
                 return@forEachIndexed
             }
-            val v = view(r) { refresh(keep = i) }
+            val v = view(r) { if (r.kind == 'T' || r.kind == 'C' || r.kind == 'A') softRefresh(i) else refresh(keep = i) }
             v.tag = i
+            val box = v as? LinearLayout
+            when (r.kind) {
+                'T' -> live[i] = { nr -> (box?.getChildAt(box.childCount - 1) as? Toggle)?.let { it.on = nr.on(); it.invalidate() } }
+                'C' -> live[i] = { nr -> (box?.getChildAt(box.childCount - 1) as? TextView)?.text = "‹  ${nr.value()}  ›" }
+                'A' -> if (r.value().isNotEmpty()) live[i] = { nr -> (box?.getChildAt(box.childCount - 2) as? TextView)?.text = nr.value() }
+            }
             list.addView(v, Ui.matchWrap().apply { topMargin = Ui.dp(me, 2) })
         }
         page.addView(scrolling(list), LinearLayout.LayoutParams(-1, 0, 1f))
