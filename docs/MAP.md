@@ -438,24 +438,25 @@ Find a symbol with grep on this file, then read only that file around the line n
    214   fun effectiveMaxResolution()  - The highest resolution to prefer.
    216   fun memoryCacheBytes()
 
-## data/Profiles.kt (76 lines) - Viewer profiles.
+## data/Profiles.kt (86 lines) - Viewer profiles.
      9 object Profiles  - Viewer profiles.
-    10   class P
-    16   fun init(c: Context)
-    21   fun all()
-    26   fun write(l: List<P>)
-    36   fun key(base: String, id: String = activeId)  - The storage key for something each profile keeps for itself (its account, addons, backup code).
-    39   fun addonSource(id: String = activeId)  - The profile whose addons [id] uses, or null.
-    42   fun shareAddons(id: String, with: String?)
-    45   fun switchTo(c: Context, id: String)  - Makes [id] the profile in use.
-    47   fun active()
-    49   fun rename(id: String, name: String)
-    51   fun add(name: String, kids: Boolean)
-    54   fun remove(id: String)  - The last profile cannot be removed.
-    61   fun forget(id: String)  - Deletes what a removed profile kept: history, Library, watched ticks, alerts, addons, account and backup code.
-    68   fun restore(l: List<P>, active: String)  - Replaces the whole list (used when restoring a backup).
-    73   fun allows(m: Meta)
-    75   fun safeForKids(m: Meta)
+    11   class P  - [avatar] is an id from ui/Avatars (empty: the profile shows its first letter).
+    17   fun init(c: Context)
+    22   fun all()
+    27   fun write(l: List<P>)
+    37   fun key(base: String, id: String = activeId)  - The storage key for something each profile keeps for itself (its account, addons, backup code).
+    40   fun addonSource(id: String = activeId)  - The profile whose addons [id] uses, or null.
+    43   fun shareAddons(id: String, with: String?)
+    46   fun switchTo(c: Context, id: String)  - Makes [id] the profile in use.
+    48   fun active()
+    50   fun rename(id: String, name: String)
+    53   fun add(name: String, kids: Boolean, avatar: String = "")  - Adds a profile and returns its id.
+    59   fun update(id: String, name: String, kids: Boolean, avatar: String)  - Changes a profile's name, kids setting and picture in one go (the edit screen).
+    64   fun remove(id: String)  - The last profile cannot be removed.
+    71   fun forget(id: String)  - Deletes what a removed profile kept: history, Library, watched ticks, alerts, addons, account and backup code.
+    78   fun restore(l: List<P>, active: String)  - Replaces the whole list (used when restoring a backup).
+    83   fun allows(m: Meta)
+    85   fun safeForKids(m: Meta)
 
 ## data/Progress.kt (123 lines) - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
     11 object Progress  - Tells My Lists where this box stopped, for a signed-in account only: part way through goes to /progress (the w
@@ -715,18 +716,30 @@ Find a symbol with grep on this file, then read only that file around the line n
    977   fun onStop()
    984   fun onDestroy()
 
-## screens/ProfilesActivity.kt (108 lines) - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
-    21 class ProfilesActivity  - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
-    26   fun onCreate(savedInstanceState: Bundle?)
-    43   fun build(focusId: String?)  - Draws the circles.
-    61   fun tile(face: TextView, name: String, sub: String?, subBrand: Boolean, onClick:  - One avatar: a round face with a focus ring, its name under it and an optional small line.
-    82   fun done(id: String)  - Hands the choice back to Home and leaves.
-    84   fun manage(p: Profiles.P)
-    91   fun rename(p: Profiles.P)
-    93   fun remove(p: Profiles.P)
-   102   fun addMenu()
-   104   fun askName(kids: Boolean)
-   107   fun onBackPressed()
+## screens/ProfileEditActivity.kt (158 lines) - A whole screen for making a profile (or changing one): a big preview that follows what you pick, the name, a k
+    27 class ProfileEditActivity  - A whole screen for making a profile (or changing one): a big preview that follows what you pick, the name, a k
+    47   fun onCreate(savedInstanceState: Bundle?)
+    69   fun left()
+    97   fun right()
+   108   fun showKids()
+   110   fun showPicture()
+   112   fun pick(a: Avatars.Avatar)
+   119   fun showGroup(g: String?)  - The filter chips ("All" and each group) and the picture grid under them.
+   136   fun tile(a: Avatars.Avatar)
+   152   fun save()
+
+## screens/ProfilesActivity.kt (118 lines) - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
+    23 class ProfilesActivity  - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
+    28   fun onCreate(savedInstanceState: Bundle?)
+    45   fun build(focusId: String?)  - Draws the circles.
+    65   fun tile(face: View, name: String, sub: String?, subBrand: Boolean, onClick: ()  - One avatar: a round face with a focus ring, its name under it and an optional small line.
+    86   fun done(id: String)  - Hands the choice back to Home and leaves.
+    88   fun manage(p: Profiles.P)
+    95   fun edit(id: String)
+    97   fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
+   102   fun remove(p: Profiles.P)
+   112   fun addMenu()  - A whole Create profile screen (name, kids, pictures), not a pop-up.
+   117   fun onBackPressed()
 
 ## screens/SettingsActivity.kt (556 lines) - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
     28 class SettingsActivity  - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
@@ -838,6 +851,16 @@ Find a symbol with grep on this file, then read only that file around the line n
 ## ui/AppsScreen.kt (35 lines) - Every installed app in a grid.
     15 class AppsScreen  - Every installed app in a grid.
     24   fun start()
+
+## ui/Avatars.kt (191 lines) - The pictures a profile can wear.
+    16 object Avatars  - The pictures a profile can wear.
+    17   class Avatar
+    23   fun byId(id: String?)
+    26   fun drawable(id: String?)  - A round picture for [id], or null when the profile has none (it then shows its first letter).
+    29   fun pick(seed: Int)  - Nothing but a stable pick: the same seed always gives the same picture, so a new profile starts with a face.
+    32   class Art  - The shapes an avatar is made of.
+    61   fun a(id: String, name: String, group: String, hue: Float, art: Art.()
+   175   class AvatarDrawable  - The round picture: the frame colour, then the art, all clipped to a circle.
 
 ## ui/BrowseScreen.kt (253 lines) - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
     18 class BrowseScreen  - Home, Movies and Series: a hero line for the focused title and rows of posters below it.
@@ -1095,4 +1118,4 @@ Find a symbol with grep on this file, then read only that file around the line n
   res/values/themes.xml
   res/xml/file_paths.xml
   res/xml/home_button_service.xml
-  manifest components: activity .MainActivity, activity .screens.DetailsActivity, activity .screens.SetupActivity, activity .screens.StreamsActivity, service .services.BackdropDream, service .services.NotificationsService, service .services.HomeButtonService, activity .screens.SettingsActivity, activity .screens.ProfilesActivity, activity .screens.TrailerActivity, activity .screens.ArrangeActivity, activity .screens.PlayerActivity
+  manifest components: activity .MainActivity, activity .screens.DetailsActivity, activity .screens.SetupActivity, activity .screens.StreamsActivity, service .services.BackdropDream, service .services.NotificationsService, service .services.HomeButtonService, activity .screens.SettingsActivity, activity .screens.ProfilesActivity, activity .screens.ProfileEditActivity, activity .screens.TrailerActivity, activity .screens.ArrangeActivity, activity .screens.PlayerActivity

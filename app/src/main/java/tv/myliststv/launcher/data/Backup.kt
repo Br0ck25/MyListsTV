@@ -63,7 +63,7 @@ object Backup {
         put("account", Prefs.accountLink)
         put("library", Library.export())
         if (Profiles.activeId == Profiles.all().first().id) {
-            put("profiles", JSONArray().also { a -> Profiles.all().forEach { a.put(JSONObject().put("id", it.id).put("name", it.name).put("kids", it.kids)) } })
+            put("profiles", JSONArray().also { a -> Profiles.all().forEach { a.put(JSONObject().put("id", it.id).put("name", it.name).put("kids", it.kids).put("avatar", it.avatar)) } })
             put("settings", Prefs.export())
         }
     }.toString()
@@ -74,7 +74,7 @@ object Backup {
         if (o.optInt("v") != 1) null else {
             val addons = o.getJSONArray("addons")
             AddonStore.restore((0 until addons.length()).map { addons.getJSONObject(it).let { a -> AddonStore.Saved(a.getString("url"), a.optBoolean("on", true)) } })
-            o.optJSONArray("profiles")?.let { ps -> Profiles.restore((0 until ps.length()).map { ps.getJSONObject(it).let { p -> Profiles.P(p.getString("id"), p.getString("name"), p.optBoolean("kids")) } }, Profiles.activeId) }
+            o.optJSONArray("profiles")?.let { ps -> Profiles.restore((0 until ps.length()).map { ps.getJSONObject(it).let { p -> Profiles.P(p.getString("id"), p.getString("name"), p.optBoolean("kids"), p.optString("avatar")) } }, Profiles.activeId) }
             Prefs.accountLink = o.optString("account"); o.optJSONObject("settings")?.let { Prefs.import(it) }; Library.import(o.opt("library")); WatchStore.init(c); AddonStore.needsRefresh = true
             "${addons.length()} addons" + (if (o.has("settings")) ", the profiles and your settings" else "") + " for ${Profiles.active().name}"
         }

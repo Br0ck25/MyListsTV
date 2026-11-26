@@ -11,12 +11,14 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import tv.myliststv.launcher.data.Prefs
 import tv.myliststv.launcher.data.Profiles
+import android.widget.ImageView
+import tv.myliststv.launcher.ui.Avatars
 import tv.myliststv.launcher.ui.Sheet
 import tv.myliststv.launcher.ui.Ui
 
 /**
  * "Who's watching?": the profiles as round avatars across the middle of a whole screen. OK picks one and hands its id back to Home
- * (which does the switching); hold OK on one to rename or remove it; the last circle adds a profile. Back leaves without a change.
+ * (which does the switching); hold OK on one to edit or remove it; the last circle opens the Create profile screen. Back leaves without a change.
  */
 class ProfilesActivity : Activity() {
     private lateinit var row: LinearLayout
@@ -33,7 +35,7 @@ class ProfilesActivity : Activity() {
         page.addView(Ui.text(c, "Select a profile to continue", 16f, Ui.DIM), Ui.wrap().apply { topMargin = Ui.dp(c, 8) })
         row = Ui.hbox(c, 28).apply { gravity = Gravity.CENTER; clipChildren = false }
         page.addView(HorizontalScrollView(c).apply { isFillViewport = true; isHorizontalScrollBarEnabled = false; clipChildren = false; addView(row, FrameLayout.LayoutParams(-1, -1)) }, LinearLayout.LayoutParams(-1, 0, 1f))
-        page.addView(Ui.text(c, "Hold OK on a profile to rename or remove it", 14f, Ui.DIM), Ui.wrap())
+        page.addView(Ui.text(c, "Hold OK on a profile to edit or remove it", 14f, Ui.DIM), Ui.wrap())
         root.addView(page, FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
         build(Profiles.activeId)
@@ -45,7 +47,9 @@ class ProfilesActivity : Activity() {
         row.removeAllViews()
         var focus: View? = null
         Profiles.all().forEach { p ->
-            val face = Ui.text(c, p.name.take(1).uppercase(), 34f, Ui.TEXT, true).apply { gravity = Gravity.CENTER; background = Ui.oval(Ui.avatarColor(p.id)) }
+            val pic = Avatars.drawable(p.avatar)
+            val face: View = if (pic != null) ImageView(c).apply { setImageDrawable(pic) }
+                else Ui.text(c, p.name.take(1).uppercase(), 34f, Ui.TEXT, true).apply { gravity = Gravity.CENTER; background = Ui.oval(Ui.avatarColor(p.id)) }
             val sub = if (p.id == Profiles.activeId) "In use" else if (p.kids) "Kids" else null
             val tile = tile(face, p.name, sub, sub == "In use", { done(p.id) }, { manage(p) })
             if (p.id == focusId) focus = tile
@@ -58,7 +62,7 @@ class ProfilesActivity : Activity() {
     }
 
     /** One avatar: a round face with a focus ring, its name under it and an optional small line. Returns the focusable circle. */
-    private fun tile(face: TextView, name: String, sub: String?, subBrand: Boolean, onClick: () -> Unit, onLong: (() -> Unit)?): View {
+    private fun tile(face: View, name: String, sub: String?, subBrand: Boolean, onClick: () -> Unit, onLong: (() -> Unit)?): View {
         val c = this
         val size = 104
         val ring = FrameLayout(c).apply {
@@ -83,12 +87,17 @@ class ProfilesActivity : Activity() {
 
     private fun manage(p: Profiles.P) {
         val items = ArrayList<Pair<String, () -> Unit>>()
-        items += "Rename" to { rename(p) }
+        items += "Edit name and picture" to { edit(p.id) }
         if (Profiles.all().size > 1) items += "Remove" to { remove(p) }
         Sheet.menu(this, p.name, null, items)
     }
 
-    private fun rename(p: Profiles.P) { Sheet.ask(this, "Rename ${p.name}", "Name", "Save", initial = p.name) { Profiles.rename(p.id, it); build(p.id) } }
+    private fun edit(id: String) = startActivityForResult(Intent(this, ProfileEditActivity::class.java).putExtra(ProfileEditActivity.EXTRA_ID, id), EDIT)
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == EDIT && resultCode == RESULT_OK) build(data?.getStringExtra("id"))
+    }
 
     private fun remove(p: Profiles.P) {
         Sheet.confirm(this, "Remove ${p.name}?", "Its addons, Library and history go with it. This cannot be undone.", "Remove", "Keep") {
@@ -99,9 +108,10 @@ class ProfilesActivity : Activity() {
         }
     }
 
-    private fun addMenu() { Sheet.menu(this, "Add a profile", null, listOf("Profile" to { askName(false) }, "Kids profile" to { askName(true) })) }
+    /** A whole Create profile screen (name, kids, pictures), not a pop-up. */
+    private fun addMenu() = startActivityForResult(Intent(this, ProfileEditActivity::class.java), EDIT)
 
-    private fun askName(kids: Boolean) { Sheet.ask(this, if (kids) "New kids profile" else "New profile", "Name", "Add") { Profiles.add(it, kids); build(Profiles.all().last().id) } }
+    private companion object { const val EDIT = 21 }
 
     @Deprecated("Back leaves; if the profile in use was removed, Home still has to reload.")
     override fun onBackPressed() { if (reload) setResult(RESULT_OK, Intent().putExtra("id", Profiles.activeId).putExtra("force", true)); super.onBackPressed() }

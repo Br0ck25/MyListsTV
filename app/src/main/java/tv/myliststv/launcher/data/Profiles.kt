@@ -7,7 +7,8 @@ import org.json.JSONObject
 
 /** Viewer profiles. Each has its own watch history; a kids profile hides adult titles. (No PIN lock by the owner's choice.) */
 object Profiles {
-    data class P(val id: String, val name: String, val kids: Boolean)
+    /** [avatar] is an id from ui/Avatars (empty: the profile shows its first letter). */
+    data class P(val id: String, val name: String, val kids: Boolean, val avatar: String = "")
 
     private lateinit var sp: SharedPreferences
     /** The "who is watching" question is asked once per app start. */
@@ -20,11 +21,11 @@ object Profiles {
 
     fun all(): List<P> = try {
         val a = JSONArray(sp.getString("list", "[]"))
-        (0 until a.length()).map { a.getJSONObject(it).let { o -> P(o.getString("id"), o.getString("name"), o.optBoolean("kids")) } }
+        (0 until a.length()).map { a.getJSONObject(it).let { o -> P(o.getString("id"), o.getString("name"), o.optBoolean("kids"), o.optString("avatar")) } }
     } catch (_: Exception) { listOf(P("p1", "Main", false)) }
 
     private fun write(l: List<P>) {
-        val a = JSONArray(); l.forEach { a.put(JSONObject().put("id", it.id).put("name", it.name).put("kids", it.kids)) }
+        val a = JSONArray(); l.forEach { a.put(JSONObject().put("id", it.id).put("name", it.name).put("kids", it.kids).put("avatar", it.avatar)) }
         sp.edit().putString("list", a.toString()).apply()
     }
 
@@ -48,7 +49,16 @@ object Profiles {
 
     fun rename(id: String, name: String) { val n = name.trim(); if (n.isNotEmpty()) write(all().map { if (it.id == id) it.copy(name = n) else it }) }
 
-    fun add(name: String, kids: Boolean) { write(all() + P("p" + System.currentTimeMillis(), name.trim().ifEmpty { "Profile" }, kids)) }
+    /** Adds a profile and returns its id. */
+    fun add(name: String, kids: Boolean, avatar: String = ""): String {
+        val id = "p" + System.currentTimeMillis()
+        write(all() + P(id, name.trim().ifEmpty { "Profile" }, kids, avatar)); return id
+    }
+
+    /** Changes a profile's name, kids setting and picture in one go (the edit screen). A blank name keeps the old one. */
+    fun update(id: String, name: String, kids: Boolean, avatar: String) {
+        write(all().map { if (it.id == id) it.copy(name = name.trim().ifEmpty { it.name }, kids = kids, avatar = avatar) else it })
+    }
 
     /** The last profile cannot be removed. */
     fun remove(id: String) {

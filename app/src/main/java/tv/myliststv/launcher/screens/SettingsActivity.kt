@@ -94,7 +94,7 @@ class SettingsActivity : Activity() {
         else try { Pop.toast(this, "Turn on My Lists TV Home button", true); startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) { }
     }
 
-    private fun askName(kids: Boolean) = Sheet.ask(this, if (kids) "New kids profile" else "New profile", "Name", "Add") { Profiles.add(it, kids); refresh() }
+    private fun askName(kids: Boolean) = startActivity(Intent(this, ProfileEditActivity::class.java).putExtra(ProfileEditActivity.EXTRA_KIDS, kids))
 
     private fun arrange(what: String) = startActivity(Intent(this, ArrangeActivity::class.java).putExtra("what", what))
 
@@ -355,7 +355,7 @@ class SettingsActivity : Activity() {
             add(action(p.name + if (p.kids) " (kids)" else "", if (active) "In use now" else "Switch to this profile", icon = R.drawable.ic_person, value = { if (active) "Active" else "" }) { if (!active) { Profiles.switchTo(me, p.id); refresh() } })
         }
         add(card("Manage"))
-        Profiles.all().forEach { p -> add(action("Rename ${p.name}", "Change the name shown for this profile.", icon = R.drawable.ic_person) { Sheet.ask(me, "Rename ${p.name}", "Name", "Save", initial = p.name) { Profiles.rename(p.id, it); refresh() } }) }
+        Profiles.all().forEach { p -> add(action("Edit ${p.name}", "Change the name, picture and kids setting.", icon = R.drawable.ic_person) { startActivity(Intent(me, ProfileEditActivity::class.java).putExtra(ProfileEditActivity.EXTRA_ID, p.id)) }) }
         add(action("Add profile", "A separate account, addons, Library and history.", icon = R.drawable.ic_add) { askName(false) })
         add(action("Add kids profile", "A profile that hides titles that are not for children.", icon = R.drawable.ic_add) { askName(true) })
         if (Profiles.all().size > 1) {
