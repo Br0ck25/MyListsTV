@@ -101,7 +101,8 @@ class ProfileEditActivity : Activity() {
         chips = Ui.hbox(c, 10).apply { clipChildren = false }
         col.addView(chips, Ui.wrap().apply { topMargin = Ui.dp(c, 14); bottomMargin = Ui.dp(c, 8) })
         grid = Ui.vbox(c).apply { clipChildren = false; setPadding(Ui.dp(c, 18), Ui.dp(c, 14), Ui.dp(c, 18), Ui.dp(c, 28)) }
-        col.addView(ScrollView(c).apply { isVerticalScrollBarEnabled = false; clipChildren = false; clipToPadding = false; addView(grid) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        col.addView(ScrollView(c).apply { isVerticalScrollBarEnabled = false; clipToPadding = false;   // clips at its own edge, so scrolled rows never draw over the chips
+                 addView(grid) }, LinearLayout.LayoutParams(-1, 0, 1f))
         return col
     }
 
