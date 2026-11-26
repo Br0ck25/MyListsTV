@@ -86,28 +86,28 @@ Find a symbol with grep on this file, then read only that file around the line n
    107   fun mark(metaId: String, movie: Boolean, watched: Boolean)  - After a title is marked by hand, the box's copy of the account's list follows at once (the account is told too
    116   fun pull(changed: ()  - Fetches the account's list.
 
-## data/AddonStore.kt (127 lines) - The user's installed addons, kept as a list of manifest URLs.
+## data/AddonStore.kt (129 lines) - The user's installed addons, kept as a list of manifest URLs.
      9 object AddonStore  - The user's installed addons, kept as a list of manifest URLs.
-    13   class Saved
-    21   fun init(c: Context)
-    27   fun listKey()  - Each profile has its own addon list; a new profile starts with just the default.
-    28   fun forget(id: String)
-    31   fun ownSaved(id: String = Profiles.activeId)  - This profile's own stored list (a new profile starts with just the default).
-    42   fun isBase(url: String)  - The default and the profile's own sign-in link are its own even when it shares; everything else comes from the
-    45   fun saved()  - The addons in use.
-    51   fun sharing()
-    54   fun stopSharing(id: String)  - Stops sharing: the profile keeps a copy of what it was using.
-    56   fun write(list: List<Saved>, force: Boolean = false)
-    62   fun storeOwn(list: List<Saved>)
-    70   fun normalize(input: String)  - Accepts stremio:// links and bare folders.
-    79   fun restore(list: List<Saved>)
-    82   fun reset()  - Back to just the default My Lists addon.
-    83   fun add(url: String)
-    84   fun remove(url: String)
-    85   fun setEnabled(url: String, on: Boolean)
-    86   fun move(url: String, delta: Int)
-    94   fun load(cb: (List<Addon>)  - Fetches every saved manifest (from cache first), then calls [cb] once on the main thread with those that loade
-   116   fun probe(url: String, cb: (Manifest?, String?)  - Fetches a manifest to check it before installing.
+    15   class Saved
+    23   fun init(c: Context)
+    29   fun listKey()  - Each profile has its own addon list; a new profile starts with just the default.
+    30   fun forget(id: String)
+    33   fun ownSaved(id: String = Profiles.activeId)  - This profile's own stored list (a new profile starts with just the default).
+    44   fun isBase(url: String)  - The default and the profile's own sign-in link are its own even when it shares; everything else comes from the
+    47   fun saved()  - The addons in use.
+    53   fun sharing()
+    56   fun stopSharing(id: String)  - Stops sharing: the profile keeps a copy of what it was using.
+    58   fun write(list: List<Saved>, force: Boolean = false)
+    64   fun storeOwn(list: List<Saved>)
+    72   fun normalize(input: String)  - Accepts stremio:// links and bare folders.
+    81   fun restore(list: List<Saved>)
+    84   fun reset()  - Back to just the default My Lists addon.
+    85   fun add(url: String)
+    86   fun remove(url: String)
+    87   fun setEnabled(url: String, on: Boolean)
+    88   fun move(url: String, delta: Int)
+    96   fun load(cb: (List<Addon>)  - Fetches every saved manifest (from cache first), then calls [cb] once on the main thread with those that loade
+   118   fun probe(url: String, cb: (Manifest?, String?)  - Fetches a manifest to check it before installing.
 
 ## data/Alerts.kt (73 lines) - New-episode alerts for series in the Library, shown in the bell.
     12 object Alerts  - New-episode alerts for series in the Library, shown in the bell.
@@ -741,7 +741,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    112   fun addMenu()  - A whole Create profile screen (name, kids, pictures), not a pop-up.
    117   fun onBackPressed()
 
-## screens/SettingsActivity.kt (556 lines) - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
+## screens/SettingsActivity.kt (564 lines) - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
     28 class SettingsActivity  - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
     33   fun card(title: String)  - A card inside a group (kind S): its title, then the rows that follow it up to the next card.
     36   fun header(t: String, subtitle: String = "", icon: Int = 0, value: ()  - A group of the settings list: its name, the line under the page title, its icon, and a short summary shown at 
@@ -778,18 +778,19 @@ Find a symbol with grep on this file, then read only that file around the line n
    386   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
    388   fun onCreate(savedInstanceState: Bundle?)
    399   fun refresh(keep: Int = -1)  - Rebuilds the groups and the page that shows, and puts focus back on the row that had it.
-   412   fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true)  - Puts the first page or the open group's page in the panel, with focus on the row tagged [focusRow] (else the f
-   420   fun rowViews(v: View, out: ArrayList<View> = ArrayList()  - The views a page tags with their row number (a group's number on the first page), in order.
-   425   fun canFocus(v: View)
-   427   fun scrolling(v: View)
-   430   fun mainPage()  - The groups under their small headings.
-   442   fun groupRow(g: Group, i: Int)
-   454   fun groupPage()  - A group's page (or the Addons page inside it): a back arrow with the title, the line under it, then the rows.
-   480   fun closeSubs()
-   483   fun goBack()  - Up one page: out of an addon, out of the Addons list, out of the group, then out of Settings.
-   491   fun view(r: Row, changed: ()
-   553   fun onBackPressed()
-   555   fun onDestroy()
+   414   fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true, scrolls  - Puts the first page or the open group's page in the panel, with focus on the row tagged [focusRow] (else the f
+   421   fun scrollViews(v: View, out: ArrayList<ScrollView> = ArrayList()
+   428   fun rowViews(v: View, out: ArrayList<View> = ArrayList()  - The views a page tags with their row number (a group's number on the first page), in order.
+   433   fun canFocus(v: View)
+   435   fun scrolling(v: View)
+   438   fun mainPage()  - The groups under their small headings.
+   450   fun groupRow(g: Group, i: Int)
+   462   fun groupPage()  - A group's page (or the Addons page inside it): a back arrow with the title, the line under it, then the rows.
+   488   fun closeSubs()
+   491   fun goBack()  - Up one page: out of an addon, out of the Addons list, out of the group, then out of Settings.
+   499   fun view(r: Row, changed: ()
+   561   fun onBackPressed()
+   563   fun onDestroy()
 
 ## screens/SetupActivity.kt (129 lines) - First run: one full screen per step (Home app, Home button, notifications, addons).
     25 class SetupActivity  - First run: one full screen per step (Home app, Home button, notifications, addons).
@@ -916,10 +917,10 @@ Find a symbol with grep on this file, then read only that file around the line n
    324   fun changedAll()
    325   fun inserted(i: Int)
 
-## ui/LibraryScreen.kt (51 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
+## ui/LibraryScreen.kt (48 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     11 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
-    32   fun start()
-    42   fun show()
+    30   fun start()
+    40   fun show()
 
 ## ui/MapperDialogs.kt (223 lines) - The Button Mapper's modals, in the order Settings, Remote & Buttons opens them: Add Button Mapping (press a bu
     24 object MapperDialogs  - The Button Mapper's modals, in the order Settings, Remote & Buttons opens them: Add Button Mapping (press a bu
