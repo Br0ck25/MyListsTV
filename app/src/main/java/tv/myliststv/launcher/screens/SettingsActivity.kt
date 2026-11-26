@@ -400,7 +400,7 @@ class SettingsActivity : Activity() {
         val page = if (open) groupPage() else mainPage()
         host.removeAllViews(); host.addView(page, android.widget.FrameLayout.LayoutParams(-1, -1))
         if (slide && !Prefs.lite()) { page.translationX = Ui.dp(this, if (forward) 48 else -48).toFloat(); page.alpha = 0f; page.animate().translationX(0f).alpha(1f).setDuration(160).start() }
-        page.post { val rs = rowViews(page).filter { canFocus(it) }; (rs.firstOrNull { it.tag == focusRow } ?: rs.firstOrNull())?.requestFocus() }
+        page.post { val rs = rowViews(page).filter { canFocus(it) }; (rs.firstOrNull { it.tag == focusRow } ?: rs.firstOrNull())?.requestFocus(); window.decorView.invalidate() }   // the first frame of a translucent window can leave its lower part undrawn until something repaints it
     }
 
     /** The views a page tags with their row number (a group's number on the first page), in order. The back row has no number. */

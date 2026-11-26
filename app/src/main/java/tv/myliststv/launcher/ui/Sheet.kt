@@ -40,20 +40,16 @@ class Sheet(val act: Activity, title: String, subtitle: String? = null) {
         body.addView(titleView, Ui.matchWrap().apply { leftMargin = Ui.dp(c, 15) })
         if (!subtitle.isNullOrBlank()) body.addView(Ui.text(c, subtitle, 14f, Ui.DIM).apply { setLineSpacing(0f, 1.15f) }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 6); leftMargin = Ui.dp(c, 15) })
         body.addView(ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false; clipToPadding = false }, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = Ui.dp(c, 10) })
-        // The same panel as Settings and the bell: down the right edge, over the dimmed screen.
-        val panel = FrameLayout(c).apply { background = Ui.rounded(c, Ui.CARD, Ui.R_DIALOG); clipToOutline = true; addView(body, FrameLayout.LayoutParams(-1, -1)) }
-        val m = Ui.dp(c, SidePanel.MARGIN)
-        val root = FrameLayout(c).apply { minimumHeight = c.resources.displayMetrics.heightPixels; setPadding(0, m, m, m); addView(panel, FrameLayout.LayoutParams(-1, -1)) }
+        // The same card colour, corners and rows as Settings, centred on the screen.
+        val panel = FrameLayout(c).apply { background = Ui.rounded(c, Ui.CARD, Ui.R_DIALOG); clipToOutline = true; addView(body, FrameLayout.LayoutParams(-1, -2)) }
+        val root = panel
         dialog = AlertDialog.Builder(c).setView(root).create()
         dialog.setOnDismissListener { onClose?.invoke() }
     }
 
     fun show(): Sheet {
         dialog.show()
-        dialog.window?.apply {
-            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Ui.CLEAR)); setDimAmount(0.7f); setGravity(Gravity.END or Gravity.TOP)
-            setLayout(Ui.dp(act, SidePanel.WIDTH + SidePanel.MARGIN), act.resources.displayMetrics.heightPixels)
-        }
+        dialog.window?.apply { setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Ui.CLEAR)); setLayout(Ui.dp(act, WIDTH), ViewGroup.LayoutParams.WRAP_CONTENT) }
         return this
     }
     fun dismiss() = dialog.dismiss()
@@ -122,6 +118,9 @@ class Sheet(val act: Activity, title: String, subtitle: String? = null) {
     }
 
     companion object {
+        /** Width of every sheet, in design units. */
+        const val WIDTH = 480
+
         /** A list of choices. Each runs and the sheet closes. The first has the focus. */
         fun menu(act: Activity, title: String, subtitle: String? = null, items: List<Pair<String, () -> Unit>>): Sheet {
             val s = Sheet(act, title, subtitle)
