@@ -26,7 +26,7 @@ object Avatars {
     fun drawable(id: String?): Drawable? = byId(id)?.let { AvatarDrawable(it) }
 
     /** Nothing but a stable pick: the same seed always gives the same picture, so a new profile starts with a face. */
-    fun pick(seed: Int): Avatar = all[(seed and 0x7fffffff) % all.size]
+    fun pick(seed: Int): Avatar = all[(seed and Int.MAX_VALUE) % all.size]
 
     /** The shapes an avatar is made of. Everything is in the 100 x 100 space. */
     class Art(val canvas: Canvas) {
