@@ -116,9 +116,12 @@ class PlayerActivity : Activity() {
         val resume = Ui.button(this, "") { chooseResume(go, at) }
         val over = Ui.button(this, "Start over") { chooseResume(go, 0L) }
         resumeBox.removeAllViews()
-        resumeBox.addView(Ui.text(this, PlaySession.meta!!.name, 26f, Ui.TEXT, true))
-        resumeBox.addView(Ui.text(this, "You stopped at ${fmt(at)}.", 16f, Ui.TEXT2), Ui.wrap().apply { topMargin = Ui.dp(this@PlayerActivity, 6); bottomMargin = Ui.dp(this@PlayerActivity, 18) })
-        val row = Ui.hbox(this, 10); row.addView(resume); row.addView(over); resumeBox.addView(row)
+        resumeBox.setBackgroundColor(Ui.SCRIM_SLATE)   // the title's artwork stays visible behind it
+        slate.visibility = View.GONE
+        val mid = { LinearLayout.LayoutParams(-2, -2).apply { gravity = Gravity.CENTER_HORIZONTAL } }
+        resumeBox.addView(Ui.text(this, PlaySession.meta!!.name, 26f, Ui.TEXT, true).apply { gravity = Gravity.CENTER }, mid())
+        resumeBox.addView(Ui.text(this, "You stopped at ${fmt(at)}.", 16f, Ui.TEXT2).apply { gravity = Gravity.CENTER }, mid().apply { topMargin = Ui.dp(this@PlayerActivity, 6); bottomMargin = Ui.dp(this@PlayerActivity, 18) })
+        val row = Ui.hbox(this, 10); row.addView(resume); row.addView(over); resumeBox.addView(row, mid())
         resumeBox.visibility = View.VISIBLE
         val t = object : Runnable { override fun run() {
             if (left <= 0) { chooseResume(go, at); return }
