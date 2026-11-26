@@ -63,7 +63,13 @@ class MainActivity : Activity() {
 
     private fun updateBell() { val n = Notices.list(this).size + Alerts.all().size; bellBadge.text = n.toString(); bellBadge.visibility = if (n > 0) View.VISIBLE else View.GONE }
 
-    private fun updateProfile() { val n = Profiles.active().name; profileName.text = n; profileAvatar.text = n.take(1).uppercase() }
+    private fun updateProfile() {
+        val p = Profiles.active(); profileName.text = p.name
+        // The profile's picture when it has one; otherwise its first letter on the brand colour.
+        val pic = tv.myliststv.launcher.ui.Avatars.drawable(p.avatar)
+        profileAvatar.text = if (pic != null) "" else p.name.take(1).uppercase()
+        profileAvatar.background = pic ?: Ui.rounded(this, Ui.BRAND_FILL, Ui.R_PILL)
+    }
 
     /** Who is watching: the current profile at the top right; OK switches. */
     private var profileChipView: View? = null
