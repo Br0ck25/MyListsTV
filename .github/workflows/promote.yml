@@ -29,6 +29,8 @@ jobs:
           fi
           if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then echo "There is no beta release to promote."; exit 1; fi
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
-          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --prerelease=false --latest --title "My Lists TV ${TAG#v}" \
-            --notes "Production release ${TAG#v}: a beta that was tested and promoted."
+          # Keep the beta's list of changes under the production line.
+          BETA_NOTES=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body | sed '1,2d')
+          NOTES=$(printf 'Production release %s: a beta that was tested and promoted.\n\n%s' "${TAG#v}" "$BETA_NOTES")
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --prerelease=false --latest --title "My Lists TV ${TAG#v}" --notes "$NOTES"
           echo "Promoted $TAG to production."
