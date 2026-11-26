@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the whole history and the tags, so the release notes can list what changed since the last release
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -32,12 +34,26 @@ jobs:
       - name: Version name from the run number (0.1.99, then 0.2.0; same rule as data/Version.kt)
         id: ver
         run: echo "name=0.$((1 + ${{ github.run_number }} / 100)).$((${{ github.run_number }} % 100))" >> "$GITHUB_OUTPUT"
+      - name: Release notes (what changed since the last release)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          PREV=$(git tag --list 'v*' --sort=-v:refname | head -1)
+          if [ -n "$PREV" ]; then RANGE="$PREV..HEAD"; else RANGE="-n 20"; fi
+          CHANGES=$(git log --no-merges --pretty='- %s' $RANGE)
+          {
+            echo "Beta build ${{ steps.ver.outputs.name }}. This same APK is promoted to production once tested (Actions, Promote a beta to production). Choose the update channel in Settings, About."
+            echo
+            echo "## What changed${PREV:+ since $PREV}"
+            echo
+            if [ -n "$CHANGES" ]; then echo "$CHANGES"; else echo "- No code changes (a re-run of the previous build)."; fi
+          } > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
       - name: Publish a release (main only)
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.name }}
           name: My Lists TV ${{ steps.ver.outputs.name }} (beta)
-          body: "Beta build: every push to main is published here as a beta. It is the same APK that is promoted to production once tested (Actions, Promote a beta to production). Choose the update channel in Settings, About."
+          body_path: RELEASE_NOTES.md
           prerelease: true
           files: MyListsTV.apk
