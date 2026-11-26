@@ -106,7 +106,7 @@ class MainActivity : Activity() {
         fun card(pkg: String, app: String, time: Long, title: String, text: String, open: () -> Unit, clear: () -> Unit) {
             val row = Ui.hbox(c, 10).apply { gravity = Gravity.CENTER_VERTICAL }
             val body = Ui.vbox(c).apply {
-                setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); background = Ui.menuRowBg(c, normal = Ui.ELEVATED); isFocusable = true; isClickable = true
+                setPadding(Ui.dp(c, 16), Ui.dp(c, 12), Ui.dp(c, 16), Ui.dp(c, 12)); background = Ui.menuRowBg(c); isFocusable = true; isClickable = true
                 setOnClickListener { open(); panel.dismiss() }
                 val top = Ui.hbox(c, 8)
                 top.addView(android.widget.ImageView(c).apply { try { setImageDrawable(if (pkg.isEmpty()) getDrawable(R.drawable.ic_launcher) else packageManager.getApplicationIcon(pkg)) } catch (_: Exception) { } }, LinearLayout.LayoutParams(Ui.dp(c, 18), Ui.dp(c, 18)))
@@ -185,7 +185,7 @@ class MainActivity : Activity() {
         }
         side = Ui.vbox(this).apply {
             val p = Ui.dp(this@MainActivity, 10); setPadding(p, Ui.dp(this@MainActivity, 16), p, p)
-            background = Ui.rounded(this@MainActivity, Ui.SIDE_GLASS, Ui.R_DIALOG)
+            background = Ui.rounded(this@MainActivity, Ui.CARD, Ui.R_DIALOG)
             visibility = if (navStyle == 1) View.VISIBLE else View.GONE
         }
         tabs.forEachIndexed { i, t ->
@@ -256,7 +256,7 @@ class MainActivity : Activity() {
         if (navStyle != 1 || !::side.isInitialized) return
         sideOpen = open
         side.layoutParams = (side.layoutParams as FrameLayout.LayoutParams).apply { width = if (open) sideWidth else slimWidth }
-        side.background = if (open) Ui.rounded(this, Ui.SIDE_GLASS, Ui.R_DIALOG) else android.graphics.drawable.ColorDrawable(Ui.CLEAR)
+        side.background = if (open) Ui.rounded(this, Ui.CARD, Ui.R_DIALOG) else android.graphics.drawable.ColorDrawable(Ui.CLEAR)
         sideItems().forEach { it.showLabel(open, Ui.dp(this, 14)) }
         if (::profileName.isInitialized) profileName.visibility = if (open) View.VISIBLE else View.GONE
         // Slim: no pills, just the icons; the one that is focused gets a ring. Open: the names, and the open page outlined.

@@ -7,7 +7,7 @@ import tv.myliststv.launcher.data.*
 /** Hold OK on a poster or tile: Go to details, add to or remove from the Library, mark as watched or not. The same everywhere a title appears. */
 object TitleMenu {
     fun show(act: Activity, meta: Meta, open: () -> Unit, changed: () -> Unit) {
-        val s = Sheet(act, meta.name, listOfNotNull(if (meta.type == "series") "Series" else "Movie", meta.year).joinToString("  \u2022  "), 420)
+        val s = Sheet(act, meta.name, listOfNotNull(if (meta.type == "series") "Series" else "Movie", meta.year).joinToString("  \u2022  "))
         val first = s.card("Go to details", "Open its page") { s.dismiss(); open() }
         val saved = Library.has(meta.id)
         s.card(if (saved) "Remove from Library" else "Add to Library", if (saved) "Take it off your Library" else "Keep it in your Library") {
