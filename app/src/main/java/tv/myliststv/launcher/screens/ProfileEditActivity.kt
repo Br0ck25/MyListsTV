@@ -53,7 +53,7 @@ class ProfileEditActivity : Activity() {
 
         val root = FrameLayout(c).apply { setBackgroundColor(Ui.BG) }
         root.addView(View(c).apply { background = Ui.wash() }, FrameLayout.LayoutParams(-1, -1))
-        val page = Ui.hbox(c, 40).apply { setPadding(Ui.dp(c, 56), Ui.dp(c, 40), Ui.dp(c, 56), Ui.dp(c, 32)); gravity = Gravity.TOP }
+        val page = Ui.hbox(c, 40).apply { setPadding(Ui.dp(c, 56), Ui.dp(c, 24), Ui.dp(c, 56), Ui.dp(c, 16)); gravity = Gravity.TOP }
         page.addView(left(), LinearLayout.LayoutParams(Ui.dp(c, 300), -1))
         page.addView(right(), LinearLayout.LayoutParams(0, -1, 1f))
         root.addView(page, FrameLayout.LayoutParams(-1, -1))
@@ -70,11 +70,11 @@ class ProfileEditActivity : Activity() {
         val c = this
         val col = Ui.vbox(c).apply { gravity = Gravity.CENTER_HORIZONTAL; clipChildren = false }
         heading = Ui.text(c, if (editing == null) "Create profile" else "Edit profile", 30f, Ui.TEXT, true)
-        col.addView(heading, Ui.wrap().apply { gravity = Gravity.START; bottomMargin = Ui.dp(c, 22) })
+        col.addView(heading, Ui.wrap().apply { gravity = Gravity.START; bottomMargin = Ui.dp(c, 12) })
         preview = ImageView(c).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
-        col.addView(preview, LinearLayout.LayoutParams(Ui.dp(c, 150), Ui.dp(c, 150)))
+        col.addView(preview, LinearLayout.LayoutParams(Ui.dp(c, 116), Ui.dp(c, 116)))
         focusedName = Ui.text(c, " ", 16f, Ui.DIM, true).apply { gravity = Gravity.CENTER }
-        col.addView(focusedName, Ui.wrap().apply { topMargin = Ui.dp(c, 10); bottomMargin = Ui.dp(c, 16) })
+        col.addView(focusedName, Ui.wrap().apply { topMargin = Ui.dp(c, 6); bottomMargin = Ui.dp(c, 10) })
 
         nameField = EditText(c).apply {
             hint = "Name"; setHintTextColor(Ui.DIM); setTextColor(Ui.TEXT); setSingleLine(true); Ui.size(this, 16f); gravity = Gravity.CENTER
@@ -88,7 +88,7 @@ class ProfileEditActivity : Activity() {
         kidsBtn = Ui.button(c, "", false) { kids = !kids; showKids() }
         col.addView(kidsBtn, Ui.matchWrap().apply { topMargin = Ui.dp(c, 10) })
         col.addView(Ui.button(c, "Surprise me") { pick(Avatars.pick(System.nanoTime().toInt())) }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 10) })
-        col.addView(Ui.button(c, if (editing == null) "Create" else "Save", primary = true) { save() }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 22) })
+        col.addView(Ui.button(c, if (editing == null) "Create" else "Save", primary = true) { save() }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 14) })
         col.addView(Ui.button(c, "Cancel") { finish() }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 10) })
         showKids()
         return col
@@ -100,7 +100,7 @@ class ProfileEditActivity : Activity() {
         col.addView(Ui.text(c, "Choose a picture", 20f, Ui.TEXT, true), Ui.wrap())
         chips = Ui.hbox(c, 10).apply { clipChildren = false }
         col.addView(chips, Ui.wrap().apply { topMargin = Ui.dp(c, 14); bottomMargin = Ui.dp(c, 8) })
-        grid = Ui.vbox(c).apply { clipChildren = false; setPadding(Ui.dp(c, 8), Ui.dp(c, 10), Ui.dp(c, 8), Ui.dp(c, 10)) }
+        grid = Ui.vbox(c).apply { clipChildren = false; setPadding(Ui.dp(c, 18), Ui.dp(c, 14), Ui.dp(c, 18), Ui.dp(c, 28)) }
         col.addView(ScrollView(c).apply { isVerticalScrollBarEnabled = false; clipChildren = false; clipToPadding = false; addView(grid) }, LinearLayout.LayoutParams(-1, 0, 1f))
         return col
     }
