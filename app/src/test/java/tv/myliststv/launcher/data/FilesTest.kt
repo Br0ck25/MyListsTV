@@ -85,4 +85,19 @@ class FilesTest {
         assertTrue(FilesScreen.friendly(java.net.ConnectException("Connection refused")).contains("reach that address"))
         assertEquals("That did not work.", FilesScreen.friendly(RuntimeException()))
     }
+
+    // ---- the pages along the top
+    @Test fun pagesKeepTheStandardOrderUntilTheOwnerMovesThem() {
+        assertEquals(Pages.all, Pages.visible(Pages.all, emptyList(), emptyList()))
+        assertEquals(listOf("Home", "Series", "Movies", "Search", "Library", "Apps", "Files"), Pages.visible(Pages.all, listOf("Home", "Series", "Movies"), emptyList()))
+    }
+
+    @Test fun anyPageButHomeCanBeHidden() {
+        assertEquals(listOf("Home", "Movies", "Series", "Search", "Library", "Apps"), Pages.visible(Pages.all, emptyList(), listOf("Files")))
+        assertTrue("Home stays", "Home" in Pages.visible(Pages.all, emptyList(), listOf("Home", "Movies")))
+    }
+
+    @Test fun aNewPageAppearsAndAForgottenOneIsIgnored() {
+        assertEquals(listOf("Series", "Home", "Movies", "Search", "Library", "Apps", "Files"), Pages.visible(Pages.all, listOf("Series", "Gone", "Home"), emptyList()))
+    }
 }

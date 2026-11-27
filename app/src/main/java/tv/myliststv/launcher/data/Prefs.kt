@@ -97,6 +97,11 @@ object Prefs {
     var homeOrder: List<String> get() = renamed(strings("homeOrder")); set(v) = putStrings("homeOrder", v)
     var homeHidden: List<String> get() = renamed(strings("homeHidden")); set(v) = putStrings("homeHidden", v)
     var appOrder: List<String> get() = strings("appOrder"); set(v) = putStrings("appOrder", v)
+    /** The top-bar pages in the owner's order, and the ones hidden (see Pages). */
+    var pageOrder: List<String> get() = strings("pageOrder"); set(v) = putStrings("pageOrder", v)
+    var pageHidden: List<String> get() = strings("pageHidden"); set(v) = putStrings("pageHidden", v)
+    fun pages(): List<String> = Pages.visible(Pages.all, pageOrder, pageHidden)
+
     var appHidden: List<String> get() = strings("appHidden"); set(v) = putStrings("appHidden", v)
 
     /** The package of the icon pack in use, or empty for the apps' own icons. */

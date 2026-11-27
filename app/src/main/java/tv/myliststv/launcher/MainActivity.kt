@@ -33,7 +33,10 @@ private const val PROFILE_REQUEST = 52
  */
 class MainActivity : Activity() {
 
-    private val tabs = listOf("Home", "Movies", "Series", "Search", "Library", "Apps", "Files")
+    /** The pages the top bar shows, in the owner's order (Settings > Arrange pages). Rebuilt if that changes. */
+    private val tabs = Prefs.pages()
+    private val pageSig = Pages.signature(tabs)
+    private val backdropPages = setOf("Home", "Movies", "Series", "Search", "Library")
     private val tabViews = ArrayList<TextView>()
     private lateinit var content: FrameLayout
     private lateinit var settingsBtn: View
@@ -299,7 +302,7 @@ class MainActivity : Activity() {
         background = if (navStyle != 0) Ui.menuRowBg(this@MainActivity) else Ui.pillBg(this@MainActivity, Ui.CLEAR); isFocusable = true; isClickable = true
         // The side bar shows an icon before each name, on a small rounded square, in the same colour as the name.
         if (navStyle != 0) {
-            val d = getDrawable(tabIcons[tabs.indexOf(t).coerceAtLeast(0)])!!.mutate(); val s = Ui.dp(this@MainActivity, 34); val inset = Ui.dp(this@MainActivity, 7)
+            val d = getDrawable(tabIcons[Pages.all.indexOf(t).coerceAtLeast(0)])!!.mutate(); val s = Ui.dp(this@MainActivity, 34); val inset = Ui.dp(this@MainActivity, 7)
             val tile = android.graphics.drawable.LayerDrawable(arrayOf(Ui.rounded(this@MainActivity, Ui.FILL, Ui.R_TILE), d)).apply { setLayerInset(1, inset, inset, inset, inset); setBounds(0, 0, s, s) }
             setCompoundDrawables(tile, null, null, null); compoundDrawablePadding = Ui.dp(this@MainActivity, 14); gravity = Gravity.CENTER_VERTICAL
         }
@@ -324,7 +327,7 @@ class MainActivity : Activity() {
         (screen as? SearchScreen)?.stop()
         content.removeAllViews()
         screen = null
-        showBackdrop(i in 0..4)
+        showBackdrop(tabs[i] in backdropPages)
         val kept = pages[i]
         if (kept != null && System.currentTimeMillis() - kept.at < PAGE_KEEP_MS) {
             screen = kept.screen; content.addView(kept.view)
@@ -336,16 +339,16 @@ class MainActivity : Activity() {
             // Only the four newest pages stay built (Home, Movies, Series and Search) (a small box has little memory to spare).
             while (pages.size > 4) pages.minByOrNull { it.value.at }?.let { pages.remove(it.key) }
         }
-        when (i) {
-            0, 1, 2 -> {
-                val s = BrowseScreen(this, type = when (i) { 1 -> "movie"; 2 -> "series"; else -> null }, withContinue = i == 0, withApps = i == 0,
+        when (tabs[i]) {
+            "Home", "Movies", "Series" -> {
+                val s = BrowseScreen(this, type = when (tabs[i]) { "Movies" -> "movie"; "Series" -> "series"; else -> null }, withContinue = tabs[i] == "Home", withApps = tabs[i] == "Home",
                     onMeta = ::openMeta, onResume = ::resumeEntry, onApp = ::launch, onAppMenu = ::appMenu, onBackdrop = ::setBackdrop, onFolder = ::openFolder)
                 screen = s; content.addView(s.view); s.start(); keep(s, s.view)
             }
-            3 -> { val s = SearchScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start(); keep(s, s.view) }
-            4 -> { val s = LibraryScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start() }
-            5 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
-            6 -> { val s = FilesScreen(this); screen = s; content.addView(s.view); s.start() }
+            "Search" -> { val s = SearchScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start(); keep(s, s.view) }
+            "Library" -> { val s = LibraryScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start() }
+            "Apps" -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
+            "Files" -> { val s = FilesScreen(this); screen = s; content.addView(s.view); s.start() }
         }
     }
 
@@ -356,7 +359,7 @@ class MainActivity : Activity() {
 
     /** Where a mapped remote button sends the launcher. */
     private fun go(where: String) {
-        val tab = listOf("home", "movies", "series", "search", "library", "apps").indexOf(where)
+        val tab = tabs.indexOfFirst { it.equals(where, true) }   // a page the owner hid is simply not there
         when {
             tab >= 0 -> { select(tab); tabViews[tab].requestFocus() }
             where == "settings" -> startActivity(Intent(this, SettingsActivity::class.java))
@@ -389,7 +392,7 @@ class MainActivity : Activity() {
         val pkg = a.component.packageName
         val system = { intent: Intent -> try { startActivity(intent) } catch (e: Exception) { Pop.toast(this, "Not available on this device") } }
         val items = ArrayList<Pair<String, () -> Unit>>()
-        if (current == 0) {
+        if (tabs.getOrNull(current) == "Home") {
             items += "Move" to { moving = true; Pop.toast(this, "Move it with Left and Right, then press OK", true) }
             items += "Hide from Home" to { Prefs.appHidden = Prefs.appHidden + pkg; if ((screen as? BrowseScreen)?.hideApp(pkg) != true) select(current, force = true) }
         }
@@ -433,10 +436,10 @@ class MainActivity : Activity() {
         val t = System.currentTimeMillis()
         if (t - lastSync <= 5 * 60_000L) return
         lastSync = t
-        Library.pull { if (current == 4) select(4, force = true) }
+        Library.pull { if (tabs.getOrNull(current) == "Library") select(current, force = true) }
         SetupSync.pull { reloadAddons() }
         Progress.pull { (screen as? BrowseScreen)?.refreshContinue() }
-        AccountWatched.pull { (screen as? BrowseScreen)?.refreshChecks(); if (current >= 4) select(current, force = true) }
+        AccountWatched.pull { (screen as? BrowseScreen)?.refreshChecks(); if (tabs.getOrNull(current) in setOf("Library", "Apps")) select(current, force = true) }
     }
 
     override fun onResume() {
@@ -447,6 +450,7 @@ class MainActivity : Activity() {
             Alerts.check { if (::bellBadge.isInitialized) updateBell() }
             syncAccount()
         }
+        if (Pages.signature(Prefs.pages()) != pageSig) { recreate(); return }   // the owner hid or moved a page
         if (::bellBadge.isInitialized) updateBell()
         if (::profileName.isInitialized) updateProfile()
         if (Prefs.epoch != seenEpoch) { seenEpoch = Prefs.epoch; dropPages(); bg.setImageDrawable(null); backdropUrl = null; if (ready && current >= 0) select(current, force = true) }
@@ -462,8 +466,8 @@ class MainActivity : Activity() {
     /** One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do. */
     private fun runHome(action: String) {
         when (action) {
-            "home" -> { if (current != 0) select(0); tabViews[0].requestFocus() }
-            "movies", "series", "library", "apps", "search", "settings", "profiles" -> go(action)
+            "home" -> { val h = tabs.indexOf("Home"); if (current != h) select(h); tabViews[h].requestFocus() }
+            "movies", "series", "library", "apps", "search", "files", "settings", "profiles" -> go(action)
             else -> ButtonMap.run(this, action)
         }
     }

@@ -29,6 +29,8 @@ class FilesScreen(private val act: Activity) {
     private val body = Ui.vbox(act).apply { setPadding(Ui.dp(act, 42), Ui.dp(act, 6), Ui.dp(act, 42), Ui.dp(act, 56)) }
     private var videos: List<LocalFiles.Video> = emptyList()
     private var generation = 0
+    /** True when focus was already on this page before it was redrawn. Coming onto the Files tab from the tab bar is not that: the focus stays on the tab until Down is pressed. */
+    private var wantFocus = false
 
     val view: View = Ui.vbox(act).also {
         val head = Ui.vbox(act).apply { setPadding(Ui.dp(act, 48), Ui.dp(act, 10), Ui.dp(act, 48), Ui.dp(act, 6)) }
@@ -56,6 +58,7 @@ class FilesScreen(private val act: Activity) {
     private fun render() {
         val page = stack.last()
         val gen = ++generation
+        wantFocus = view.hasFocus()
         heading.text = if (page.kind == Kind.ROOT) "Files" else page.title
         where.text = if (page.kind == Kind.ROOT) "Videos on this box, on USB drives and on your network" else crumb()
         body.removeAllViews()
@@ -102,7 +105,7 @@ class FilesScreen(private val act: Activity) {
                         body.addView(row(R.drawable.ic_folder, r.name, "${r.count} video${if (r.count == 1) "" else "s"}", null, { open(Page(r.name, Kind.LOCAL, r.path)) }), slot + i, rowParams())
                     }
                     // The focus was put on the first row that existed while the drives were still being looked for; move it to the first drive.
-                    if (roots.isNotEmpty() && (body.findFocus() == null || body.findFocus() === startedOn)) body.getChildAt(slot)?.requestFocus()
+                    if (wantFocus && roots.isNotEmpty() && (body.findFocus() == null || body.findFocus() === startedOn)) body.getChildAt(slot)?.requestFocus()
                 }
             }
         }
@@ -166,6 +169,7 @@ class FilesScreen(private val act: Activity) {
 
     /** Focus goes to the row you came back to, else the first row you can act on. */
     private fun focusFirst(page: Page) {
+        if (!wantFocus) return
         body.post {
             val rows = (0 until body.childCount).map { body.getChildAt(it) }.filter { it.isFocusable }
             (rows.firstOrNull { it.tag == page.focus } ?: rows.firstOrNull())?.requestFocus()
