@@ -339,7 +339,7 @@ class MainActivity : Activity() {
         when (i) {
             0, 1, 2 -> {
                 val s = BrowseScreen(this, type = when (i) { 1 -> "movie"; 2 -> "series"; else -> null }, withContinue = i == 0, withApps = i == 0,
-                    onMeta = ::openMeta, onResume = ::resumeEntry, onApp = ::launch, onAppMenu = ::appMenu, onBackdrop = ::setBackdrop)
+                    onMeta = ::openMeta, onResume = ::resumeEntry, onApp = ::launch, onAppMenu = ::appMenu, onBackdrop = ::setBackdrop, onFolder = ::openFolder)
                 screen = s; content.addView(s.view); s.start(); keep(s, s.view)
             }
             3 -> { val s = SearchScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start(); keep(s, s.view) }
@@ -362,6 +362,8 @@ class MainActivity : Activity() {
             where == "profiles" -> pickProfile()
         }
     }
+
+    private fun openFolder(f: Collections.Folder) { Collections.opened = f; startActivity(Intent(this, tv.myliststv.launcher.screens.CollectionActivity::class.java)) }
 
     private fun openMeta(m: Meta) {
         startActivity(Intent(this, DetailsActivity::class.java).putExtra("meta", Json.metaToJson(m)))

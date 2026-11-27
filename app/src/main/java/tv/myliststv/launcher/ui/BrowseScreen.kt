@@ -25,6 +25,7 @@ class BrowseScreen(
     private val onApp: (AppEntry) -> Unit,
     private val onAppMenu: (AppEntry) -> Unit,
     private val onBackdrop: (String?) -> Unit = {},
+    private val onFolder: (Collections.Folder) -> Unit = {},
 ) {
     private val c = act
     private val lite = Prefs.lite()
@@ -37,6 +38,7 @@ class BrowseScreen(
             is Meta -> onMeta(p)
             is WatchStore.Entry -> onResume(p)
             is AppEntry -> onApp(p)
+            is Collections.Folder -> onFolder(p)
         }
     }, { model ->
         when (val p = model.payload) {
@@ -91,6 +93,7 @@ class BrowseScreen(
             }
         }
         list.changedAll()
+        if (withContinue && Prefs.showCollections) Collections.load { cols -> showCollections(cols) }
         if (withApps && Prefs.showAppsRow && "Your Apps" !in hidden) {
             Http.background {
                 val apps = AppRepository.forHome(act)
@@ -104,6 +107,29 @@ class BrowseScreen(
                 }
             }
         }
+    }
+
+    private var collectionTitles: List<String> = emptyList()
+    private var collectionSig = ""
+
+    /**
+     * The collections from My Lists as rows of wide tiles, the same size as Continue Watching and Your Apps, each with the picture attached
+     * to it on the website. It may be called twice (saved copy, fresh copy); a row is only redrawn when something in it changed.
+     */
+    private fun showCollections(cols: List<Collections.Collection>) {
+        val hidden = Prefs.homeHidden
+        val shown = cols.filter { it.title !in hidden }
+        val sig = shown.joinToString("|") { c -> c.title + ":" + c.folders.joinToString(",") { it.id + it.title + it.cover } }
+        if (sig == collectionSig) return
+        collectionSig = sig
+        rows.removeAll { it.title in collectionTitles }
+        collectionTitles = shown.map { it.title }
+        shown.forEach { col ->
+            val tiles = col.folders.map { f -> CardModel(if (f.hideTitle || f.nameIsOnCover) "" else f.title, f.cover, payload = f) }
+            rows += RowModel(col.title, "Collection", CardKind.WIDE, tiles)
+        }
+        rows.sortBy { Prefs.homeRank(it.title) }
+        list.changedAll()
     }
 
     /** Hold OK on a Continue Watching card, Mark as watched: the episode (or movie) is done, here and in the account's watched history. */
@@ -248,6 +274,7 @@ class BrowseScreen(
                 }
             }
             is AppEntry -> { onBackdrop(""); heroTitle.text = p.label; heroMeta.text = "Installed app"; heroDesc.text = "Press OK to open." }
+            is Collections.Folder -> { onBackdrop(""); heroTitle.text = p.title; heroMeta.text = "Collection"; heroDesc.text = "${p.sources.size} list${if (p.sources.size == 1) "" else "s"}. Press OK to open." }
         }
     }
 }
