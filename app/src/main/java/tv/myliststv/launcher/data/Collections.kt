@@ -66,11 +66,18 @@ object Collections {
         return if (full.contains("/api/channel-poster") && !full.contains("format=")) full + (if (full.contains("?")) "&" else "?") + "format=landscape" else full
     }
 
+    /** The id of the account's own collections in the answer. Everything else is the website's built-in set (Streaming Services, Genres, Franchises, Studios), which every account gets. */
+    const val OWN_ID = "my-lists-collections"
+
+    /** Only what the signed-in account made itself. Signed out there is nothing of one's own, so nothing shows. */
+    fun own(all: List<Collection>, signedIn: Boolean): List<Collection> = if (signedIn) all.filter { it.id == OWN_ID } else emptyList()
+
     /** [cb] may run twice: once from the cache, once with fresh data. */
     fun load(cb: (List<Collection>) -> Unit) {
         Http.get(url(), TTL) { body, _, _ ->
-            val list = body?.let { parse(it) } ?: return@get
-            if (list.isNotEmpty()) { knownTitles = list.map { it.title }; cb(list) }
+            val list = body?.let { own(parse(it), Prefs.accountLink.isNotEmpty()) } ?: return@get
+            knownTitles = list.map { it.title }
+            cb(list)
         }
     }
 

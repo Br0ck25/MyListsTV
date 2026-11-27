@@ -45,6 +45,8 @@ android {
 
 dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+    // The website's generated collection pictures are SVG, which Android cannot draw by itself.
+    implementation("com.caverock:androidsvg-aar:1.4")
     implementation("androidx.core:core-ktx:1.13.1")
 }
 

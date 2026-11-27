@@ -120,7 +120,7 @@ class BrowseScreen(
         val hidden = Prefs.homeHidden
         val shown = cols.filter { it.title !in hidden }
         val sig = shown.joinToString("|") { c -> c.title + ":" + c.folders.joinToString(",") { it.id + it.title + it.cover } }
-        if (sig == collectionSig) return
+        if (sig == collectionSig) return   // nothing changed since the last answer
         collectionSig = sig
         rows.removeAll { it.title in collectionTitles }
         collectionTitles = shown.map { it.title }

@@ -58,6 +58,7 @@ object ImageLoader {
             try { f?.writeBytes(b) } catch (_: Exception) {}
             b
         }
+        if (isSvg(bytes)) return decodeSvg(bytes, w, h, alpha)
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
         if (bounds.outWidth <= 0) return null
@@ -68,6 +69,21 @@ object ImageLoader {
             inPreferredConfig = if (alpha) Bitmap.Config.ARGB_8888 else Bitmap.Config.RGB_565
         }
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+    }
+
+    /** True when the bytes are an SVG drawing (the website's generated collection pictures), which BitmapFactory cannot read. */
+    fun isSvg(bytes: ByteArray): Boolean = String(bytes, 0, minOf(bytes.size, 300), Charsets.UTF_8).contains("<svg")
+
+    /** Draws an SVG to fill a [w] x [h] bitmap. */
+    private fun decodeSvg(bytes: ByteArray, w: Int, h: Int, alpha: Boolean): Bitmap? {
+        if (w <= 0 || h <= 0) return null
+        val svg = com.caverock.androidsvg.SVG.getFromInputStream(bytes.inputStream())
+        // A drawing with no viewBox is fitted by its own size; then it is fitted, whole and centred, into the tile.
+        if (svg.documentViewBox == null && svg.documentWidth > 0 && svg.documentHeight > 0) svg.setDocumentViewBox(0f, 0f, svg.documentWidth, svg.documentHeight)
+        // Transparent where the drawing is, so a logo sits on the tile's own colour.
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        svg.renderToCanvas(android.graphics.Canvas(bmp), com.caverock.androidsvg.RenderOptions.create().viewPort(0f, 0f, w.toFloat(), h.toFloat()))
+        return bmp
     }
 
     private fun prune() {
