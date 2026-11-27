@@ -191,20 +191,20 @@ Find a symbol with grep on this file, then read only that file around the line n
     10   fun syncUrl(accountLink: String)  - The account's sync list: its channels, each with the id the addon serves details for.
     13   fun byName(sync: String, name: String)  - The details id of the channel called [name] in a sync answer, or null when it is not there.
 
-## data/Collections.kt (98 lines) - Collections from My Lists: groups of tiles (Streaming Services, Genres, Studios, or the account's own folders)
+## data/Collections.kt (96 lines) - Collections from My Lists: groups of tiles (Streaming Services, Genres, Studios, or the account's own folders)
     10 object Collections  - Collections from My Lists: groups of tiles (Streaming Services, Genres, Studios, or the account's own folders)
     15   class Source  - One list inside a folder: which addon has it, its catalog id, its name and whether it holds movies or series.
     18   class Folder  - A tile.
-    23   class Collection
-    33   fun target()  - The account's collections when signed in, else the default set.
-    35   fun url()
-    38   fun parse(body: String)  - The addon-protocol-shaped answer in, the visible collections out.
-    63   fun cover(url: String?)  - A tile is wide, so a generated tall picture is asked for in the wide shape; a picture the owner attached is us
-    73   fun own(all: List<Collection>, signedIn: Boolean)  - Only what the signed-in account made itself.
-    76   fun load(cb: (List<Collection>)  - [cb] may run twice: once from the cache, once with fresh data.
-    85   fun addonFor(s: Source)  - The addon that holds a folder's list: the one with that id if installed, else My Lists (the default or the acc
-    91   fun baseFor(s: Source)  - Where a source's catalog is fetched from: its addon, or the default My Lists link when that addon is not insta
-    94   fun rowName(s: Source, all: List<Source>)  - The row's name on a folder's page: the list's name, with Movies or Series when the same name is there for both
+    24   class Collection  - [own] is the website's mark for a collection the account made itself, as against the built-in set every accoun
+    34   fun target()  - The account's collections when signed in, else the default set.
+    36   fun url()
+    39   fun parse(body: String)  - The addon-protocol-shaped answer in, the visible collections out.
+    64   fun cover(url: String?)  - A tile is wide, so a generated tall picture is asked for in the wide shape; a picture the owner attached is us
+    71   fun own(all: List<Collection>, signedIn: Boolean)  - Only what the signed-in account made itself (the website marks those).
+    74   fun load(cb: (List<Collection>)  - [cb] may run twice: once from the cache, once with fresh data.
+    83   fun addonFor(s: Source)  - The addon that holds a folder's list: the one with that id if installed, else My Lists (the default or the acc
+    89   fun baseFor(s: Source)  - Where a source's catalog is fetched from: its addon, or the default My Lists link when that addon is not insta
+    92   fun rowName(s: Source, all: List<Source>)  - The row's name on a folder's page: the list's name, with Movies or Series when the same name is there for both
 
 ## data/CrashGuard.kt (26 lines) - Counts recent crashes.
      6 object CrashGuard  - Counts recent crashes.
