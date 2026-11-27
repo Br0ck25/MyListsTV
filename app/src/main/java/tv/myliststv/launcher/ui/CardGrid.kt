@@ -20,14 +20,27 @@ object CardGrid {
     fun columns(c: Context, bw: Int): Int =
         ((c.resources.displayMetrics.widthPixels - Ui.dp(c, EDGE * 2)) / cell(c, bw) + 0.02f).toInt().coerceAtLeast(1)
 
-    /** Puts [rv] in a grid of [bw]-wide cards, centred, with [top] and [bottom] space (in the same units as [Ui.dp]). */
+    /**
+     * Puts [rv] in a grid of [bw]-wide cards, centred, with [top] and [bottom] space (in the same units as [Ui.dp]). The number of columns
+     * is worked out from the width the grid really gets once it is on the screen, so a page beside the side menu has fewer columns than one
+     * across the whole screen, and the cards never overlap.
+     */
     fun apply(rv: RecyclerView, c: Context, bw: Int, top: Int = 6, bottom: Int = 24) {
-        val cols = columns(c, bw)
-        val side = Ui.dp(c, EDGE)   // left-aligned like a row on Home; what is left over stays at the right
-        rv.layoutManager = GridLayoutManager(c, cols)
+        rv.layoutManager = GridLayoutManager(c, columns(c, bw))
         rv.clipToPadding = false; rv.itemAnimator = null
+        fit(rv, c, bw, c.resources.displayMetrics.widthPixels, top, bottom)
+        rv.addOnLayoutChangeListener { v, l, _, r, _, _, _, _, _ -> if (r - l > 0) fit(rv, c, bw, r - l, top, bottom) }
+    }
+
+    /** Columns and edges for a grid that is [width] pixels wide. Nothing changes (so nothing is laid out again) when they already fit. */
+    private fun fit(rv: RecyclerView, c: Context, bw: Int, width: Int, top: Int, bottom: Int) {
+        val side = Ui.dp(c, EDGE)   // left-aligned like a row on Home; what is left over stays at the right
+        val cols = ((width - side * 2) / cell(c, bw) + 0.02f).toInt().coerceAtLeast(1)
         // The grid shares its width equally between the columns, so the leftover goes in the right padding: then each column is exactly one card wide.
-        val right = (c.resources.displayMetrics.widthPixels - side - cols * cell(c, bw)).toInt().coerceAtLeast(0)
-        rv.setPadding(side, Ui.dp(c, top), right, Ui.dp(c, bottom))
+        val right = (width - side - cols * cell(c, bw)).toInt().coerceAtLeast(0)
+        val lm = rv.layoutManager as? GridLayoutManager ?: return
+        if (lm.spanCount != cols) lm.spanCount = cols
+        if (rv.paddingLeft != side || rv.paddingRight != right || rv.paddingTop != Ui.dp(c, top) || rv.paddingBottom != Ui.dp(c, bottom))
+            rv.setPadding(side, Ui.dp(c, top), right, Ui.dp(c, bottom))
     }
 }
