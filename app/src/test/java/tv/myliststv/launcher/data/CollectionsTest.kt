@@ -47,9 +47,8 @@ class CollectionsTest {
     @Test fun garbageGivesNothing() { assertTrue(Collections.parse("nope").isEmpty()); assertTrue(Collections.parse("{}").isEmpty()) }
 
     @Test fun spotsAnSvgPicture() {
-        assertTrue(ImageLoader.isSvg("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 600 338\"></svg>".toByteArray()))
-        assertTrue(ImageLoader.isSvg("<?xml version=\"1.0\"?>
-<svg></svg>".toByteArray()))
+        assertTrue(ImageLoader.isSvg("<svg viewBox='0 0 600 338'></svg>".toByteArray()))
+        assertTrue(ImageLoader.isSvg("<?xml version='1.0'?><svg></svg>".toByteArray()))
         assertFalse(ImageLoader.isSvg(byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47)))
     }
 }
