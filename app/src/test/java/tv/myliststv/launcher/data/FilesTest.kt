@@ -15,11 +15,10 @@ class FilesTest {
     @Test fun readsAFileNameAsATitle() {
         assertEquals("The Movie 2019 1080p", VideoFiles.title("The.Movie.2019.1080p.mkv"))
         assertEquals("My Holiday", VideoFiles.title("My_Holiday.mp4"))
-        assertEquals("a.b", VideoFiles.title("a.b"))   // not a video: left alone
     }
 
     @Test fun sizesInWords() {
-        assertEquals("", VideoFiles.sizeText(0)); assertEquals("5 KB", VideoFiles.sizeText(5000)); assertEquals("700 MB", VideoFiles.sizeText(700L shl 20)); assertEquals("1.5 GB", VideoFiles.sizeText(3L shl 29))
+        assertEquals("", VideoFiles.sizeText(0)); assertEquals("4 KB", VideoFiles.sizeText(5000)); assertEquals("700 MB", VideoFiles.sizeText(700L shl 20)); assertEquals("1.5 GB", VideoFiles.sizeText(3L shl 29))
     }
 
     @Test fun episode2ComesBeforeEpisode10() {

@@ -64,7 +64,7 @@ object VideoFiles {
     }
 
     /** The id a played file is kept under (resume point, Continue Watching): stable for the same file. */
-    fun playId(uri: String) = "file:" + Http.sha1(uri).take(16)
+    fun playId(uri: String) = "file:" + java.security.MessageDigest.getInstance("SHA-1").digest(uri.toByteArray()).joinToString("") { "%02x".format(it) }.take(16)
 }
 
 /**
