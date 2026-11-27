@@ -58,6 +58,7 @@ object ImageLoader {
             try { f?.writeBytes(b) } catch (_: Exception) {}
             b
         }
+        if (isSvg(bytes)) return decodeSvg(bytes, w, h, alpha)
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
         if (bounds.outWidth <= 0) return null
@@ -68,6 +69,19 @@ object ImageLoader {
             inPreferredConfig = if (alpha) Bitmap.Config.ARGB_8888 else Bitmap.Config.RGB_565
         }
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+    }
+
+    /** True when the bytes are an SVG drawing (the website's generated collection pictures), which BitmapFactory cannot read. */
+    fun isSvg(bytes: ByteArray): Boolean = String(bytes, 0, minOf(bytes.size, 300), Charsets.UTF_8).contains("<svg")
+
+    /** Draws an SVG to fill a [w] x [h] bitmap. */
+    private fun decodeSvg(bytes: ByteArray, w: Int, h: Int, alpha: Boolean): Bitmap? {
+        if (w <= 0 || h <= 0) return null
+        val svg = com.caverock.androidsvg.SVG.getFromInputStream(bytes.inputStream())
+        svg.setDocumentWidth(w.toFloat()); svg.setDocumentHeight(h.toFloat())
+        val bmp = Bitmap.createBitmap(w, h, if (alpha) Bitmap.Config.ARGB_8888 else Bitmap.Config.RGB_565)
+        svg.renderToCanvas(android.graphics.Canvas(bmp))
+        return bmp
     }
 
     private fun prune() {

@@ -268,14 +268,16 @@ Find a symbol with grep on this file, then read only that file around the line n
     28   class Table  - "pkg/Class" to picture name, and "pkg" to the picture of its first listed activity.
     30   fun parse(p: XmlPullParser)
 
-## data/ImageLoader.kt (87 lines) - Loads images at the size they are shown, in RGB_565, into a byte-bounded memory cache and a disk cache.
+## data/ImageLoader.kt (101 lines) - Loads images at the size they are shown, in RGB_565, into a byte-bounded memory cache and a disk cache.
     17 object ImageLoader  - Loads images at the size they are shown, in RGB_565, into a byte-bounded memory cache and a disk cache.
     22   fun init(cacheDir: File, memoryBytes: Int)
     30   fun trim()
     33   fun load(view: ImageView, url: String?, w: Int, h: Int, alpha: Boolean = false,   - [fade] fades the picture in when it arrives from the network (not when it is already in memory).
     54   fun decode(url: String, w: Int, h: Int, alpha: Boolean)
-    73   fun prune()
-    84   fun clearDisk()
+    75   fun isSvg(bytes: ByteArray)  - True when the bytes are an SVG drawing (the website's generated collection pictures), which BitmapFactory cann
+    78   fun decodeSvg(bytes: ByteArray, w: Int, h: Int, alpha: Boolean)  - Draws an SVG to fill a [w] x [h] bitmap.
+    87   fun prune()
+    98   fun clearDisk()
 
 ## data/Json.kt (201 lines) - Parsing for Stremio addon protocol responses.
      7 object Json  - Parsing for Stremio addon protocol responses.
