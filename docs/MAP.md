@@ -18,7 +18,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     38   fun look(ctx: Context, c: ComponentName)  - What to draw for an app: the picture the owner chose for it, else the icon pack's, else its TV banner if it ha
     48   fun query(pm: PackageManager, category: String, sideloaded: Boolean)
 
-## MainActivity.kt (625 lines) - The home screen.
+## MainActivity.kt (626 lines) - The home screen.
     34 class MainActivity  - The home screen.
     67   fun updateBell()
     69   fun updateProfile()
@@ -35,42 +35,42 @@ Find a symbol with grep on this file, then read only that file around the line n
    251   fun afterStart(safe: Boolean)  - Safe mode, first-run welcome, or the "who is watching" question, whichever applies.
    264   fun welcome()  - First run: the setup screens (Home app, Home button, notifications, addons), each one skippable.
    270   fun setSideOpen(open: Boolean)  - Side bar (always there): a slim strip of icons that opens into the labelled panel while the focus is on it.
-   291   fun refreshRailTint()  - While the strip is slim only the icons show: the open page's is blue, the others dim.
-   296   fun sideItems()
-   300   fun tabView(t: String)
-   320   fun dropPages()  - What the pages show changed (addons, profile, settings): none of the built pages is right any more.
-   322   fun select(i: Int, force: Boolean = false)
-   360   fun reloadAddons()
-   363   fun go(where: String)  - Where a mapped remote button sends the launcher.
-   372   fun openFolder(f: Collections.Folder)
-   374   fun openMeta(m: Meta)
-   378   fun resumeEntry(e: WatchStore.Entry)
-   384   fun launch(a: AppEntry)
-   393   fun appMenu(a: AppEntry)
-   409   fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>,
-   414   fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
-   420   fun iconMenu(a: AppEntry)  - A picture of the owner's own for one app (an icon pack changes them all, in Settings).
-   434   fun onPause()
-   437   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
-   447   fun onResume()
-   469   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
-   477   fun onNewIntent(intent: Intent)
-   497   fun onBackPressed()
-   521   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
-   528   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
-   539   fun dispatchKeyEvent(e: KeyEvent)
-   569   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
-   575   fun isIn(v: View, container: View)
-   576   fun isInContent(v: View)
-   579   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
-   585   fun openSide()
-   586   fun closeSide()
-   589   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
-   609   fun onKeyDown(keyCode: Int, event: KeyEvent?)
-   614   fun onDestroy()
-   616   fun onTrimMemory(level: Int)
-   623   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
-   624   fun setTextColor(color: Int)
+   292   fun refreshRailTint()  - While the strip is slim only the icons show: the open page's is blue, the others dim.
+   297   fun sideItems()
+   301   fun tabView(t: String)
+   321   fun dropPages()  - What the pages show changed (addons, profile, settings): none of the built pages is right any more.
+   323   fun select(i: Int, force: Boolean = false)
+   361   fun reloadAddons()
+   364   fun go(where: String)  - Where a mapped remote button sends the launcher.
+   373   fun openFolder(f: Collections.Folder)
+   375   fun openMeta(m: Meta)
+   379   fun resumeEntry(e: WatchStore.Entry)
+   385   fun launch(a: AppEntry)
+   394   fun appMenu(a: AppEntry)
+   410   fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>,
+   415   fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
+   421   fun iconMenu(a: AppEntry)  - A picture of the owner's own for one app (an icon pack changes them all, in Settings).
+   435   fun onPause()
+   438   fun syncAccount()  - Pulls what the account holds (Library, addons, Continue Watching, Airing Next) at most every five minutes; als
+   448   fun onResume()
+   470   fun runHome(action: String)  - One of the Home button's jobs: to the top of Home, to another page, or any job the button mapper can do.
+   478   fun onNewIntent(intent: Intent)
+   498   fun onBackPressed()
+   522   fun focusItem(rv: androidx.recyclerview.widget.RecyclerView, pos: Int)  - Scrolls [rv] to [pos] and puts the focus on that item once it exists.
+   529   fun afterLayout(rv: androidx.recyclerview.widget.RecyclerView, then: ()  - Runs [then] after [rv]'s next layout, when the item it scrolled to exists.
+   540   fun dispatchKeyEvent(e: KeyEvent)
+   570   fun nearestTopIcon(from: View)  - Of the three buttons at the top right, the one whose middle is nearest across to [from].
+   576   fun isIn(v: View, container: View)
+   577   fun isInContent(v: View)
+   580   fun atLeftEdge(f: View)  - Is this card the first one in its strip, or in the first column of its grid?
+   586   fun openSide()
+   587   fun closeSide()
+   590   fun moveApp(e: KeyEvent, f: View)  - Moving an app: Left and Right swap it with its neighbour and save the order; OK or Back puts it down.
+   610   fun onKeyDown(keyCode: Int, event: KeyEvent?)
+   615   fun onDestroy()
+   617   fun onTrimMemory(level: Int)
+   624   fun showLabel(on: Boolean, gap: Int)  - The side bar is a slim strip of icons until it opens; then each icon gets its name.
+   625   fun setTextColor(color: Int)
 
 ## data/AccountWatched.kt (131 lines) - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
     12 object AccountWatched  - What the My Lists account has already watched, read once in a while from /api/nuvio-tv/watched so titles and e
@@ -996,12 +996,12 @@ Find a symbol with grep on this file, then read only that file around the line n
    243   fun restoreFocus()  - Back on this page with nothing focused (the page behind a details page, say): the card you were last on.
    248   fun hero(m: CardModel)
 
-## ui/CardGrid.kt (46 lines) - The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spa
-    13 object CardGrid  - The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spa
-    17   fun cell(c: Context, bw: Int)
-    20   fun columns(c: Context, bw: Int)  - How many cards of base width [bw] (Cards.kt: 118 poster, 208 wide or app) fit across, at the chosen card size.
-    28   fun apply(rv: RecyclerView, c: Context, bw: Int, top: Int = 6, bottom: Int = 24)  - Puts [rv] in a grid of [bw]-wide cards, centred, with [top] and [bottom] space (in the same units as [Ui.dp]).
-    36   fun fit(rv: RecyclerView, c: Context, bw: Int, width: Int, top: Int, bottom: Int  - Columns and edges for a grid that is [width] pixels wide.
+## ui/CardGrid.kt (65 lines) - The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spa
+    15 object CardGrid  - The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spa
+    19   fun cell(c: Context, bw: Int)
+    22   fun columns(c: Context, bw: Int)  - How many cards of base width [bw] (Cards.kt: 118 poster, 208 wide or app) fit across, at the chosen card size.
+    42   fun apply(rv: RecyclerView, c: Context, bw: Int, top: Int = 6, bottom: Int = 24)  - Puts [rv] in a grid of [bw]-wide cards with [top] and [bottom] space (in the same units as [Ui.dp]).
+    51   fun fit(rv: RecyclerView, c: Context, bw: Int, width: Int, top: Int, bottom: Int  - Columns, edges and the gap between cards for a grid [width] pixels wide.
 
 ## ui/Cards.kt (343 lines)
     25 class CardKind

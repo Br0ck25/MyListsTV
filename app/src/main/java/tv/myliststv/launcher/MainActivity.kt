@@ -281,8 +281,9 @@ class MainActivity : Activity() {
         }
         profileChipView?.apply {
             background = Ui.menuRowBg(this@MainActivity, normal = if (open) Ui.FILL else Ui.CLEAR)
-            (this as LinearLayout).gravity = if (open) Gravity.CENTER_VERTICAL else Gravity.CENTER
-            setPadding(Ui.dp(this@MainActivity, if (open) 6 else 0), Ui.dp(this@MainActivity, 5), Ui.dp(this@MainActivity, if (open) 16 else 0), Ui.dp(this@MainActivity, 5))
+            (this as LinearLayout).gravity = Gravity.CENTER_VERTICAL
+            // The same left edge as the page icons below it, open or slim (they use 16 open and 18 slim), so the picture sits right above them.
+            setPadding(Ui.dp(this@MainActivity, if (open) 16 else 18), Ui.dp(this@MainActivity, 3), Ui.dp(this@MainActivity, if (open) 16 else 0), Ui.dp(this@MainActivity, 3))
         }
         refreshRailTint()
     }
