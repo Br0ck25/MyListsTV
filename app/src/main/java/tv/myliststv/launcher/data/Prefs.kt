@@ -68,6 +68,11 @@ object Prefs {
         get() = sp.getBoolean("autoNext", true)
         set(v) = sp.edit().putBoolean("autoNext", v).apply()
 
+    /** Collections from My Lists as rows on Home. */
+    var showCollections: Boolean
+        get() = sp.getBoolean("collections", true)
+        set(v) { sp.edit().putBoolean("collections", v).apply(); epoch++ }
+
     var showAppsRow: Boolean
         get() = sp.getBoolean("appsRow", true)
         set(v) { sp.edit().putBoolean("appsRow", v).apply(); epoch++ }

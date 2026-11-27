@@ -170,6 +170,7 @@ class SettingsActivity : Activity() {
         if (Prefs.showAiring) add(toggle("Hide upcoming from Continue Watching", "An episode that is in Airing Next is not also shown in Continue Watching.", { Prefs.hideUpcomingContinue }, { Prefs.hideUpcomingContinue = it }))
         add(toggle("Show Continue Watching", "", { Prefs.showContinue }, { Prefs.showContinue = it }))
         add(toggle("Show apps row", "", { Prefs.showAppsRow }, { Prefs.showAppsRow = it }))
+        add(toggle("Show collections", "Rows of tiles from My Lists, such as Streaming Services, Genres and Studios. Choose them on mylistsaddon.com.", { Prefs.showCollections }, { Prefs.showCollections = it }))
         add(header("Content & Discovery", "Addons, catalogs, and discovery sources", R.drawable.ic_compass) { AddonStore.saved().size.let { "$it addon" + if (it == 1) "" else "s" } })
         add(card(""))
         add(action("Addons", "Manage addons, catalog order, and what each one provides", icon = R.drawable.ic_puzzle) { openSub("addons") })
