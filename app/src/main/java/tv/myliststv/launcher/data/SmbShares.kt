@@ -43,7 +43,7 @@ object SmbShares {
     fun all(): List<SmbShare> = try {
         val a = JSONArray(sp.getString("list", "[]"))
         (0 until a.length()).map { a.getJSONObject(it) }.map { o ->
-            SmbShare(o.getString("id"), o.getString("name"), o.getString("host"), o.getString("share"), o.optString("user"), Secure.unwrap(o.optString("pw")), o.optString("domain"), o.optInt("port", 445))
+            SmbShare(o.getString("id"), o.getString("name"), o.getString("host"), o.getString("share"), o.optString("user"), (Secure.unwrap(o.optString("pw")) ?: ""), o.optString("domain"), o.optInt("port", 445))
         }
     } catch (_: Exception) { emptyList() }
 
