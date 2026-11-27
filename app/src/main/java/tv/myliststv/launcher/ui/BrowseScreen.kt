@@ -52,6 +52,8 @@ class BrowseScreen(
     })
     val view: View
 
+    private companion object { const val MAX_LISTS = 40 }
+
     init {
         val root = Ui.vbox(c)
         val hero = Ui.vbox(c).apply { setPadding(Ui.dp(c, 48), Ui.dp(c, 10), Ui.dp(c, 420), Ui.dp(c, 6)) }
@@ -66,7 +68,9 @@ class BrowseScreen(
         rows.clear()
         if (withContinue) { continueRow()?.let { rows += it }; airingRow()?.let { rows += it } }
         val hidden = Prefs.homeHidden
-        val defs = Catalogs.browseRows(type, 8).filter { (_, cat) -> Catalogs.rowTitle(type, cat) !in hidden }
+        // Home shows the lists that are not hidden from it. Movies and Series show every list of their kind: hiding a list is for Home only.
+        val defs = if (type == null) Catalogs.browseRows(null, MAX_LISTS).filter { (_, cat) -> Catalogs.rowTitle(null, cat) !in hidden }
+            else Catalogs.browseRows(type, MAX_LISTS)
         if (defs.isEmpty() && Catalogs.enabled().isEmpty()) {
             heroTitle.text = "No catalog addon is on"
             heroDesc.text = "Turn one on in Settings, then Addons."

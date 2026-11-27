@@ -36,7 +36,7 @@ class ArrangeActivity : Activity() {
         // The same drawer as Settings: a back arrow with the title, the line under it, then the cards.
         val page = Ui.vbox(c)
         page.addView(SidePanel.backRow(c, if (pagesMode) "Arrange Pages" else if (apps) "Reorder Apps Row" else "Reorder Home Catalogs") { onBackPressed() }, Ui.matchWrap().apply { setMargins(Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14), 0) })
-        page.addView(Ui.text(c, if (pagesMode) "These are the pages along the top. Turn one off to hide it, or move it with the handle. Home always stays." else if (apps) "This controls the order of the apps on Home. The Apps page still shows all of them." else "This controls row order on Home. OK on a handle picks a row up; Up and Down move it.", 14f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { setMargins(Ui.dp(c, 28), Ui.dp(c, 6), Ui.dp(c, 28), Ui.dp(c, 6)) })
+        page.addView(Ui.text(c, if (pagesMode) "These are the pages along the top. Turn one off to hide it, or move it with the handle. Home always stays." else if (apps) "This controls the order of the apps on Home. The Apps page still shows all of them." else "This controls row order on Home. OK on a handle picks a row up; Up and Down move it. Turning a list off here hides it from Home only: Movies and Series still show it.", 14f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { setMargins(Ui.dp(c, 28), Ui.dp(c, 6), Ui.dp(c, 28), Ui.dp(c, 6)) })
         page.addView(ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false; clipToPadding = false }, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(SidePanel.drawer(c, page))
         if (apps) Http.background {
@@ -49,8 +49,8 @@ class ArrangeActivity : Activity() {
             fill((named + Pages.all.filter { it !in named }).map { Triple(it, it, sub[it] ?: "") }, Prefs.pageHidden.filter { it != "Home" }) { o, h -> Prefs.pageOrder = o; Prefs.pageHidden = h.filter { it != "Home" } }
         } else {
             val fixed = mapOf("Continue Watching" to "Your progress", "Airing Next" to "Next episodes of the shows you follow", "Your Apps" to "Installed apps") + Collections.knownTitles.associateWith { "Collection" }
-            val source = Catalogs.browseRows(null, 8).associate { (a, cat) -> Catalogs.rowTitle(null, cat) to (if (a.name.startsWith("My Lists")) "My Lists" else a.name) }
-            val titles = listOf("Continue Watching", "Airing Next") + Catalogs.browseRows(null, 8).map { (_, cat) -> Catalogs.rowTitle(null, cat) } + (if (Prefs.showCollections) Collections.knownTitles else emptyList()) + "Your Apps"
+            val source = Catalogs.browseRows(null, 40).associate { (a, cat) -> Catalogs.rowTitle(null, cat) to (if (a.name.startsWith("My Lists")) "My Lists" else a.name) }
+            val titles = listOf("Continue Watching", "Airing Next") + Catalogs.browseRows(null, 40).map { (_, cat) -> Catalogs.rowTitle(null, cat) } + (if (Prefs.showCollections) Collections.knownTitles else emptyList()) + "Your Apps"
             fill(titles.distinct().sortedBy { Prefs.homeRank(it) }.map { Triple(it, it, fixed[it] ?: source[it] ?: "Catalog") }, Prefs.homeHidden) { o, h -> Prefs.homeOrder = o; Prefs.homeHidden = h }
         }
     }
