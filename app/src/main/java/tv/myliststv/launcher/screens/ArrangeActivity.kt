@@ -25,22 +25,28 @@ class ArrangeActivity : Activity() {
     private val items = ArrayList<Item>()
     private var save: (List<String>, List<String>) -> Unit = { _, _ -> }
     private var carrying: View? = null
+    private var pagesMode = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val apps = intent.getStringExtra("what") == "apps"
+        pagesMode = intent.getStringExtra("what") == "pages"
         val c = this
         list = Ui.vbox(c).apply { setPadding(Ui.dp(c, 14), Ui.dp(c, 3), Ui.dp(c, 14), Ui.dp(c, 16)) }
         // The same drawer as Settings: a back arrow with the title, the line under it, then the cards.
         val page = Ui.vbox(c)
-        page.addView(SidePanel.backRow(c, if (apps) "Reorder Apps Row" else "Reorder Home Catalogs") { onBackPressed() }, Ui.matchWrap().apply { setMargins(Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14), 0) })
-        page.addView(Ui.text(c, if (apps) "This controls the order of the apps on Home. The Apps page still shows all of them." else "This controls row order on Home. OK on a handle picks a row up; Up and Down move it.", 14f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { setMargins(Ui.dp(c, 28), Ui.dp(c, 6), Ui.dp(c, 28), Ui.dp(c, 6)) })
+        page.addView(SidePanel.backRow(c, if (pagesMode) "Arrange Pages" else if (apps) "Reorder Apps Row" else "Reorder Home Catalogs") { onBackPressed() }, Ui.matchWrap().apply { setMargins(Ui.dp(c, 14), Ui.dp(c, 14), Ui.dp(c, 14), 0) })
+        page.addView(Ui.text(c, if (pagesMode) "These are the pages along the top. Turn one off to hide it, or move it with the handle. Home always stays." else if (apps) "This controls the order of the apps on Home. The Apps page still shows all of them." else "This controls row order on Home. OK on a handle picks a row up; Up and Down move it.", 14f, Ui.DIM).apply { setLineSpacing(0f, 1.1f) }, Ui.matchWrap().apply { setMargins(Ui.dp(c, 28), Ui.dp(c, 6), Ui.dp(c, 28), Ui.dp(c, 6)) })
         page.addView(ScrollView(c).apply { addView(list); isVerticalScrollBarEnabled = false; clipToPadding = false }, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(SidePanel.drawer(c, page))
         if (apps) Http.background {
             val order = Prefs.appOrder
             val all = AppRepository.load(this).sortedBy { order.indexOf(it.component.packageName).let { i -> if (i < 0) Int.MAX_VALUE else i } }
             Http.post { fill(all.map { Triple(it.component.packageName, it.label, "Installed app") }, Prefs.appHidden) { o, h -> Prefs.appOrder = o; Prefs.appHidden = h } }
+        } else if (pagesMode) {
+            val sub = mapOf("Home" to "Continue Watching and your rows", "Movies" to "Movie catalogs", "Series" to "Show catalogs", "Search" to "Find a title or a file", "Library" to "Titles you saved", "Apps" to "Everything installed", "Files" to "Videos on this box, USB drives and your network")
+            val named = Prefs.pageOrder.filter { it in Pages.all }
+            fill((named + Pages.all.filter { it !in named }).map { Triple(it, it, sub[it] ?: "") }, Prefs.pageHidden.filter { it != "Home" }) { o, h -> Prefs.pageOrder = o; Prefs.pageHidden = h.filter { it != "Home" } }
         } else {
             val fixed = mapOf("Continue Watching" to "Your progress", "Airing Next" to "Next episodes of the shows you follow", "Your Apps" to "Installed apps") + Collections.knownTitles.associateWith { "Collection" }
             val source = Catalogs.browseRows(null, 8).associate { (a, cat) -> Catalogs.rowTitle(null, cat) to (if (a.name.startsWith("My Lists")) "My Lists" else a.name) }
@@ -69,7 +75,7 @@ class ArrangeActivity : Activity() {
             gravity = Gravity.CENTER; setPadding(Ui.dp(c, 8), Ui.dp(c, 8), Ui.dp(c, 8), Ui.dp(c, 8))
             background = Ui.pillBg(c, Ui.CLEAR, Ui.FOCUS_FILL); isFocusable = true; isClickable = true
             addView(toggle)
-            setOnClickListener { item.hidden = !item.hidden; toggle.on = !item.hidden; toggle.invalidate(); name.alpha = if (item.hidden) 0.5f else 1f; persist() }
+            setOnClickListener { if (pagesMode && item.key == "Home") { Pop.toast(this@ArrangeActivity, "Home always shows", true); return@setOnClickListener }; item.hidden = !item.hidden; toggle.on = !item.hidden; toggle.invalidate(); name.alpha = if (item.hidden) 0.5f else 1f; persist() }
         }
         name.alpha = if (item.hidden) 0.5f else 1f
         val handle = ImageView(c).apply {

@@ -164,6 +164,7 @@ class SettingsActivity : Activity() {
         }
         add(action("Wallpaper", "Your own picture behind Home when no title is highlighted (apps, the Apps page). Pick one from the TV's files.") { wallpaperMenu() })
         add(card("Home rows"))
+        add(action("Arrange pages", "Hide Movies, Series, Files or any other page along the top, or put them in a different order.") { arrange("pages") })
         add(action("Arrange Home rows", "Move lists and the apps row up or down, or hide them from Home.") { arrange("rows") })
         add(action("Arrange apps row", "Reorder the apps on Home or hide some. The Apps tab still shows all of them.") { arrange("apps") })
         add(toggle("Show Airing Next", "The next episode of the shows you follow on My Lists, soonest first.", { Prefs.showAiring }, { Prefs.showAiring = it }))
