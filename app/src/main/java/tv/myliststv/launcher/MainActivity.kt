@@ -77,14 +77,16 @@ class MainActivity : Activity() {
     /** Who is watching: the current profile at the top right; OK switches. */
     private var profileChipView: View? = null
 
-    private fun profileChip(): View = Ui.hbox(this, 8).apply {
+    private fun profileChip(): View = Ui.hbox(this, if (navStyle != 0) 14 else 8).apply {
         profileChipView = this
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(Ui.dp(this@MainActivity, 6), Ui.dp(this@MainActivity, 5), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 5))
+        // In the side menu the picture lines up with the page icons below it: the same left edge and the same size as their square.
+        setPadding(Ui.dp(this@MainActivity, if (navStyle != 0) 16 else 6), Ui.dp(this@MainActivity, if (navStyle != 0) 3 else 5), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, if (navStyle != 0) 3 else 5))
         background = Ui.pillBg(this@MainActivity); isFocusable = true; isClickable = true
         profileAvatar = Ui.text(this@MainActivity, "", 14f, Ui.TEXT, true).apply { gravity = Gravity.CENTER; background = Ui.rounded(this@MainActivity, Ui.BRAND_FILL, Ui.R_PILL) }
         profileName = Ui.text(this@MainActivity, "", 14f, Ui.TEXT, true, 1)
-        addView(profileAvatar, LinearLayout.LayoutParams(Ui.dp(this@MainActivity, 30), Ui.dp(this@MainActivity, 30)))
+        val face = if (navStyle != 0) 34 else 30
+        addView(profileAvatar, LinearLayout.LayoutParams(Ui.dp(this@MainActivity, face), Ui.dp(this@MainActivity, face)))
         addView(profileName, Ui.wrap())
         setOnClickListener { pickProfile() }
     }
