@@ -20,7 +20,8 @@ object Collections {
         val nameIsOnCover: Boolean get() = cover?.contains("/api/channel-poster") == true
     }
 
-    data class Collection(val id: String, val title: String, val folders: List<Folder>)
+    /** [own] is the website's mark for a collection the account made itself, as against the built-in set every account is given. */
+    data class Collection(val id: String, val title: String, val folders: List<Folder>, val own: Boolean = false)
 
     /** The row titles last loaded, so the Arrange screen can list them. */
     @Volatile var knownTitles: List<String> = emptyList()
@@ -55,7 +56,7 @@ object Collections {
                 Folder(f.optString("id").ifEmpty { title }, title, cover(f.optString("coverImageUrl")), f.optBoolean("hideTitle"), sources)
             }
             val title = c.optString("title").ifEmpty { c.optString("name") }
-            if (title.isEmpty() || folders.isEmpty()) null else Collection(c.optString("id").ifEmpty { title }, title, folders)
+            if (title.isEmpty() || folders.isEmpty()) null else Collection(c.optString("id").ifEmpty { title }, title, folders, c.optBoolean("own"))
         }
     } catch (_: Exception) { emptyList() }
 
@@ -66,11 +67,8 @@ object Collections {
         return if (full.contains("/api/channel-poster") && !full.contains("format=")) full + (if (full.contains("?")) "&" else "?") + "format=landscape" else full
     }
 
-    /** The id of the account's own collections in the answer. Everything else is the website's built-in set (Streaming Services, Genres, Franchises, Studios), which every account gets. */
-    const val OWN_ID = "my-lists-collections"
-
-    /** Only what the signed-in account made itself. Signed out there is nothing of one's own, so nothing shows. */
-    fun own(all: List<Collection>, signedIn: Boolean): List<Collection> = if (signedIn) all.filter { it.id == OWN_ID } else emptyList()
+    /** Only what the signed-in account made itself (the website marks those). Everything else is the built-in set every account is given. Signed out there is nothing of one's own, so nothing shows. */
+    fun own(all: List<Collection>, signedIn: Boolean): List<Collection> = if (signedIn) all.filter { it.own } else emptyList()
 
     /** [cb] may run twice: once from the cache, once with fresh data. */
     fun load(cb: (List<Collection>) -> Unit) {

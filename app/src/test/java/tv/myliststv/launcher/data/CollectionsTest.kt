@@ -53,8 +53,13 @@ class CollectionsTest {
     }
 
     @Test fun onlyTheAccountsOwnCollectionsShow() {
-        val all = listOf(Collections.Collection("my-lists-collections", "My Lists Collections", emptyList()), Collections.Collection("col_mylists_genres", "Genres", emptyList()))
-        assertEquals(listOf("My Lists Collections"), Collections.own(all, true).map { it.title })
+        val all = listOf(Collections.Collection("col_mylists_streaming_services", "Streaming Services", emptyList(), own = true), Collections.Collection("col_mylists_genres", "Genres", emptyList()))
+        assertEquals(listOf("Streaming Services"), Collections.own(all, true).map { it.title })
         assertTrue("signed out has none of its own", Collections.own(all, false).isEmpty())
+    }
+
+    @Test fun readsTheOwnMark() {
+        val c = Collections.parse("""{"collections":[{"id":"a","title":"A","own":true,"folders":[{"id":"f","title":"F","catalogSources":[{"catalogId":"x","name":"X","type":"movie"}]}]},{"id":"b","title":"B","folders":[{"id":"g","title":"G","catalogSources":[{"catalogId":"y","name":"Y","type":"movie"}]}]}]}""")
+        assertEquals(listOf(true, false), c.map { it.own })
     }
 }
