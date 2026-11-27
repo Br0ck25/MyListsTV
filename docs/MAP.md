@@ -716,32 +716,32 @@ Find a symbol with grep on this file, then read only that file around the line n
    977   fun onStop()
    984   fun onDestroy()
 
-## screens/ProfileEditActivity.kt (161 lines) - A whole screen for making a profile (or changing one): a big preview that follows what you pick, the name, a k
+## screens/ProfileEditActivity.kt (180 lines) - A whole screen for making a profile (or changing one): a big preview that follows what you pick, the name, a k
     27 class ProfileEditActivity  - A whole screen for making a profile (or changing one): a big preview that follows what you pick, the name, a k
-    47   fun onCreate(savedInstanceState: Bundle?)
-    69   fun left()
-    97   fun right()
-   109   fun showKids()
-   111   fun showPicture()
-   113   fun pick(a: Avatars.Avatar)
-   120   fun showGroup(g: String?)  - The filter chips ("All" and each group) and the picture grid under them.
-   137   fun tile(a: Avatars.Avatar)
-   155   fun save()
+    48   fun onCreate(savedInstanceState: Bundle?)
+    70   fun left()
+   109   fun right()
+   121   fun showKids()
+   123   fun showPicture()
+   125   fun pick(a: Avatars.Avatar)
+   132   fun showGroup(g: String?)  - The filter chips ("All" and each group) and the picture grid under them.
+   149   fun tile(a: Avatars.Avatar)
+   167   fun remove(p: Profiles.P)
+   174   fun save()
 
-## screens/ProfilesActivity.kt (118 lines) - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
-    23 class ProfilesActivity  - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
-    28   fun onCreate(savedInstanceState: Bundle?)
-    45   fun build(focusId: String?)  - Draws the circles.
-    65   fun tile(face: View, name: String, sub: String?, subBrand: Boolean, onClick: ()  - One avatar: a round face with a focus ring, its name under it and an optional small line.
-    86   fun done(id: String)  - Hands the choice back to Home and leaves.
-    88   fun manage(p: Profiles.P)
-    95   fun edit(id: String)
-    97   fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
-   102   fun remove(p: Profiles.P)
-   112   fun addMenu()  - A whole Create profile screen (name, kids, pictures), not a pop-up.
-   117   fun onBackPressed()
+## screens/ProfilesActivity.kt (107 lines) - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
+    22 class ProfilesActivity  - "Who's watching?": the profiles as round avatars across the middle of a whole screen.
+    27   fun onCreate(savedInstanceState: Bundle?)
+    44   fun build(focusId: String?)  - Draws the circles.
+    64   fun tile(face: View, name: String, sub: String?, subBrand: Boolean, onClick: ()  - One avatar: a round face with a focus ring, its name under it and an optional small line.
+    85   fun done(id: String)  - Hands the choice back to Home and leaves.
+    88   fun manage(p: Profiles.P)  - Hold OK goes straight to the edit page (name, picture, kids, and Remove), not a menu.
+    90   fun edit(id: String)
+    92   fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
+   101   fun addMenu()  - A whole Create profile screen (name, kids, pictures), not a pop-up.
+   106   fun onBackPressed()
 
-## screens/SettingsActivity.kt (600 lines) - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
+## screens/SettingsActivity.kt (612 lines) - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
     28 class SettingsActivity  - Settings as a drawer (docs/DESIGN.md section 4): one rounded panel down the right edge over the dimmed screen.
     33   fun card(title: String)  - A card inside a group (kind S): its title, then the rows that follow it up to the next card.
     36   fun header(t: String, subtitle: String = "", icon: Int = 0, value: ()  - A group of the settings list: its name, the line under the page title, its icon, and a short summary shown at 
@@ -778,22 +778,23 @@ Find a symbol with grep on this file, then read only that file around the line n
    386   fun fadeEdges(s: ScrollView)  - Content fades out at the top and bottom of its area, so it looks like it goes behind the panel instead of bein
    388   fun onCreate(savedInstanceState: Bundle?)
    398   fun regroup()
-   414   fun sameShape(a: List<Row>, b: List<Row>)  - The two pages show the same rows in the same order: only values differ, so they can be changed where they are.
-   424   fun softRefresh(row: Int)  - After a toggle or choice: change that page's values where they stand, so nothing is rebuilt, flashes or loses 
-   434   fun refresh(keep: Int = -1)  - Rebuilds the groups and the page that shows, and puts focus back on the row that had it.
-   443   fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true, scrolls  - Puts the first page or the open group's page in the panel, with focus on the row tagged [focusRow] (else the f
-   450   fun scrollViews(v: View, out: ArrayList<ScrollView> = ArrayList()
-   457   fun rowViews(v: View, out: ArrayList<View> = ArrayList()  - The views a page tags with their row number (a group's number on the first page), in order.
-   462   fun canFocus(v: View)
-   464   fun scrolling(v: View)
-   467   fun mainPage()  - The groups under their small headings.
-   479   fun groupRow(g: Group, i: Int)
-   491   fun groupPage()  - A group's page (or the Addons page inside it): a back arrow with the title, the line under it, then the rows.
-   524   fun closeSubs()
-   527   fun goBack()  - Up one page: out of an addon, out of the Addons list, out of the group, then out of Settings.
-   535   fun view(r: Row, changed: ()
-   597   fun onBackPressed()
-   599   fun onDestroy()
+   415   fun sameShape(a: List<Row>, b: List<Row>)  - The two pages show the same rows in the same order: only values differ, so they can be changed where they are.
+   425   fun softRefresh(row: Int)  - After a toggle or choice: change that page's values where they stand, so nothing is rebuilt, flashes or loses 
+   435   fun resumeRefresh()  - Coming back from another screen (Arrange, an app's page): change only what is different, so the panel does not
+   445   fun refresh(keep: Int = -1)  - Rebuilds the groups and the page that shows, and puts focus back on the row that had it.
+   454   fun show(focusRow: Int, slide: Boolean = false, forward: Boolean = true, scrolls  - Puts the first page or the open group's page in the panel, with focus on the row tagged [focusRow] (else the f
+   461   fun scrollViews(v: View, out: ArrayList<ScrollView> = ArrayList()
+   468   fun rowViews(v: View, out: ArrayList<View> = ArrayList()  - The views a page tags with their row number (a group's number on the first page), in order.
+   473   fun canFocus(v: View)
+   475   fun scrolling(v: View)
+   478   fun mainPage()  - The groups under their small headings.
+   491   fun groupRow(g: Group, i: Int)
+   503   fun groupPage()  - A group's page (or the Addons page inside it): a back arrow with the title, the line under it, then the rows.
+   536   fun closeSubs()
+   539   fun goBack()  - Up one page: out of an addon, out of the Addons list, out of the group, then out of Settings.
+   547   fun view(r: Row, changed: ()
+   609   fun onBackPressed()
+   611   fun onDestroy()
 
 ## screens/SetupActivity.kt (129 lines) - First run: one full screen per step (Home app, Home button, notifications, addons).
     25 class SetupActivity  - First run: one full screen per step (Home app, Home button, notifications, addons).

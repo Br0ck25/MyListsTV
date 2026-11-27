@@ -13,7 +13,6 @@ import tv.myliststv.launcher.data.Prefs
 import tv.myliststv.launcher.data.Profiles
 import android.widget.ImageView
 import tv.myliststv.launcher.ui.Avatars
-import tv.myliststv.launcher.ui.Sheet
 import tv.myliststv.launcher.ui.Ui
 
 /**
@@ -85,26 +84,16 @@ class ProfilesActivity : Activity() {
     /** Hands the choice back to Home and leaves. */
     private fun done(id: String) { setResult(RESULT_OK, Intent().putExtra("id", id).putExtra("force", reload)); finish() }
 
-    private fun manage(p: Profiles.P) {
-        val items = ArrayList<Pair<String, () -> Unit>>()
-        items += "Edit name and picture" to { edit(p.id) }
-        if (Profiles.all().size > 1) items += "Remove" to { remove(p) }
-        Sheet.menu(this, p.name, null, items)
-    }
+    /** Hold OK goes straight to the edit page (name, picture, kids, and Remove), not a menu. */
+    private fun manage(p: Profiles.P) = edit(p.id)
 
     private fun edit(id: String) = startActivityForResult(Intent(this, ProfileEditActivity::class.java).putExtra(ProfileEditActivity.EXTRA_ID, id), EDIT)
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == EDIT && resultCode == RESULT_OK) build(data?.getStringExtra("id"))
-    }
-
-    private fun remove(p: Profiles.P) {
-        Sheet.confirm(this, "Remove ${p.name}?", "Its addons, Library and history go with it. This cannot be undone.", "Remove", "Keep") {
-            val wasActive = p.id == Profiles.activeId
-            Profiles.remove(p.id)
-            if (wasActive) { Profiles.switchTo(this, Profiles.activeId); reload = true }
-            build(Profiles.activeId)
+        if (requestCode == EDIT && resultCode == RESULT_OK) {
+            if (data?.getBooleanExtra("wasActive", false) == true) reload = true   // the profile in use was removed: Home must reload
+            build(data?.getStringExtra("id"))
         }
     }
 

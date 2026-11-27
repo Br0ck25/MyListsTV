@@ -64,7 +64,7 @@ class SettingsActivity : Activity() {
 
     private fun openSub(id: String) { subStack.add(id); show(0, slide = true) }
 
-    override fun onResume() { super.onResume(); if (::host.isInitialized) refresh() }
+    override fun onResume() { super.onResume(); if (::host.isInitialized) resumeRefresh() }
 
     private val pictures = PicturePicker(this, 41)
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) { super.onActivityResult(requestCode, resultCode, data); pictures.result(requestCode, resultCode, data) }
@@ -409,6 +409,7 @@ class SettingsActivity : Activity() {
     private var pageRows: List<Row> = emptyList()
     private val live = HashMap<Int, (Row) -> Unit>()
     private var pageId: String? = null   // which sub-page the rows above belong to
+    private var mainSig = ""            // what the first page shows (each group's name and value)
 
     /** The two pages show the same rows in the same order: only values differ, so they can be changed where they are. */
     private fun sameShape(a: List<Row>, b: List<Row>) = a.size == b.size && a.indices.all { i ->
@@ -428,6 +429,16 @@ class SettingsActivity : Activity() {
         if (!sameShape(pageRows, now)) { refresh(keep = row); return }
         pageRows = now
         now.forEachIndexed { i, r -> live[i]?.invoke(r) }
+    }
+
+    /** Coming back from another screen (Arrange, an app's page): change only what is different, so the panel does not redraw when nothing changed. */
+    private fun resumeRefresh() {
+        regroup()
+        if (open) {
+            val now = subPage()?.third ?: groups[cat].rows
+            if (pageId == subStack.lastOrNull() && sameShape(pageRows, now)) { pageRows = now; now.forEachIndexed { i, r -> live[i]?.invoke(r) }; return }
+        } else if (mainSig == groups.joinToString("|") { it.name + "=" + it.value }) return
+        refresh()
     }
 
     /** Rebuilds the groups and the page that shows, and puts focus back on the row that had it. [keep] is the row to focus instead. */
@@ -466,6 +477,7 @@ class SettingsActivity : Activity() {
     /** The groups under their small headings. */
     private fun mainPage(): View {
         val me = this
+        mainSig = groups.joinToString("|") { it.name + "=" + it.value }
         val list = Ui.vbox(me).apply { setPadding(Ui.dp(me, 14), Ui.dp(me, 8), Ui.dp(me, 14), Ui.dp(me, 16)) }
         sections.forEach { (name, members) ->
             val shown = members.map { m -> groups.indexOfFirst { it.name == m } }.filter { it >= 0 }

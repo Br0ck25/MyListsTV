@@ -34,6 +34,7 @@ class ProfileEditActivity : Activity() {
     private var chosen = Avatars.all.first().id
     private var kids = false
     private var group: String? = null
+    private var armed = false   // Remove profile has been pressed once
 
     private lateinit var preview: ImageView
     private lateinit var nameField: EditText
@@ -90,6 +91,17 @@ class ProfileEditActivity : Activity() {
         col.addView(Ui.button(c, "Surprise me") { pick(Avatars.pick(System.nanoTime().toInt())) }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 10) })
         col.addView(Ui.button(c, if (editing == null) "Create" else "Save", primary = true) { save() }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 14) })
         col.addView(Ui.button(c, "Cancel") { finish() }, Ui.matchWrap().apply { topMargin = Ui.dp(c, 10) })
+        // Remove lives here too (two presses, no pop-up). The last profile cannot be removed.
+        val who = editing
+        if (who != null && Profiles.all().size > 1) {
+            lateinit var rm: TextView
+            rm = Ui.button(c, "Remove profile") {
+                if (!armed) { armed = true; rm.text = "Press again: removes its addons, Library and history" }
+                else remove(who)
+            }
+            rm.setOnFocusChangeListener { _, f -> if (!f && armed) { armed = false; rm.text = "Remove profile" } }
+            col.addView(rm, Ui.matchWrap().apply { topMargin = Ui.dp(c, 10) })
+        }
         showKids()
         return col
     }
@@ -150,6 +162,13 @@ class ProfileEditActivity : Activity() {
         checks[a.id] = tick
         Ui.focusScale(frame, Prefs.lite(), 1.1f)
         return frame.also { it.layoutParams = LinearLayout.LayoutParams(Ui.dp(c, size), Ui.dp(c, size)) }
+    }
+
+    private fun remove(p: Profiles.P) {
+        val wasActive = p.id == Profiles.activeId
+        Profiles.remove(p.id)
+        if (wasActive) Profiles.switchTo(this, Profiles.activeId)
+        setResult(RESULT_OK, Intent().putExtra("id", Profiles.activeId).putExtra("wasActive", wasActive)); finish()
     }
 
     private fun save() {
