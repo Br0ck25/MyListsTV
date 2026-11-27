@@ -996,11 +996,12 @@ Find a symbol with grep on this file, then read only that file around the line n
    239   fun restoreFocus()  - Back on this page with nothing focused (the page behind a details page, say): the card you were last on.
    244   fun hero(m: CardModel)
 
-## ui/CardGrid.kt (33 lines) - The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spa
+## ui/CardGrid.kt (46 lines) - The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spa
     13 object CardGrid  - The one way a page lays cards out in a grid (Search, Library, Apps), so every page has the same card size, spa
     17   fun cell(c: Context, bw: Int)
     20   fun columns(c: Context, bw: Int)  - How many cards of base width [bw] (Cards.kt: 118 poster, 208 wide or app) fit across, at the chosen card size.
-    24   fun apply(rv: RecyclerView, c: Context, bw: Int, top: Int = 6, bottom: Int = 24)  - Puts [rv] in a grid of [bw]-wide cards, centred, with [top] and [bottom] space (in the same units as [Ui.dp]).
+    28   fun apply(rv: RecyclerView, c: Context, bw: Int, top: Int = 6, bottom: Int = 24)  - Puts [rv] in a grid of [bw]-wide cards, centred, with [top] and [bottom] space (in the same units as [Ui.dp]).
+    36   fun fit(rv: RecyclerView, c: Context, bw: Int, width: Int, top: Int, bottom: Int  - Columns and edges for a grid that is [width] pixels wide.
 
 ## ui/Cards.kt (343 lines)
     25 class CardKind
