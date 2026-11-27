@@ -18,7 +18,7 @@ object WatchNext {
             if (!c.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) return@background
             val cr = c.contentResolver
             cr.delete(TvContractCompat.WatchNextPrograms.CONTENT_URI, null, null)   // only removes this app's entries
-            for (e in WatchStore.continueWatching().take(5)) {
+            for (e in WatchStore.continueWatching().filter { !it.metaId.startsWith("file:") }.take(5)) {
                 val open = Intent(c, DetailsActivity::class.java).putExtra("meta", Json.metaToJson(Meta(e.metaId, e.type, e.name, e.poster, e.background))).putExtra("play", e.videoId)
                 val b = WatchNextProgram.Builder()
                     .setType(if (e.type == "series") TvContractCompat.WatchNextPrograms.TYPE_TV_EPISODE else TvContractCompat.WatchNextPrograms.TYPE_MOVIE)

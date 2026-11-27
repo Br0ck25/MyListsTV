@@ -335,9 +335,12 @@ class PlayerActivity : Activity() {
     private fun playerHasVideo(): Boolean = player.currentTracks.groups.any { it.type == C.TRACK_TYPE_VIDEO && it.isSelected }
 
     /** Starts a stream for a new video: asks subtitle addons first (3 s at most), then plays. Later restarts of the same video reuse the answer. */
+    /** Playing a file from the Files page rather than a title from the addons. */
+    private val isFile get() = PlaySession.meta?.id?.startsWith("file:") == true
+
     private fun begin(s: StreamItem, pos: Long, msg: String) {
         val vid = PlaySession.videoId
-        if (subsFor == vid) { startStream(s, pos, msg); return }
+        if (subsFor == vid || isFile) { startStream(s, pos, msg); return }   // a file from Files has no addon subtitles to ask for
         subsFor = vid; segs = emptyList(); showSlate("Finding subtitles…")
         Subs.fetch(StreamResolver.typeFor(PlaySession.meta!!.type, PlaySession.meta!!.id, vid), vid, Prefs.subtitleLang) { found -> if (!isFinishing) { subs = found; startStream(s, pos, msg) } }
     }
@@ -397,7 +400,7 @@ class PlayerActivity : Activity() {
         PlayerEngine.matchFrameRate(this, player.videoFormat?.frameRate ?: 0f)?.let { bannerShow(it) }
         zoom = PlayerPrefs.zoom(PlaySession.meta?.id); applyZoom()
         val vid = PlaySession.videoId
-        if (Prefs.skipIntro) Segments.load(vid) { if (vid == PlaySession.videoId) segs = it }
+        if (Prefs.skipIntro && !isFile) Segments.load(vid) { if (vid == PlaySession.videoId) segs = it }
         hideSlate()
         scheduleHide()
         if (fallback != null && fallback!!.attempts > 0 && autoSelected) bannerShow("The first source failed. Playing the next best match.")

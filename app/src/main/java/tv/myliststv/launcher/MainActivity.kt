@@ -33,7 +33,7 @@ private const val PROFILE_REQUEST = 52
  */
 class MainActivity : Activity() {
 
-    private val tabs = listOf("Home", "Movies", "Series", "Search", "Library", "Apps")
+    private val tabs = listOf("Home", "Movies", "Series", "Search", "Library", "Apps", "Files")
     private val tabViews = ArrayList<TextView>()
     private lateinit var content: FrameLayout
     private lateinit var settingsBtn: View
@@ -290,7 +290,7 @@ class MainActivity : Activity() {
 
     private fun sideItems(): List<TabText> = tabViews.map { it as TabText }
 
-    private val tabIcons = listOf(R.drawable.ic_home, R.drawable.ic_play, R.drawable.ic_tv, R.drawable.ic_search, R.drawable.ic_bookmark, R.drawable.ic_apps)
+    private val tabIcons = listOf(R.drawable.ic_home, R.drawable.ic_play, R.drawable.ic_tv, R.drawable.ic_search, R.drawable.ic_bookmark, R.drawable.ic_apps, R.drawable.ic_folder)
 
     private fun tabView(t: String) = TabText(this).apply {
         text = t; label = t; Ui.size(this, if (navStyle != 0) 20f else 15f); typeface = android.graphics.Typeface.DEFAULT_BOLD
@@ -345,6 +345,7 @@ class MainActivity : Activity() {
             3 -> { val s = SearchScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start(); keep(s, s.view) }
             4 -> { val s = LibraryScreen(this, ::openMeta, ::setBackdrop); screen = s; content.addView(s.view); s.start() }
             5 -> { val s = AppsScreen(this, ::launch, ::appMenu); screen = s; content.addView(s.view); s.start() }
+            6 -> { val s = FilesScreen(this); screen = s; content.addView(s.view); s.start() }
         }
     }
 
@@ -370,6 +371,7 @@ class MainActivity : Activity() {
     }
 
     private fun resumeEntry(e: WatchStore.Entry) {
+        if (e.metaId.startsWith("file:")) { FilesPlay.resume(this, e); return }   // a video from Files: no title page, just play it
         val m = Meta(e.metaId, e.type, e.name, e.poster, e.background)
         startActivity(Intent(this, DetailsActivity::class.java).putExtra("meta", Json.metaToJson(m)).putExtra("play", e.videoId))
     }
@@ -399,6 +401,11 @@ class MainActivity : Activity() {
     }
 
     private val pictures = PicturePicker(this, 42)
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == FilesScreen.REQ) (screen as? FilesScreen)?.onPermission()
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data); pictures.result(requestCode, resultCode, data)
         if (requestCode == PROFILE_REQUEST && resultCode == RESULT_OK) data?.getStringExtra("id")?.let { switchProfile(it, data.getBooleanExtra("force", false)) }
@@ -482,6 +489,7 @@ class MainActivity : Activity() {
 
     @Deprecated("Back walks toward the top; the launcher itself never closes.")
     override fun onBackPressed() {
+        if ((screen as? FilesScreen)?.back() == true) return   // up one folder first
         val f = currentFocus
         val inBar = f != null && (f.parent === tabViews[0].parent)
         if (inBar || current < 0) return   // On the tab bar, Back does nothing: this is the home screen.
