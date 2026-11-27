@@ -57,7 +57,7 @@ class FilesScreen(private val act: Activity) {
         val page = stack.last()
         val gen = ++generation
         heading.text = if (page.kind == Kind.ROOT) "Files" else page.title
-        where.text = if (page.kind == Kind.ROOT) "Videos on this box, on USB drives and on your network" else crumb(page)
+        where.text = if (page.kind == Kind.ROOT) "Videos on this box, on USB drives and on your network" else crumb()
         body.removeAllViews()
         when (page.kind) {
             Kind.ROOT -> root(page, gen)
@@ -66,10 +66,8 @@ class FilesScreen(private val act: Activity) {
         }
     }
 
-    private fun crumb(p: Page) = when (p.kind) {
-        Kind.SMB -> p.share!!.name + if (p.path.isEmpty()) "" else "  ›  " + p.path.replace("/", "  ›  ")
-        else -> p.path.removePrefix("/storage/").replace("/", "  ›  ")
-    }
+    /** The drive or share, then each folder you opened, in the order you opened them. */
+    private fun crumb() = stack.drop(1).joinToString("  ›  ") { it.title }
 
     /** Runs [work] off the main thread and lists what it returns, unless the page has moved on. */
     private fun background(gen: Int, onError: ((Throwable) -> Unit)? = null, work: () -> List<FileItem>) {
@@ -89,6 +87,8 @@ class FilesScreen(private val act: Activity) {
         } else {
             add(info("Looking for videos…"))
             val slot = body.childCount - 1
+            var startedOn: View? = null
+            body.post { startedOn = body.findFocus() }
             Http.background {
                 val found = try { LocalFiles.scan(act) } catch (_: Throwable) { emptyList() }
                 val labels = LocalFiles.labels(act)
@@ -101,7 +101,8 @@ class FilesScreen(private val act: Activity) {
                     roots.forEachIndexed { i, r ->
                         body.addView(row(R.drawable.ic_folder, r.name, "${r.count} video${if (r.count == 1) "" else "s"}", null, { open(Page(r.name, Kind.LOCAL, r.path)) }), slot + i, rowParams())
                     }
-                    if (body.findFocus() == null) focusFirst(page)
+                    // The focus was put on the first row that existed while the drives were still being looked for; move it to the first drive.
+                    if (roots.isNotEmpty() && (body.findFocus() == null || body.findFocus() === startedOn)) body.getChildAt(slot)?.requestFocus()
                 }
             }
         }
@@ -184,13 +185,16 @@ class FilesScreen(private val act: Activity) {
     private fun editShare(existing: SmbShare?) {
         val s = Sheet(act, if (existing == null) "Add a network share" else "Change ${existing.name}",
             "Address is the NAS or computer (nas, or 192.168.1.20). Share is the folder it offers (Movies). Leave the username empty to join as a guest.")
-        val addr = s.field("Address", existing?.let { it.host + if (it.port != 445) ":${it.port}" else "" }.orEmpty()) { }
-        val share = s.field("Share name", existing?.share.orEmpty()) { }
-        val user = s.field("Username (empty for guest)", existing?.user.orEmpty()) { }
-        val pass = s.field("Password", existing?.password.orEmpty()) { }.apply {
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD; transformationMethod = PasswordTransformationMethod.getInstance()
-        }
-        s.card("Connect and save", highlighted = true) {
+        // The keyboard's check key moves to the next field, and from the last one to the button (hiding the keyboard).
+        lateinit var share: EditText; lateinit var user: EditText; lateinit var pass: EditText; lateinit var go: View
+        val addr = s.field("Address", existing?.let { it.host + if (it.port != 445) ":${it.port}" else "" }.orEmpty()) { share.requestFocus() }
+        share = s.field("Share name", existing?.share.orEmpty()) { user.requestFocus() }
+        user = s.field("Username (empty for guest)", existing?.user.orEmpty()) { pass.requestFocus() }
+        pass = s.field("Password", existing?.password.orEmpty()) {
+            (act.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).hideSoftInputFromWindow(pass.windowToken, 0)
+            go.requestFocus()
+        }.apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD; transformationMethod = PasswordTransformationMethod.getInstance() }
+        go = s.card("Connect and save", highlighted = true) {
             val (host, port, inAddress) = SmbShares.parseAddress(addr.text.toString())
             val name = share.text.toString().trim().trim('/').ifEmpty { inAddress }.substringBefore('/')
             if (host.isEmpty() || name.isEmpty()) { Pop.toast(act, "Both the address and the share name are needed", true); return@card }
