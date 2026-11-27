@@ -78,9 +78,11 @@ object ImageLoader {
     private fun decodeSvg(bytes: ByteArray, w: Int, h: Int, alpha: Boolean): Bitmap? {
         if (w <= 0 || h <= 0) return null
         val svg = com.caverock.androidsvg.SVG.getFromInputStream(bytes.inputStream())
-        svg.setDocumentWidth(w.toFloat()); svg.setDocumentHeight(h.toFloat())
-        val bmp = Bitmap.createBitmap(w, h, if (alpha) Bitmap.Config.ARGB_8888 else Bitmap.Config.RGB_565)
-        svg.renderToCanvas(android.graphics.Canvas(bmp))
+        // A drawing with no viewBox is fitted by its own size; then it is fitted, whole and centred, into the tile.
+        if (svg.documentViewBox == null && svg.documentWidth > 0 && svg.documentHeight > 0) svg.setDocumentViewBox(0f, 0f, svg.documentWidth, svg.documentHeight)
+        // Transparent where the drawing is, so a logo sits on the tile's own colour.
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        svg.renderToCanvas(android.graphics.Canvas(bmp), com.caverock.androidsvg.RenderOptions.create().viewPort(0f, 0f, w.toFloat(), h.toFloat()))
         return bmp
     }
 

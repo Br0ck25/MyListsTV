@@ -51,4 +51,10 @@ class CollectionsTest {
         assertTrue(ImageLoader.isSvg("<?xml version='1.0'?><svg></svg>".toByteArray()))
         assertFalse(ImageLoader.isSvg(byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47)))
     }
+
+    @Test fun onlyTheAccountsOwnCollectionsShow() {
+        val all = listOf(Collections.Collection("my-lists-collections", "My Lists Collections", emptyList()), Collections.Collection("col_mylists_genres", "Genres", emptyList()))
+        assertEquals(listOf("My Lists Collections"), Collections.own(all, true).map { it.title })
+        assertTrue("signed out has none of its own", Collections.own(all, false).isEmpty())
+    }
 }

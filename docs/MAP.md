@@ -191,7 +191,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     10   fun syncUrl(accountLink: String)  - The account's sync list: its channels, each with the id the addon serves details for.
     13   fun byName(sync: String, name: String)  - The details id of the channel called [name] in a sync answer, or null when it is not there.
 
-## data/Collections.kt (91 lines) - Collections from My Lists: groups of tiles (Streaming Services, Genres, Studios, or the account's own folders)
+## data/Collections.kt (98 lines) - Collections from My Lists: groups of tiles (Streaming Services, Genres, Studios, or the account's own folders)
     10 object Collections  - Collections from My Lists: groups of tiles (Streaming Services, Genres, Studios, or the account's own folders)
     15   class Source  - One list inside a folder: which addon has it, its catalog id, its name and whether it holds movies or series.
     18   class Folder  - A tile.
@@ -200,10 +200,11 @@ Find a symbol with grep on this file, then read only that file around the line n
     35   fun url()
     38   fun parse(body: String)  - The addon-protocol-shaped answer in, the visible collections out.
     63   fun cover(url: String?)  - A tile is wide, so a generated tall picture is asked for in the wide shape; a picture the owner attached is us
-    70   fun load(cb: (List<Collection>)  - [cb] may run twice: once from the cache, once with fresh data.
-    78   fun addonFor(s: Source)  - The addon that holds a folder's list: the one with that id if installed, else My Lists (the default or the acc
-    84   fun baseFor(s: Source)  - Where a source's catalog is fetched from: its addon, or the default My Lists link when that addon is not insta
-    87   fun rowName(s: Source, all: List<Source>)  - The row's name on a folder's page: the list's name, with Movies or Series when the same name is there for both
+    73   fun own(all: List<Collection>, signedIn: Boolean)  - Only what the signed-in account made itself.
+    76   fun load(cb: (List<Collection>)  - [cb] may run twice: once from the cache, once with fresh data.
+    85   fun addonFor(s: Source)  - The addon that holds a folder's list: the one with that id if installed, else My Lists (the default or the acc
+    91   fun baseFor(s: Source)  - Where a source's catalog is fetched from: its addon, or the default My Lists link when that addon is not insta
+    94   fun rowName(s: Source, all: List<Source>)  - The row's name on a folder's page: the list's name, with Movies or Series when the same name is there for both
 
 ## data/CrashGuard.kt (26 lines) - Counts recent crashes.
      6 object CrashGuard  - Counts recent crashes.
@@ -268,7 +269,7 @@ Find a symbol with grep on this file, then read only that file around the line n
     28   class Table  - "pkg/Class" to picture name, and "pkg" to the picture of its first listed activity.
     30   fun parse(p: XmlPullParser)
 
-## data/ImageLoader.kt (101 lines) - Loads images at the size they are shown, in RGB_565, into a byte-bounded memory cache and a disk cache.
+## data/ImageLoader.kt (103 lines) - Loads images at the size they are shown, in RGB_565, into a byte-bounded memory cache and a disk cache.
     17 object ImageLoader  - Loads images at the size they are shown, in RGB_565, into a byte-bounded memory cache and a disk cache.
     22   fun init(cacheDir: File, memoryBytes: Int)
     30   fun trim()
@@ -276,8 +277,8 @@ Find a symbol with grep on this file, then read only that file around the line n
     54   fun decode(url: String, w: Int, h: Int, alpha: Boolean)
     75   fun isSvg(bytes: ByteArray)  - True when the bytes are an SVG drawing (the website's generated collection pictures), which BitmapFactory cann
     78   fun decodeSvg(bytes: ByteArray, w: Int, h: Int, alpha: Boolean)  - Draws an SVG to fill a [w] x [h] bitmap.
-    87   fun prune()
-    98   fun clearDisk()
+    89   fun prune()
+   100   fun clearDisk()
 
 ## data/Json.kt (201 lines) - Parsing for Stremio addon protocol responses.
      7 object Json  - Parsing for Stremio addon protocol responses.
