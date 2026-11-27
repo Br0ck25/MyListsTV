@@ -15,6 +15,7 @@ class App : Application() {
         Http.init(this)
         ImageLoader.init(cacheDir, Prefs.memoryCacheBytes())
         AddonStore.init(this)
+        SmbShares.init(this)
         Profiles.init(this)
         WatchStore.init(this)
     }

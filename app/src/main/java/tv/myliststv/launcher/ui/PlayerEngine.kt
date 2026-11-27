@@ -7,6 +7,7 @@ import android.view.WindowManager
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -21,6 +22,7 @@ import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.SubtitleView
 import tv.myliststv.launcher.data.PlayerPrefs
 import tv.myliststv.launcher.data.Prefs
+import tv.myliststv.launcher.data.SchemeDataSource
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -73,7 +75,10 @@ object PlayerEngine {
             .setConnectTimeoutMs(10_000).setReadTimeoutMs(20_000)
             .setAllowCrossProtocolRedirects(true)
             .setDefaultRequestProperties(headers)
-        return DefaultMediaSourceFactory(DefaultDataSource.Factory(c, http), DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true))
+        val normal = DefaultDataSource.Factory(c, http)
+        // smb:// (a video on a network share) goes to the share reader; everything else to the usual one.
+        val factory = DataSource.Factory { SchemeDataSource(normal.createDataSource()) }
+        return DefaultMediaSourceFactory(factory, DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true))
             .setLoadErrorHandlingPolicy(DefaultLoadErrorHandlingPolicy(8))
     }
 

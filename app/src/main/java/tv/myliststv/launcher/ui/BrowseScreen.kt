@@ -43,7 +43,8 @@ class BrowseScreen(
     }, { model ->
         when (val p = model.payload) {
             is AppEntry -> onAppMenu(p)
-            is WatchStore.Entry -> Sheet.menu(c, p.name, if (p.type == "series" && p.season >= 0) "S${p.season} \u00b7 E${p.episode}" else null, listOf(
+            is WatchStore.Entry -> if (p.metaId.startsWith("file:")) Sheet.menu(c, p.name, "From Files", listOf("Remove from Continue Watching" to { WatchStore.remove(p.metaId); refreshContinue() }))
+                else Sheet.menu(c, p.name, if (p.type == "series" && p.season >= 0) "S${p.season} \u00b7 E${p.episode}" else null, listOf(
                 "Go to details" to { onMeta(Meta(p.metaId, p.type, p.name, p.poster, p.background)) },
                 "Mark as watched" to { markWatched(p); refreshContinue() },
                 "Remove from Continue Watching" to { WatchStore.remove(p.metaId); refreshContinue() }))
@@ -265,7 +266,7 @@ class BrowseScreen(
                 heroMeta.text = "$where   $progress"; heroDesc.text = ""
                 heroId = p.metaId
                 // The title's own details (year, rating, genres, story), like any other tile.
-                Catalogs.meta(p.type, p.metaId, null) { full ->
+                if (!p.metaId.startsWith("file:")) Catalogs.meta(p.type, p.metaId, null) { full ->
                     if (full != null && heroId == p.metaId) {
                         full.background?.let(onBackdrop)
                         heroMeta.text = listOfNotNull(where, progress, full.year, full.rating?.let { "★ $it" }, full.genres.take(3).joinToString(", ").ifEmpty { null }).joinToString("   ")

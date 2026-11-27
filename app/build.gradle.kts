@@ -47,6 +47,8 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     // The website's generated collection pictures are SVG, which Android cannot draw by itself.
     implementation("com.caverock:androidsvg-aar:1.4")
+    // Files: playing a video from a NAS or another computer on the network (SMB).
+    implementation("com.hierynomus:smbj:0.14.0")
     implementation("androidx.core:core-ktx:1.13.1")
 }
 
