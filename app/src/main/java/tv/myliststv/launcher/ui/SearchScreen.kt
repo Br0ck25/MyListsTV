@@ -37,7 +37,10 @@ class SearchScreen(private val act: Activity, private val onMeta: (Meta) -> Unit
     private var trending: RowsList? = null
     /** Files on this box, drives and network shares whose names match, as one row above the catalog results. */
     private val fileRows = ArrayList<RowModel>()
-    private val fileList = RowsList(act, fileRows, Prefs.lite(), { }, { m -> (m.payload as? FileItem)?.let { FilesPlay.play(act, it) } }).apply { visibility = View.GONE; isNestedScrollingEnabled = false }
+    private val fileList = RowsList(act, fileRows, Prefs.lite(), { results.post { results.smoothScrollTo(0, 0) } }, { m -> (m.payload as? FileItem)?.let { FilesPlay.play(act, it) } }).apply {
+        visibility = View.GONE; isNestedScrollingEnabled = false
+        setPadding(0, 0, 0, Ui.dp(act, 2))   // the row's usual space underneath is for Home; here the results follow right after it
+    }
 
     val view: View = Ui.vbox(act).also { root ->
         // The field is a rounded pill with a search icon; it lights up with a white ring while you type.
