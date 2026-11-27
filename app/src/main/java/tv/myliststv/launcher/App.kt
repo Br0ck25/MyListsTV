@@ -16,6 +16,7 @@ class App : Application() {
         ImageLoader.init(cacheDir, Prefs.memoryCacheBytes())
         AddonStore.init(this)
         SmbShares.init(this)
+        FileIndex.init(this)
         Profiles.init(this)
         WatchStore.init(this)
     }
