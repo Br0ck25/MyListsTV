@@ -1137,13 +1137,13 @@ Find a symbol with grep on this file, then read only that file around the line n
    102   fun remainder(data: ByteArray, div: IntArray)
    109   fun penalty(m: Array<BooleanArray>)  - A simple badness score (long runs, 2x2 blocks, dark share) to pick the mask that scans best.
 
-## ui/SearchScreen.kt (133 lines) - "Search" as a page like the others: a field to type in with the system keyboard.
+## ui/SearchScreen.kt (136 lines) - "Search" as a page like the others: a field to type in with the system keyboard.
     24 class SearchScreen  - "Search" as a page like the others: a field to type in with the system keyboard.
-    62   fun card(m: Meta)
-    65   fun loadTrending()  - Trending movies and series from the first catalog of each kind, as rows under the field.
-    81   fun start()
-   110   fun showFiles(q: String, found: List<FileItem>)  - The files that match, as one row of cards.
-   132   fun stop()
+    65   fun card(m: Meta)
+    68   fun loadTrending()  - Trending movies and series from the first catalog of each kind, as rows under the field.
+    84   fun start()
+   113   fun showFiles(q: String, found: List<FileItem>)  - The files that match, as one row of cards.
+   135   fun stop()
 
 ## ui/Sheet.kt (167 lines) - The one pop-up of the app (docs/DESIGN.md section 9).
     27 class Sheet  - The one pop-up of the app (docs/DESIGN.md section 9).
