@@ -150,4 +150,13 @@ class FilesTest {
         val l = listOf(FileItem("The Dark Knight.mkv", false), FileItem("Batman - Dark Knight.mkv", false), FileItem("Dark Knight Rises.mkv", false))
         assertEquals(listOf("Dark Knight Rises.mkv", "Batman - Dark Knight.mkv", "The Dark Knight.mkv"), FileIndex.rank(l, "dark knight").map { it.name })
     }
+
+    @Test fun splitsTheShareFromTheStartFolder() {
+        assertEquals("server" to "media", SmbShares.splitShare("server", "", "media"))
+        assertEquals("server" to "media", SmbShares.splitShare("", "server/media", ""))
+        assertEquals("server" to "media/movies", SmbShares.splitShare("server/media/movies", "", ""))
+        assertEquals("server" to "other", SmbShares.splitShare("server/media", "", "other"))
+        assertEquals("Movies" to "", SmbShares.splitShare("Movies", "", ""))
+        assertEquals("" to "", SmbShares.splitShare("", "", ""))
+    }
 }

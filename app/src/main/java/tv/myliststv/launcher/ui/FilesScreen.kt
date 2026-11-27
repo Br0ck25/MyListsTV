@@ -114,7 +114,7 @@ class FilesScreen(private val act: Activity) {
         }
         add(Ui.sectionLabel(act, "Network shares"), 16)
         SmbShares.all().forEach { s ->
-            add(row(R.drawable.ic_source, s.name, s.host + if (s.port != 445) ":${s.port}" else "", null, { open(Page(s.name, Kind.SMB, "", s)) }, { shareMenu(s) }))
+            add(row(R.drawable.ic_source, s.name, s.host + (if (s.port != 445) ":${s.port}" else "") + (if (s.startPath.isNotEmpty()) "  ›  ${s.startPath.replace("/", "  ›  ")}" else ""), null, { open(Page(s.name, Kind.SMB, s.startPath, s)) }, { shareMenu(s) }))
         }
         add(row(R.drawable.ic_add, "Add a network share", "A NAS or another computer. You need its address and the folder it shares.", null, { editShare(null) }))
         focusFirst(page)
@@ -225,11 +225,12 @@ class FilesScreen(private val act: Activity) {
     /** Address, share name and sign-in on one sheet; the connection is tried before it is kept. */
     private fun editShare(existing: SmbShare?) {
         val s = Sheet(act, if (existing == null) "Add a network share" else "Change ${existing.name}",
-            "Address is the NAS or computer (nas, or 192.168.1.20). Share is the folder it offers (Movies). Leave the username empty to join as a guest.")
+            "Address is the NAS or computer (nas, or 192.168.1.20). Share is the folder it offers (Movies). Start folder is where to open inside it (media). Leave the username empty to join as a guest.")
         // The keyboard's check key moves to the next field, and from the last one to the button (hiding the keyboard).
-        lateinit var share: EditText; lateinit var user: EditText; lateinit var pass: EditText; lateinit var go: View
+        lateinit var share: EditText; lateinit var start: EditText; lateinit var user: EditText; lateinit var pass: EditText; lateinit var go: View
         val addr = s.field("Address", existing?.let { it.host + if (it.port != 445) ":${it.port}" else "" }.orEmpty()) { share.requestFocus() }
-        share = s.field("Share name", existing?.share.orEmpty()) { user.requestFocus() }
+        share = s.field("Share name", existing?.share.orEmpty()) { start.requestFocus() }
+        start = s.field("Start folder (optional, such as media)", existing?.startPath.orEmpty()) { user.requestFocus() }
         user = s.field("Username (empty for guest)", existing?.user.orEmpty()) { pass.requestFocus() }
         pass = s.field("Password", existing?.password.orEmpty()) {
             (act.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).hideSoftInputFromWindow(pass.windowToken, 0)
@@ -237,10 +238,10 @@ class FilesScreen(private val act: Activity) {
         }.apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD; transformationMethod = PasswordTransformationMethod.getInstance() }
         go = s.card("Connect and save", highlighted = true) {
             val (host, port, inAddress) = SmbShares.parseAddress(addr.text.toString())
-            val name = share.text.toString().trim().trim('/').ifEmpty { inAddress }.substringBefore('/')
+            val (name, startIn) = SmbShares.splitShare(share.text.toString(), inAddress, start.text.toString())
             if (host.isEmpty() || name.isEmpty()) { Pop.toast(act, "Both the address and the share name are needed", true); return@card }
             s.dismiss()
-            tryShare(SmbShare(existing?.id ?: SmbShares.newId(), "$name on $host", host, name, user.text.toString().trim(), pass.text.toString(), "", port))
+            tryShare(SmbShare(existing?.id ?: SmbShares.newId(), "$name on $host", host, name, user.text.toString().trim(), pass.text.toString(), "", port, startIn))
         }
         s.card("Cancel") { s.dismiss() }
         s.show(); addr.requestFocus()
@@ -249,7 +250,7 @@ class FilesScreen(private val act: Activity) {
     private fun tryShare(sh: SmbShare) {
         Pop.toast(act, "Connecting to ${sh.host}…")
         Http.background {
-            val error = try { SmbClients.forget(sh); SmbClients.list(sh, ""); null } catch (e: Throwable) { e }
+            val error = try { SmbClients.forget(sh); SmbClients.list(sh, sh.startPath); null } catch (e: Throwable) { e }
             Http.post {
                 if (error == null) { SmbShares.save(sh); Pop.toast(act, "Connected"); stack.clear(); stack += Page("Files", Kind.ROOT, ""); stack.last().focus = sh.name; render() }
                 else Sheet.message(act, "Could not connect", friendly(error),

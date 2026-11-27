@@ -39,7 +39,7 @@ object FileIndex {
     /** Breadth first, so the shallow folders (where the films and shows are) come before anything deep. Stops at a limit, keeping what it has. */
     private fun walk(s: SmbShare): List<FileItem> {
         val out = ArrayList<FileItem>()
-        val queue = ArrayDeque<String>().apply { add("") }
+        val queue = ArrayDeque<String>().apply { add(s.startPath) }   // from the share's start folder, so only the media folder is looked through
         val start = System.currentTimeMillis()
         var folders = 0
         while (queue.isNotEmpty() && folders < MAX_FOLDERS && out.size < MAX_FILES && System.currentTimeMillis() - start < MAX_MS) {

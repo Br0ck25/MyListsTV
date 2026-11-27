@@ -584,24 +584,25 @@ Find a symbol with grep on this file, then read only that file around the line n
     90   fun getResponseHeaders()
     91   fun close()
 
-## data/SmbShares.kt (134 lines) - A folder shared by a NAS or another computer (SMB, the Windows file-sharing protocol), and what it takes to si
+## data/SmbShares.kt (147 lines) - A folder shared by a NAS or another computer (SMB, the Windows file-sharing protocol), and what it takes to si
     20 class SmbShare  - A folder shared by a NAS or another computer (SMB, the Windows file-sharing protocol), and what it takes to si
-    31   fun uriFor(path: String)  - What the player is given for a file in it.
-    38 object SmbShares  - The shares this box knows.
-    41   fun init(c: Context)
-    43   fun all()
-    50   fun write(l: List<SmbShare>)
-    57   fun save(s: SmbShare)  - Adds a share, or replaces the one with the same id.
-    59   fun remove(id: String)
-    61   fun find(host: String, port: Int, share: String)
-    63   fun newId()
-    66   fun parseAddress(text: String)  - "nas", "nas:4445", "smb://nas/Movies" or "\\\\nas\\Movies" read as a host, a port and (when given) a share nam
-    77 object SmbClients  - Connections to shares, kept open between pages and while a video plays, and made again when one drops.
-    81   fun key(s: SmbShare)
-   105   fun close(c: Conn)
-   107   fun dos(path: String)
-   110   fun list(s: SmbShare, dir: String)  - What is in [dir] (a path inside the share, "" for its top): folders, and video files with the address the play
-   130   fun open(s: SmbShare, path: String)  - Opens a file for reading and says how long it is.
+    33   fun uriFor(path: String)  - What the player is given for a file in it.
+    40 object SmbShares  - The shares this box knows.
+    43   fun init(c: Context)
+    45   fun all()
+    52   fun write(l: List<SmbShare>)
+    59   fun save(s: SmbShare)  - Adds a share, or replaces the one with the same id.
+    61   fun remove(id: String)
+    63   fun find(host: String, port: Int, share: String)
+    65   fun newId()
+    71   fun splitShare(shareField: String, addressPath: String, startField: String)  - The share and the folder to start in.
+    79   fun parseAddress(text: String)  - "nas", "nas:4445", "smb://nas/Movies" or "\\\\nas\\Movies" read as a host, a port and (when given) a share nam
+    90 object SmbClients  - Connections to shares, kept open between pages and while a video plays, and made again when one drops.
+    94   fun key(s: SmbShare)
+   118   fun close(c: Conn)
+   120   fun dos(path: String)
+   123   fun list(s: SmbShare, dir: String)  - What is in [dir] (a path inside the share, "" for its top): folders, and video files with the address the play
+   143   fun open(s: SmbShare, path: String)  - Opens a file for reading and says how long it is.
 
 ## data/StreamRank.kt (85 lines) - Reading quality out of addon stream text, ranking, and the next-source choice for fallback.
      6 object StreamRank  - Reading quality out of addon stream text, ranking, and the next-source choice for fallback.
@@ -1032,7 +1033,7 @@ Find a symbol with grep on this file, then read only that file around the line n
    324   fun changedAll()
    325   fun inserted(i: Int)
 
-## ui/FilesScreen.kt (300 lines) - "Files": videos on this box, on a USB drive, or on a NAS or computer on the network, and Play on any of them.
+## ui/FilesScreen.kt (301 lines) - "Files": videos on this box, on a USB drive, or on a NAS or computer on the network, and Play on any of them.
     20 class FilesScreen  - "Files": videos on this box, on a USB drive, or on a NAS or computer on the network, and Play on any of them.
     45   fun start()
     48   fun back()  - Back goes up a folder.
@@ -1052,10 +1053,10 @@ Find a symbol with grep on this file, then read only that file around the line n
    208   fun focusFirst(page: Page)  - Focus goes to the row you came back to, else the first row you can act on.
    218   fun shareMenu(s: SmbShare)
    226   fun editShare(existing: SmbShare?)  - Address, share name and sign-in on one sheet; the connection is tried before it is kept.
-   249   fun tryShare(sh: SmbShare)
-   280 object FilesPlay  - Starts a file in the player: the same player as everything else, with its resume point and Continue Watching e
-   281   fun play(act: Activity, f: FileItem)
-   299   fun resume(act: Activity, e: WatchStore.Entry)  - Continue Watching on Home: the file is opened again from where it stopped.
+   250   fun tryShare(sh: SmbShare)
+   281 object FilesPlay  - Starts a file in the player: the same player as everything else, with its resume point and Continue Watching e
+   282   fun play(act: Activity, f: FileItem)
+   300   fun resume(act: Activity, e: WatchStore.Entry)  - Continue Watching on Home: the file is opened again from where it stopped.
 
 ## ui/LibraryScreen.kt (48 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     11 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
