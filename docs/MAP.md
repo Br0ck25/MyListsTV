@@ -1033,30 +1033,30 @@ Find a symbol with grep on this file, then read only that file around the line n
    324   fun changedAll()
    325   fun inserted(i: Int)
 
-## ui/FilesScreen.kt (301 lines) - "Files": videos on this box, on a USB drive, or on a NAS or computer on the network, and Play on any of them.
-    20 class FilesScreen  - "Files": videos on this box, on a USB drive, or on a NAS or computer on the network, and Play on any of them.
-    45   fun start()
-    48   fun back()  - Back goes up a folder.
-    57   fun onPermission()  - The answer to the permission question the page asked.
-    61   fun render()
-    76   fun crumb()  - The drive or share, then each folder you opened, in the order you opened them.
-    79   fun background(gen: Int, onError: ((Throwable)  - Runs [work] off the main thread and lists what it returns, unless the page has moved on.
-    89   fun root(page: Page, gen: Int)
-   123   fun list(items: List<FileItem>)
-   144   fun details(f: FileItem, sub: String?, gen: Int)  - A film's or episode's poster, name and story, put onto its row when the lookup answers.
-   167   fun open(p: Page)
-   169   fun showError(page: Page, e: Throwable)
-   179   fun rowParams()
-   181   fun add(v: View, topDp: Int = 0)
-   183   fun info(text: String)
-   185   fun row(icon: Int, title: String, sub: String?, trailing: String?, onClick: ()
-   208   fun focusFirst(page: Page)  - Focus goes to the row you came back to, else the first row you can act on.
-   218   fun shareMenu(s: SmbShare)
-   226   fun editShare(existing: SmbShare?)  - Address, share name and sign-in on one sheet; the connection is tried before it is kept.
-   250   fun tryShare(sh: SmbShare)
-   281 object FilesPlay  - Starts a file in the player: the same player as everything else, with its resume point and Continue Watching e
-   282   fun play(act: Activity, f: FileItem)
-   300   fun resume(act: Activity, e: WatchStore.Entry)  - Continue Watching on Home: the file is opened again from where it stopped.
+## ui/FilesScreen.kt (302 lines) - "Files": videos on this box, on a USB drive, or on a NAS or computer on the network, and Play on any of them.
+    21 class FilesScreen  - "Files": videos on this box, on a USB drive, or on a NAS or computer on the network, and Play on any of them.
+    47   fun start()
+    50   fun back()  - Back goes up a folder.
+    59   fun onPermission()  - The answer to the permission question the page asked.
+    63   fun render()
+    78   fun crumb()  - The drive or share, then each folder you opened, in the order you opened them.
+    81   fun background(gen: Int, onError: ((Throwable)  - Runs [work] off the main thread and lists what it returns, unless the page has moved on.
+    91   fun root(page: Page, gen: Int)
+   126   fun list(items: List<FileItem>)  - The folders and videos as cards in a grid.
+   155   fun details(f: FileItem, i: Int, card: CardModel, gen: Int)  - A film's or episode's poster, name and story, put onto its card when the lookup answers.
+   171   fun open(p: Page)
+   173   fun showError(page: Page, e: Throwable)
+   183   fun rowParams()
+   185   fun add(v: View, topDp: Int = 0)
+   187   fun info(text: String)
+   189   fun row(icon: Int, title: String, sub: String?, trailing: String?, onClick: ()
+   209   fun focusFirst(page: Page)  - Focus goes to the row you came back to, else the first row you can act on.
+   219   fun shareMenu(s: SmbShare)
+   227   fun editShare(existing: SmbShare?)  - Address, share name and sign-in on one sheet; the connection is tried before it is kept.
+   251   fun tryShare(sh: SmbShare)
+   282 object FilesPlay  - Starts a file in the player: the same player as everything else, with its resume point and Continue Watching e
+   283   fun play(act: Activity, f: FileItem)
+   301   fun resume(act: Activity, e: WatchStore.Entry)  - Continue Watching on Home: the file is opened again from where it stopped.
 
 ## ui/LibraryScreen.kt (48 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     11 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
@@ -1137,13 +1137,13 @@ Find a symbol with grep on this file, then read only that file around the line n
    102   fun remainder(data: ByteArray, div: IntArray)
    109   fun penalty(m: Array<BooleanArray>)  - A simple badness score (long runs, 2x2 blocks, dark share) to pick the mask that scans best.
 
-## ui/SearchScreen.kt (124 lines) - "Search" as a page like the others: a field to type in with the system keyboard.
+## ui/SearchScreen.kt (133 lines) - "Search" as a page like the others: a field to type in with the system keyboard.
     24 class SearchScreen  - "Search" as a page like the others: a field to type in with the system keyboard.
-    57   fun card(m: Meta)
-    60   fun loadTrending()  - Trending movies and series from the first catalog of each kind, as rows under the field.
-    76   fun start()
-   105   fun showFiles(q: String, found: List<FileItem>)  - The files that match, as one row of cards.
-   123   fun stop()
+    62   fun card(m: Meta)
+    65   fun loadTrending()  - Trending movies and series from the first catalog of each kind, as rows under the field.
+    81   fun start()
+   110   fun showFiles(q: String, found: List<FileItem>)  - The files that match, as one row of cards.
+   132   fun stop()
 
 ## ui/Sheet.kt (167 lines) - The one pop-up of the app (docs/DESIGN.md section 9).
     27 class Sheet  - The one pop-up of the app (docs/DESIGN.md section 9).

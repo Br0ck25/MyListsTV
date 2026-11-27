@@ -25,9 +25,9 @@ private const val LIFT = 1.15f
 enum class CardKind { POSTER, WIDE, APP, EPISODE }
 
 data class CardModel(
-    val title: String,
-    val image: String?,
-    val sub: String? = null,
+    var title: String,
+    var image: String?,
+    var sub: String? = null,
     val progress: Float = 0f,
     val payload: Any? = null,
     val icon: android.graphics.drawable.Drawable? = null,
