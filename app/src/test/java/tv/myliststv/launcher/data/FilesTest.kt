@@ -69,7 +69,7 @@ class FilesTest {
         assertEquals(Triple("nas", 445, ""), SmbShares.parseAddress("nas"))
         assertEquals(Triple("192.168.1.20", 4445, ""), SmbShares.parseAddress("192.168.1.20:4445"))
         assertEquals(Triple("nas", 445, "Movies/Kids"), SmbShares.parseAddress("smb://nas/Movies/Kids/"))
-        assertEquals(Triple("nas", 445, "Movies"), SmbShares.parseAddress("\\nas\Movies"))
+        assertEquals(Triple("nas", 445, "Movies"), SmbShares.parseAddress("""\\nas\Movies"""))
     }
 
     @Test fun anAddressForThePlayerHasNoPasswordAndEncodesTheName() {
