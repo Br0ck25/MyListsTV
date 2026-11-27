@@ -3,10 +3,10 @@
 Find a symbol with grep on this file, then read only that file around the line number. Task-to-file hints are in docs/INDEX.md.
 
 
-## App.kt (27 lines)
+## App.kt (28 lines)
      7 class App
     10   fun onCreate()
-    23   fun onTrimMemory(level: Int)
+    24   fun onTrimMemory(level: Int)
 
 ## AppEntry.kt (11 lines) - One launchable app.
      6 class AppEntry  - One launchable app.
@@ -232,6 +232,31 @@ Find a symbol with grep on this file, then read only that file around the line n
     25   fun airsText(airMs: Long, nowMs: Long, tz: TimeZone = TimeZone.getDefault()  - An air date is a calendar date (the addon sends no time of day), so count calendar days from today rather than
     31   fun leftText(n: Int)
     34   fun timeLeft(e: WatchStore.Entry)  - "45 min left" or "1h 5m left" for something you have started, null when its length is not known.
+
+## data/FileIndex.kt (94 lines) - What Search can find among the files: videos on this box and drives (asked of the media index each time) and v
+    11 object FileIndex  - What Search can find among the files: videos on this box and drives (asked of the media index each time) and v
+    21   fun init(c: Context)
+    23   fun fileFor(s: SmbShare)
+    29   fun ensure(s: SmbShare, force: Boolean = false, done: (()  - Walks [s] in the background if there is no copy or the copy is old (or [force]).
+    40   fun walk(s: SmbShare)  - Breadth first, so the shallow folders (where the films and shows are) come before anything deep.
+    55   fun skip(name: String)
+    57   fun write(s: SmbShare, items: List<FileItem>)
+    61   fun read(s: SmbShare)
+    71   fun tokens(q: String)  - The words of a query, and whether a file name has all of them (in any order, ignoring case and punctuation).
+    73   fun matches(name: String, tokens: List<String>)
+    80   fun rank(items: List<FileItem>, query: String)  - Names starting with what was typed first, then the rest in reading order.
+    86   fun search(c: Context, query: String, limit: Int = 40)  - Videos whose names match [query], from this box and every saved share, [limit] at most.
+
+## data/FileMeta.kt (103 lines) - Posters and details for files: the title, year and (for shows) season and episode are read from the file name,
+     9 object FileMeta  - Posters and details for files: the title, year and (for shows) season and episode are read from the file name,
+    14   class Guess  - What a file name says.
+    20   class Match  - A file matched to a title.
+    26   fun normalize(s: String)
+    29   fun guess(name: String)  - Reads a file (or folder) name.
+    47   fun pick(g: Guess, results: List<Meta>)  - The best of [results] for [g]: the same title (and, for a film, the same year give or take one); nothing when 
+    67   fun lookup(g: Guess, cb: (Match?)  - Finds the match for [g].
+    76   fun finish(g: Guess, m: Match?, cb: (Match?)
+    81   fun run(g: Guess, cb: (Match?)
 
 ## data/FileSources.kt (131 lines) - One line of a Files page: a folder to open or a video to play.
     13 class FileItem  - One line of a Files page: a folder to open or a video to play.
@@ -559,24 +584,25 @@ Find a symbol with grep on this file, then read only that file around the line n
     90   fun getResponseHeaders()
     91   fun close()
 
-## data/SmbShares.kt (134 lines) - A folder shared by a NAS or another computer (SMB, the Windows file-sharing protocol), and what it takes to si
+## data/SmbShares.kt (147 lines) - A folder shared by a NAS or another computer (SMB, the Windows file-sharing protocol), and what it takes to si
     20 class SmbShare  - A folder shared by a NAS or another computer (SMB, the Windows file-sharing protocol), and what it takes to si
-    31   fun uriFor(path: String)  - What the player is given for a file in it.
-    38 object SmbShares  - The shares this box knows.
-    41   fun init(c: Context)
-    43   fun all()
-    50   fun write(l: List<SmbShare>)
-    57   fun save(s: SmbShare)  - Adds a share, or replaces the one with the same id.
-    59   fun remove(id: String)
-    61   fun find(host: String, port: Int, share: String)
-    63   fun newId()
-    66   fun parseAddress(text: String)  - "nas", "nas:4445", "smb://nas/Movies" or "\\\\nas\\Movies" read as a host, a port and (when given) a share nam
-    77 object SmbClients  - Connections to shares, kept open between pages and while a video plays, and made again when one drops.
-    81   fun key(s: SmbShare)
-   105   fun close(c: Conn)
-   107   fun dos(path: String)
-   110   fun list(s: SmbShare, dir: String)  - What is in [dir] (a path inside the share, "" for its top): folders, and video files with the address the play
-   130   fun open(s: SmbShare, path: String)  - Opens a file for reading and says how long it is.
+    33   fun uriFor(path: String)  - What the player is given for a file in it.
+    40 object SmbShares  - The shares this box knows.
+    43   fun init(c: Context)
+    45   fun all()
+    52   fun write(l: List<SmbShare>)
+    59   fun save(s: SmbShare)  - Adds a share, or replaces the one with the same id.
+    61   fun remove(id: String)
+    63   fun find(host: String, port: Int, share: String)
+    65   fun newId()
+    71   fun splitShare(shareField: String, addressPath: String, startField: String)  - The share and the folder to start in.
+    79   fun parseAddress(text: String)  - "nas", "nas:4445", "smb://nas/Movies" or "\\\\nas\\Movies" read as a host, a port and (when given) a share nam
+    90 object SmbClients  - Connections to shares, kept open between pages and while a video plays, and made again when one drops.
+    94   fun key(s: SmbShare)
+   118   fun close(c: Conn)
+   120   fun dos(path: String)
+   123   fun list(s: SmbShare, dir: String)  - What is in [dir] (a path inside the share, "" for its top): folders, and video files with the address the play
+   143   fun open(s: SmbShare, path: String)  - Opens a file for reading and says how long it is.
 
 ## data/StreamRank.kt (85 lines) - Reading quality out of addon stream text, ranking, and the next-source choice for fallback.
      6 object StreamRank  - Reading quality out of addon stream text, ranking, and the next-source choice for fallback.
@@ -1007,29 +1033,30 @@ Find a symbol with grep on this file, then read only that file around the line n
    324   fun changedAll()
    325   fun inserted(i: Int)
 
-## ui/FilesScreen.kt (259 lines) - "Files": videos on this box, on a USB drive, or on a NAS or computer on the network, and Play on any of them.
+## ui/FilesScreen.kt (301 lines) - "Files": videos on this box, on a USB drive, or on a NAS or computer on the network, and Play on any of them.
     20 class FilesScreen  - "Files": videos on this box, on a USB drive, or on a NAS or computer on the network, and Play on any of them.
-    42   fun start()
-    45   fun back()  - Back goes up a folder.
-    54   fun onPermission()  - The answer to the permission question the page asked.
-    58   fun render()
-    73   fun crumb()  - The drive or share, then each folder you opened, in the order you opened them.
-    76   fun background(gen: Int, onError: ((Throwable)  - Runs [work] off the main thread and lists what it returns, unless the page has moved on.
-    86   fun root(page: Page, gen: Int)
-   120   fun list(items: List<FileItem>)
-   137   fun open(p: Page)
-   139   fun showError(page: Page, e: Throwable)
-   149   fun rowParams()
-   151   fun add(v: View, topDp: Int = 0)
-   153   fun info(text: String)
-   155   fun row(icon: Int, title: String, sub: String?, trailing: String?, onClick: ()
-   171   fun focusFirst(page: Page)  - Focus goes to the row you came back to, else the first row you can act on.
-   181   fun shareMenu(s: SmbShare)
-   189   fun editShare(existing: SmbShare?)  - Address, share name and sign-in on one sheet; the connection is tried before it is kept.
-   212   fun tryShare(sh: SmbShare)
-   243 object FilesPlay  - Starts a file in the player: the same player as everything else, with its resume point and Continue Watching e
-   244   fun play(act: Activity, f: FileItem)
-   258   fun resume(act: Activity, e: WatchStore.Entry)  - Continue Watching on Home: the file is opened again from where it stopped.
+    45   fun start()
+    48   fun back()  - Back goes up a folder.
+    57   fun onPermission()  - The answer to the permission question the page asked.
+    61   fun render()
+    76   fun crumb()  - The drive or share, then each folder you opened, in the order you opened them.
+    79   fun background(gen: Int, onError: ((Throwable)  - Runs [work] off the main thread and lists what it returns, unless the page has moved on.
+    89   fun root(page: Page, gen: Int)
+   123   fun list(items: List<FileItem>)
+   144   fun details(f: FileItem, sub: String?, gen: Int)  - A film's or episode's poster, name and story, put onto its row when the lookup answers.
+   167   fun open(p: Page)
+   169   fun showError(page: Page, e: Throwable)
+   179   fun rowParams()
+   181   fun add(v: View, topDp: Int = 0)
+   183   fun info(text: String)
+   185   fun row(icon: Int, title: String, sub: String?, trailing: String?, onClick: ()
+   208   fun focusFirst(page: Page)  - Focus goes to the row you came back to, else the first row you can act on.
+   218   fun shareMenu(s: SmbShare)
+   226   fun editShare(existing: SmbShare?)  - Address, share name and sign-in on one sheet; the connection is tried before it is kept.
+   250   fun tryShare(sh: SmbShare)
+   281 object FilesPlay  - Starts a file in the player: the same player as everything else, with its resume point and Continue Watching e
+   282   fun play(act: Activity, f: FileItem)
+   300   fun resume(act: Activity, e: WatchStore.Entry)  - Continue Watching on Home: the file is opened again from where it stopped.
 
 ## ui/LibraryScreen.kt (48 lines) - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
     11 class LibraryScreen  - "Library" as a page: every saved title in a grid, with All, Movies and Series filters.
@@ -1110,12 +1137,13 @@ Find a symbol with grep on this file, then read only that file around the line n
    102   fun remainder(data: ByteArray, div: IntArray)
    109   fun penalty(m: Array<BooleanArray>)  - A simple badness score (long runs, 2x2 blocks, dark share) to pick the mask that scans best.
 
-## ui/SearchScreen.kt (100 lines) - "Search" as a page like the others: a field to type in with the system keyboard.
+## ui/SearchScreen.kt (124 lines) - "Search" as a page like the others: a field to type in with the system keyboard.
     24 class SearchScreen  - "Search" as a page like the others: a field to type in with the system keyboard.
-    53   fun card(m: Meta)
-    56   fun loadTrending()  - Trending movies and series from the first catalog of each kind, as rows under the field.
-    72   fun start()
-    99   fun stop()
+    57   fun card(m: Meta)
+    60   fun loadTrending()  - Trending movies and series from the first catalog of each kind, as rows under the field.
+    76   fun start()
+   105   fun showFiles(q: String, found: List<FileItem>)  - The files that match, as one row of cards.
+   123   fun stop()
 
 ## ui/Sheet.kt (167 lines) - The one pop-up of the app (docs/DESIGN.md section 9).
     27 class Sheet  - The one pop-up of the app (docs/DESIGN.md section 9).

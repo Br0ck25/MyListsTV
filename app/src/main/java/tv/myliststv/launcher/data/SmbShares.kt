@@ -26,6 +26,8 @@ data class SmbShare(
     val password: String = "",
     val domain: String = "",
     val port: Int = 445,
+    /** A folder inside the share to open at ("media" for server/media). Empty opens the top of the share. */
+    val startPath: String = "",
 ) {
     /** What the player is given for a file in it. No password is ever put in it; the player looks the share up by host, port and name. */
     fun uriFor(path: String): String {
@@ -43,13 +45,13 @@ object SmbShares {
     fun all(): List<SmbShare> = try {
         val a = JSONArray(sp.getString("list", "[]"))
         (0 until a.length()).map { a.getJSONObject(it) }.map { o ->
-            SmbShare(o.getString("id"), o.getString("name"), o.getString("host"), o.getString("share"), o.optString("user"), (Secure.unwrap(o.optString("pw")) ?: ""), o.optString("domain"), o.optInt("port", 445))
+            SmbShare(o.getString("id"), o.getString("name"), o.getString("host"), o.getString("share"), o.optString("user"), (Secure.unwrap(o.optString("pw")) ?: ""), o.optString("domain"), o.optInt("port", 445), o.optString("start"))
         }
     } catch (_: Exception) { emptyList() }
 
     private fun write(l: List<SmbShare>) {
         val a = JSONArray()
-        l.forEach { s -> a.put(JSONObject().put("id", s.id).put("name", s.name).put("host", s.host).put("share", s.share).put("user", s.user).put("pw", Secure.wrap(s.password)).put("domain", s.domain).put("port", s.port)) }
+        l.forEach { s -> a.put(JSONObject().put("id", s.id).put("name", s.name).put("host", s.host).put("share", s.share).put("user", s.user).put("pw", Secure.wrap(s.password)).put("domain", s.domain).put("port", s.port).put("start", s.startPath)) }
         sp.edit().putString("list", a.toString()).apply()
     }
 
@@ -61,6 +63,17 @@ object SmbShares {
     fun find(host: String, port: Int, share: String): SmbShare? = all().firstOrNull { it.host.equals(host, true) && it.port == port && it.share.equals(share, true) }
 
     fun newId() = "s" + System.currentTimeMillis()
+
+    /**
+     * The share and the folder to start in. The share field may hold "Movies" or "Movies/Kids"; with it empty, the address's own path
+     * ("nas/Movies/Kids") is used. A separate start folder, when given, wins over the folders in either.
+     */
+    fun splitShare(shareField: String, addressPath: String, startField: String): Pair<String, String> {
+        val segs = (shareField.trim().ifEmpty { addressPath }).replace('\\', '/').split('/').filter { it.isNotEmpty() }
+        val share = segs.firstOrNull().orEmpty()
+        val start = startField.replace('\\', '/').trim('/').ifEmpty { segs.drop(1).joinToString("/") }
+        return share to start
+    }
 
     /** "nas", "nas:4445", "smb://nas/Movies" or "\\\\nas\\Movies" read as a host, a port and (when given) a share name. */
     fun parseAddress(text: String): Triple<String, Int, String> {

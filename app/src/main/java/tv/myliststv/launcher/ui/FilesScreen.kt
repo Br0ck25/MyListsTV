@@ -29,6 +29,9 @@ class FilesScreen(private val act: Activity) {
     private val body = Ui.vbox(act).apply { setPadding(Ui.dp(act, 42), Ui.dp(act, 6), Ui.dp(act, 42), Ui.dp(act, 56)) }
     private var videos: List<LocalFiles.Video> = emptyList()
     private var generation = 0
+    /** The pieces of each row on the page, so a poster and a description can be put in once the title is known. */
+    private class Parts(val left: android.widget.FrameLayout, val title: android.widget.TextView, val sub: android.widget.TextView, val desc: android.widget.TextView)
+    private val parts = HashMap<String, Parts>()
     /** True when focus was already on this page before it was redrawn. Coming onto the Files tab from the tab bar is not that: the focus stays on the tab until Down is pressed. */
     private var wantFocus = false
 
@@ -61,7 +64,7 @@ class FilesScreen(private val act: Activity) {
         wantFocus = view.hasFocus()
         heading.text = if (page.kind == Kind.ROOT) "Files" else page.title
         where.text = if (page.kind == Kind.ROOT) "Videos on this box, on USB drives and on your network" else crumb()
-        body.removeAllViews()
+        body.removeAllViews(); parts.clear()
         when (page.kind) {
             Kind.ROOT -> root(page, gen)
             Kind.LOCAL -> { add(info("Loading…")); background(gen) { LocalFiles.children(videos.ifEmpty { LocalFiles.scan(act).also { v -> videos = v } }, page.path) } }
@@ -111,7 +114,7 @@ class FilesScreen(private val act: Activity) {
         }
         add(Ui.sectionLabel(act, "Network shares"), 16)
         SmbShares.all().forEach { s ->
-            add(row(R.drawable.ic_source, s.name, s.host + if (s.port != 445) ":${s.port}" else "", null, { open(Page(s.name, Kind.SMB, "", s)) }, { shareMenu(s) }))
+            add(row(R.drawable.ic_source, s.name, s.host + (if (s.port != 445) ":${s.port}" else "") + (if (s.startPath.isNotEmpty()) "  ›  ${s.startPath.replace("/", "  ›  ")}" else ""), null, { open(Page(s.name, Kind.SMB, s.startPath, s)) }, { shareMenu(s) }))
         }
         add(row(R.drawable.ic_add, "Add a network share", "A NAS or another computer. You need its address and the folder it shares.", null, { editShare(null) }))
         focusFirst(page)
@@ -121,17 +124,44 @@ class FilesScreen(private val act: Activity) {
         val page = stack.last()
         body.removeAllViews()
         if (items.isEmpty()) { add(info("No videos in this folder.")); return }
+        val gen = generation
         items.forEach { f ->
+            val sub: String?
             if (f.isDir) {
-                val sub = if (f.count > 0) "${f.count} video${if (f.count == 1) "" else "s"}" else null
+                sub = if (f.count > 0) "${f.count} video${if (f.count == 1) "" else "s"}" else null
                 add(row(R.drawable.ic_folder, f.name, sub, null, { open(Page(f.name, page.kind, f.path, page.share)) }, tag = f.name))
             } else {
                 val seen = WatchStore.forMeta(VideoFiles.playId(f.uri))
-                val sub = listOfNotNull(VideoFiles.sizeText(f.size).ifEmpty { null }, seen?.takeIf { it.fraction in 0.02f..0.93f }?.let { "Resume at ${(it.fraction * 100).toInt()}%" }).joinToString("  ·  ")
-                add(row(R.drawable.ic_play, VideoFiles.title(f.name), sub.ifEmpty { null }, null, { FilesPlay.play(act, f) }, tag = f.name))
+                sub = listOfNotNull(VideoFiles.sizeText(f.size).ifEmpty { null }, seen?.takeIf { it.fraction in 0.02f..0.93f }?.let { "Resume at ${(it.fraction * 100).toInt()}%" }).joinToString("  ·  ").ifEmpty { null }
+                add(row(R.drawable.ic_play, VideoFiles.title(f.name), sub, null, { FilesPlay.play(act, f) }, tag = f.name))
             }
+            details(f, sub, gen)
         }
         focusFirst(page)
+    }
+
+    /** A film's or episode's poster, name and story, put onto its row when the lookup answers. A folder is looked up only when its name has a year (a film's folder). */
+    private fun details(f: FileItem, sub: String?, gen: Int) {
+        val g = FileMeta.guess(f.name)?.takeIf { !f.isDir || it.year != null } ?: return
+        val show = { m: FileMeta.Match? ->
+            val p = parts[f.name]
+            if (gen == generation && m != null && p != null) {
+                val ep = if (g.isEpisode) "S${"%02d".format(g.season)}E${"%02d".format(g.episode)}" + (m.episodeTitle?.let { "  ·  $it" } ?: "") else null
+                p.title.text = m.meta.name + (m.meta.year?.takeIf { !g.isEpisode && it.isNotBlank() }?.let { " ($it)" } ?: "")
+                p.sub.text = listOfNotNull(ep, sub).joinToString("  ·  ")
+                p.sub.visibility = if (p.sub.text.isEmpty()) View.GONE else View.VISIBLE
+                (m.overview ?: m.meta.description)?.takeIf { it.isNotBlank() }?.let { p.desc.text = it; p.desc.visibility = View.VISIBLE }
+                (m.still?.takeIf { g.isEpisode } ?: m.meta.poster)?.let { url ->
+                    p.left.removeAllViews()
+                    p.left.layoutParams = LinearLayout.LayoutParams(Ui.dp(act, 56), Ui.dp(act, 84)).apply { rightMargin = Ui.dp(act, 14) }
+                    val img = android.widget.ImageView(act).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP; background = Ui.rounded(act, Ui.CARD, Ui.R_TILE); clipToOutline = true }
+                    p.left.addView(img, android.widget.FrameLayout.LayoutParams(-1, -1))
+                    ImageLoader.load(img, url, Ui.dp(act, 56), Ui.dp(act, 84))
+                }
+            }
+        }
+        FileMeta.peek(f.name)?.let { show(it); return }
+        FileMeta.lookup(g, show)
     }
 
     private fun open(p: Page) { stack.last().focus = p.title; stack += p; render() }
@@ -155,10 +185,17 @@ class FilesScreen(private val act: Activity) {
     private fun row(icon: Int, title: String, sub: String?, trailing: String?, onClick: () -> Unit, onLong: (() -> Unit)? = null, tag: String? = null): View {
         val c = act
         val r = Ui.hbox(c).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(Ui.dp(c, 12), Ui.dp(c, 10), Ui.dp(c, 14), Ui.dp(c, 10)); background = Ui.menuRowBg(c); isFocusable = true; isClickable = true }
-        r.addView(Ui.iconTile(c, icon, 32), LinearLayout.LayoutParams(Ui.dp(c, 32), Ui.dp(c, 32)).apply { rightMargin = Ui.dp(c, 14) })
+        val left = android.widget.FrameLayout(c).apply { addView(Ui.iconTile(c, icon, 32), android.widget.FrameLayout.LayoutParams(Ui.dp(c, 32), Ui.dp(c, 32), Gravity.CENTER)) }
+        r.addView(left, LinearLayout.LayoutParams(Ui.dp(c, 32), Ui.dp(c, 32)).apply { rightMargin = Ui.dp(c, 14) })
         val mid = Ui.vbox(c)
-        mid.addView(Ui.text(c, title, 16f, Ui.TEXT, true, 2))
-        if (!sub.isNullOrEmpty()) mid.addView(Ui.text(c, sub, 12f, Ui.DIM, false, 2), Ui.matchWrap().apply { topMargin = Ui.dp(c, 2) })
+        val titleView = Ui.text(c, title, 16f, Ui.TEXT, true, 2)
+        mid.addView(titleView)
+        val subView = Ui.text(c, sub ?: "", 12f, Ui.DIM, false, 2)
+        if (sub.isNullOrEmpty()) subView.visibility = View.GONE
+        mid.addView(subView, Ui.matchWrap().apply { topMargin = Ui.dp(c, 2) })
+        val descView = Ui.text(c, "", 12f, Ui.TEXT2, false, 2).apply { visibility = View.GONE }
+        mid.addView(descView, Ui.matchWrap().apply { topMargin = Ui.dp(c, 4) })
+        parts[tag ?: title] = Parts(left, titleView, subView, descView)
         r.addView(mid, LinearLayout.LayoutParams(0, -2, 1f))
         if (trailing != null) r.addView(Ui.text(c, trailing, 14f, Ui.TEXT2), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = Ui.dp(c, 16) })
         r.setOnClickListener { onClick() }
@@ -188,11 +225,12 @@ class FilesScreen(private val act: Activity) {
     /** Address, share name and sign-in on one sheet; the connection is tried before it is kept. */
     private fun editShare(existing: SmbShare?) {
         val s = Sheet(act, if (existing == null) "Add a network share" else "Change ${existing.name}",
-            "Address is the NAS or computer (nas, or 192.168.1.20). Share is the folder it offers (Movies). Leave the username empty to join as a guest.")
+            "Address is the NAS or computer (nas, or 192.168.1.20). Share is the folder it offers (Movies). Start folder is where to open inside it (media). Leave the username empty to join as a guest.")
         // The keyboard's check key moves to the next field, and from the last one to the button (hiding the keyboard).
-        lateinit var share: EditText; lateinit var user: EditText; lateinit var pass: EditText; lateinit var go: View
+        lateinit var share: EditText; lateinit var start: EditText; lateinit var user: EditText; lateinit var pass: EditText; lateinit var go: View
         val addr = s.field("Address", existing?.let { it.host + if (it.port != 445) ":${it.port}" else "" }.orEmpty()) { share.requestFocus() }
-        share = s.field("Share name", existing?.share.orEmpty()) { user.requestFocus() }
+        share = s.field("Share name", existing?.share.orEmpty()) { start.requestFocus() }
+        start = s.field("Start folder (optional, such as media)", existing?.startPath.orEmpty()) { user.requestFocus() }
         user = s.field("Username (empty for guest)", existing?.user.orEmpty()) { pass.requestFocus() }
         pass = s.field("Password", existing?.password.orEmpty()) {
             (act.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).hideSoftInputFromWindow(pass.windowToken, 0)
@@ -200,10 +238,10 @@ class FilesScreen(private val act: Activity) {
         }.apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD; transformationMethod = PasswordTransformationMethod.getInstance() }
         go = s.card("Connect and save", highlighted = true) {
             val (host, port, inAddress) = SmbShares.parseAddress(addr.text.toString())
-            val name = share.text.toString().trim().trim('/').ifEmpty { inAddress }.substringBefore('/')
+            val (name, startIn) = SmbShares.splitShare(share.text.toString(), inAddress, start.text.toString())
             if (host.isEmpty() || name.isEmpty()) { Pop.toast(act, "Both the address and the share name are needed", true); return@card }
             s.dismiss()
-            tryShare(SmbShare(existing?.id ?: SmbShares.newId(), "$name on $host", host, name, user.text.toString().trim(), pass.text.toString(), "", port))
+            tryShare(SmbShare(existing?.id ?: SmbShares.newId(), "$name on $host", host, name, user.text.toString().trim(), pass.text.toString(), "", port, startIn))
         }
         s.card("Cancel") { s.dismiss() }
         s.show(); addr.requestFocus()
@@ -212,7 +250,7 @@ class FilesScreen(private val act: Activity) {
     private fun tryShare(sh: SmbShare) {
         Pop.toast(act, "Connecting to ${sh.host}…")
         Http.background {
-            val error = try { SmbClients.forget(sh); SmbClients.list(sh, ""); null } catch (e: Throwable) { e }
+            val error = try { SmbClients.forget(sh); SmbClients.list(sh, sh.startPath); null } catch (e: Throwable) { e }
             Http.post {
                 if (error == null) { SmbShares.save(sh); Pop.toast(act, "Connected"); stack.clear(); stack += Page("Files", Kind.ROOT, ""); stack.last().focus = sh.name; render() }
                 else Sheet.message(act, "Could not connect", friendly(error),
@@ -245,8 +283,12 @@ object FilesPlay {
         val id = VideoFiles.playId(f.uri)
         val resume = WatchStore.forMeta(id)
         val stream = StreamItem("Files", "", f.uri, f.name, "", f.name, null, 0, f.size, false, false, null)
+        // Looked up already (the Files page does it as you browse)? Then Continue Watching shows its poster and proper name.
+        val known = FileMeta.peek(f.name)
+        val g = FileMeta.guess(f.name)
+        val shown = if (known == null) VideoFiles.title(f.name) else known.meta.name + (if (g?.isEpisode == true) " S${"%02d".format(g.season)}E${"%02d".format(g.episode)}" else known.meta.year?.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: "")
         PlaySession.apply {
-            meta = Meta(id, "movie", VideoFiles.title(f.name))
+            meta = Meta(id, "movie", shown, known?.meta?.poster, known?.meta?.background ?: known?.still, description = known?.overview ?: known?.meta?.description, year = known?.meta?.year)
             videoId = f.uri; season = -1; episode = -1; episodeTitle = null
             ranked = listOf(stream); current = stream; autoSelected = false; resolving = false; noStreams = null
             resumeMs = if (resume != null && resume.fraction in 0.02f..0.93f) resume.positionMs else 0L
