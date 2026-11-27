@@ -22,44 +22,41 @@ object CardGrid {
     fun columns(c: Context, bw: Int): Int =
         ((c.resources.displayMetrics.widthPixels - Ui.dp(c, EDGE * 2)) / cell(c, bw) + 0.02f).toInt().coerceAtLeast(1)
 
-    /** Spaces the cards evenly across the whole width: the first card at the left edge, the last at the right, the same gap between each. */
-    private class Spread : RecyclerView.ItemDecoration() {
+    /**
+     * A grid that works out its own columns on every layout from the width it really has, so a page beside the side menu (or any width) never
+     * packs in more cards than fit. The leftover width is shared as equal gaps between the columns, so the cards use the whole width.
+     */
+    private class FitLayout(c: Context, private val bw: Int) : GridLayoutManager(c, 1) {
         var gap = 0f
-        var cols = 1
+        override fun onLayoutChildren(recycler: RecyclerView.Recycler, state: RecyclerView.State) {
+            val outer = cell(ctx, bw)
+            val usable = width - paddingLeft - paddingRight
+            if (usable > 0) {
+                val cols = (usable / outer + 0.02f).toInt().coerceAtLeast(1)
+                gap = if (cols > 1) (usable - cols * outer) / (cols - 1) else 0f
+                if (spanCount != cols) spanCount = cols
+            }
+            super.onLayoutChildren(recycler, state)
+        }
+        private val ctx = c
+    }
+
+    private class Spread : RecyclerView.ItemDecoration() {
         override fun getItemOffsets(out: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
+            val lm = parent.layoutManager as? FitLayout ?: return
             val col = (view.layoutParams as? GridLayoutManager.LayoutParams)?.spanIndex ?: 0
-            out.left = if (cols > 1) (col * gap / cols).toInt() else 0
+            out.left = if (lm.spanCount > 1) (col * lm.gap / lm.spanCount).toInt() else 0
         }
     }
 
-    private val spreads = java.util.WeakHashMap<RecyclerView, Spread>()
-
     /**
-     * Puts [rv] in a grid of [bw]-wide cards with [top] and [bottom] space (in the same units as [Ui.dp]). The columns are worked out from the
-     * width the grid really gets once it is on the screen (so a page beside the side menu has fewer), and the cards are spread over all of
-     * that width, not bunched at the left.
+     * Puts [rv] in a grid of [bw]-wide cards with [top] and [bottom] space (in the same units as [Ui.dp]), spread over the whole width
+     * between the same edges as a row on Home.
      */
     fun apply(rv: RecyclerView, c: Context, bw: Int, top: Int = 6, bottom: Int = 24) {
-        rv.layoutManager = GridLayoutManager(c, columns(c, bw))
+        rv.layoutManager = FitLayout(c, bw)
         rv.clipToPadding = false; rv.itemAnimator = null
-        val spread = Spread().also { spreads[rv] = it; rv.addItemDecoration(it) }
-        fit(rv, c, bw, c.resources.displayMetrics.widthPixels, top, bottom, spread)
-        rv.addOnLayoutChangeListener { _, l, _, r, _, _, _, _, _ -> if (r - l > 0) fit(rv, c, bw, r - l, top, bottom, spread) }
-    }
-
-    /** Columns, edges and the gap between cards for a grid [width] pixels wide. Nothing changes (so nothing is laid out again) when they already fit. */
-    private fun fit(rv: RecyclerView, c: Context, bw: Int, width: Int, top: Int, bottom: Int, spread: Spread) {
-        val side = Ui.dp(c, EDGE)
-        val outer = cell(c, bw)
-        val usable = width - side * 2
-        val cols = (usable / outer + 0.02f).toInt().coerceAtLeast(1)
-        val gap = if (cols > 1) (usable - cols * outer) / (cols - 1) else 0f
-        val lm = rv.layoutManager as? GridLayoutManager ?: return
-        var changed = false
-        if (lm.spanCount != cols) { lm.spanCount = cols; changed = true }
-        if (spread.cols != cols || kotlin.math.abs(spread.gap - gap) > 0.5f) { spread.cols = cols; spread.gap = gap; changed = true }
-        if (rv.paddingLeft != side || rv.paddingRight != side || rv.paddingTop != Ui.dp(c, top) || rv.paddingBottom != Ui.dp(c, bottom))
-            rv.setPadding(side, Ui.dp(c, top), side, Ui.dp(c, bottom))
-        if (changed) rv.invalidateItemDecorations()
+        rv.addItemDecoration(Spread())
+        rv.setPadding(Ui.dp(c, EDGE), Ui.dp(c, top), Ui.dp(c, EDGE), Ui.dp(c, bottom))
     }
 }
