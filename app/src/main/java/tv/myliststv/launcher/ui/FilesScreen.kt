@@ -9,6 +9,7 @@ import android.view.View
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import androidx.recyclerview.widget.RecyclerView
 import tv.myliststv.launcher.R
 import tv.myliststv.launcher.data.*
 import tv.myliststv.launcher.screens.PlayerActivity
@@ -29,9 +30,10 @@ class FilesScreen(private val act: Activity) {
     private val body = Ui.vbox(act).apply { setPadding(Ui.dp(act, 42), Ui.dp(act, 6), Ui.dp(act, 42), Ui.dp(act, 56)) }
     private var videos: List<LocalFiles.Video> = emptyList()
     private var generation = 0
-    /** The pieces of each row on the page, so a poster and a description can be put in once the title is known. */
-    private class Parts(val left: android.widget.FrameLayout, val title: android.widget.TextView, val sub: android.widget.TextView, val desc: android.widget.TextView)
-    private val parts = HashMap<String, Parts>()
+    /** The pages of folders and videos are a grid of posters, like Search: it follows the tall or wide picture setting and the card size. */
+    private val scroll = ScrollView(act).apply { isVerticalScrollBarEnabled = false; clipToPadding = false; addView(body) }
+    private val grid = RecyclerView(act).apply { visibility = View.GONE }
+    private var adapter: CardAdapter? = null
     /** True when focus was already on this page before it was redrawn. Coming onto the Files tab from the tab bar is not that: the focus stays on the tab until Down is pressed. */
     private var wantFocus = false
 
@@ -39,7 +41,7 @@ class FilesScreen(private val act: Activity) {
         val head = Ui.vbox(act).apply { setPadding(Ui.dp(act, 48), Ui.dp(act, 10), Ui.dp(act, 48), Ui.dp(act, 6)) }
         head.addView(heading, Ui.matchWrap()); head.addView(where, Ui.matchWrap())
         it.addView(head, Ui.matchWrap())
-        it.addView(ScrollView(act).apply { isVerticalScrollBarEnabled = false; clipToPadding = false; addView(body) }, LinearLayout.LayoutParams(-1, 0, 1f))
+        it.addView(android.widget.FrameLayout(act).apply { addView(scroll, android.widget.FrameLayout.LayoutParams(-1, -1)); addView(grid, android.widget.FrameLayout.LayoutParams(-1, -1)) }, LinearLayout.LayoutParams(-1, 0, 1f))
     }
 
     fun start() { stack.clear(); stack += Page("Files", Kind.ROOT, ""); render() }
@@ -64,7 +66,7 @@ class FilesScreen(private val act: Activity) {
         wantFocus = view.hasFocus()
         heading.text = if (page.kind == Kind.ROOT) "Files" else page.title
         where.text = if (page.kind == Kind.ROOT) "Videos on this box, on USB drives and on your network" else crumb()
-        body.removeAllViews(); parts.clear()
+        body.removeAllViews(); scroll.visibility = View.VISIBLE; grid.visibility = View.GONE; adapter = null
         when (page.kind) {
             Kind.ROOT -> root(page, gen)
             Kind.LOCAL -> { add(info("Loading…")); background(gen) { LocalFiles.children(videos.ifEmpty { LocalFiles.scan(act).also { v -> videos = v } }, page.path) } }
@@ -120,44 +122,46 @@ class FilesScreen(private val act: Activity) {
         focusFirst(page)
     }
 
+    /** The folders and videos as cards in a grid. A poster and proper name come in as each lookup answers; only that card is redrawn. */
     private fun list(items: List<FileItem>) {
         val page = stack.last()
         body.removeAllViews()
-        if (items.isEmpty()) { add(info("No videos in this folder.")); return }
+        if (items.isEmpty()) { add(info("No videos in this folder.")); focusFirst(page); return }
+        val wide = Prefs.horizontalPosters
         val gen = generation
-        items.forEach { f ->
-            val sub: String?
-            if (f.isDir) {
-                sub = if (f.count > 0) "${f.count} video${if (f.count == 1) "" else "s"}" else null
-                add(row(R.drawable.ic_folder, f.name, sub, null, { open(Page(f.name, page.kind, f.path, page.share)) }, tag = f.name))
-            } else {
-                val seen = WatchStore.forMeta(VideoFiles.playId(f.uri))
-                sub = listOfNotNull(VideoFiles.sizeText(f.size).ifEmpty { null }, seen?.takeIf { it.fraction in 0.02f..0.93f }?.let { "Resume at ${(it.fraction * 100).toInt()}%" }).joinToString("  ·  ").ifEmpty { null }
-                add(row(R.drawable.ic_play, VideoFiles.title(f.name), sub, null, { FilesPlay.play(act, f) }, tag = f.name))
+        val models = items.map { f ->
+            if (f.isDir) CardModel(f.name, null, if (f.count > 0) "${f.count} video${if (f.count == 1) "" else "s"}" else null, payload = f)
+            else {
+                val seen = WatchStore.forMeta(VideoFiles.playId(f.uri))?.takeIf { it.fraction in 0.02f..0.93f }
+                CardModel(VideoFiles.title(f.name), null, listOfNotNull(VideoFiles.sizeText(f.size).ifEmpty { null }, seen?.let { "Resume at ${(it.fraction * 100).toInt()}%" }).joinToString("  \u00b7  ").ifEmpty { null }, seen?.fraction ?: 0f, payload = f)
             }
-            details(f, sub, gen)
         }
-        focusFirst(page)
+        CardGrid.apply(grid, act, if (wide) 208 else 118, 14, 56)
+        val a = CardAdapter(if (wide) CardKind.WIDE else CardKind.POSTER, models, Prefs.lite(), { }, { m ->
+            (m.payload as? FileItem)?.let { f -> if (f.isDir) open(Page(f.name, page.kind, f.path, page.share)) else FilesPlay.play(act, f) }
+        })
+        adapter = a; grid.adapter = a
+        scroll.visibility = View.GONE; grid.visibility = View.VISIBLE
+        items.forEachIndexed { i, f -> details(f, i, models[i], gen) }
+        if (wantFocus) {
+            val at = items.indexOfFirst { it.name == page.focus }.coerceAtLeast(0)
+            grid.scrollToPosition(at)
+            val take = { grid.findViewHolderForAdapterPosition(at)?.itemView?.requestFocus() }
+            grid.postDelayed({ if (take() != true) grid.postDelayed({ take() }, 250) }, 80)
+        }
     }
 
-    /** A film's or episode's poster, name and story, put onto its row when the lookup answers. A folder is looked up only when its name has a year (a film's folder). */
-    private fun details(f: FileItem, sub: String?, gen: Int) {
+    /** A film's or episode's poster, name and story, put onto its card when the lookup answers. A folder is looked up only when its name has a year (a film's folder). */
+    private fun details(f: FileItem, i: Int, card: CardModel, gen: Int) {
         val g = FileMeta.guess(f.name)?.takeIf { !f.isDir || it.year != null } ?: return
+        val wide = Prefs.horizontalPosters
         val show = { m: FileMeta.Match? ->
-            val p = parts[f.name]
-            if (gen == generation && m != null && p != null) {
-                val ep = if (g.isEpisode) "S${"%02d".format(g.season)}E${"%02d".format(g.episode)}" + (m.episodeTitle?.let { "  ·  $it" } ?: "") else null
-                p.title.text = m.meta.name + (m.meta.year?.takeIf { !g.isEpisode && it.isNotBlank() }?.let { " ($it)" } ?: "")
-                p.sub.text = listOfNotNull(ep, sub).joinToString("  ·  ")
-                p.sub.visibility = if (p.sub.text.isEmpty()) View.GONE else View.VISIBLE
-                (m.overview ?: m.meta.description)?.takeIf { it.isNotBlank() }?.let { p.desc.text = it; p.desc.visibility = View.VISIBLE }
-                (m.still?.takeIf { g.isEpisode } ?: m.meta.poster)?.let { url ->
-                    p.left.removeAllViews()
-                    p.left.layoutParams = LinearLayout.LayoutParams(Ui.dp(act, 56), Ui.dp(act, 84)).apply { rightMargin = Ui.dp(act, 14) }
-                    val img = android.widget.ImageView(act).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP; background = Ui.rounded(act, Ui.CARD, Ui.R_TILE); clipToOutline = true }
-                    p.left.addView(img, android.widget.FrameLayout.LayoutParams(-1, -1))
-                    ImageLoader.load(img, url, Ui.dp(act, 56), Ui.dp(act, 84))
-                }
+            if (gen == generation && m != null) {
+                val ep = if (g.isEpisode) "S${"%02d".format(g.season)}E${"%02d".format(g.episode)}" + (m.episodeTitle?.let { "  \u00b7  $it" } ?: "") else null
+                card.title = m.meta.name + (m.meta.year?.takeIf { !g.isEpisode && it.isNotBlank() }?.let { " ($it)" } ?: "")
+                card.sub = listOfNotNull(ep, card.sub).joinToString("  \u00b7  ").ifEmpty { null }
+                card.image = if (wide) (m.still?.takeIf { g.isEpisode } ?: m.meta.background ?: m.meta.poster) else (m.meta.poster ?: m.still)
+                adapter?.refresh(i) { }
             }
         }
         FileMeta.peek(f.name)?.let { show(it); return }
@@ -193,9 +197,6 @@ class FilesScreen(private val act: Activity) {
         val subView = Ui.text(c, sub ?: "", 12f, Ui.DIM, false, 2)
         if (sub.isNullOrEmpty()) subView.visibility = View.GONE
         mid.addView(subView, Ui.matchWrap().apply { topMargin = Ui.dp(c, 2) })
-        val descView = Ui.text(c, "", 12f, Ui.TEXT2, false, 2).apply { visibility = View.GONE }
-        mid.addView(descView, Ui.matchWrap().apply { topMargin = Ui.dp(c, 4) })
-        parts[tag ?: title] = Parts(left, titleView, subView, descView)
         r.addView(mid, LinearLayout.LayoutParams(0, -2, 1f))
         if (trailing != null) r.addView(Ui.text(c, trailing, 14f, Ui.TEXT2), LinearLayout.LayoutParams(-2, -2).apply { leftMargin = Ui.dp(c, 16) })
         r.setOnClickListener { onClick() }

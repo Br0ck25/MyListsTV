@@ -30,12 +30,14 @@ class SearchScreen(private val act: Activity, private val onMeta: (Meta) -> Unit
     }
     private val status = Ui.text(act, "Trending now", 13f, Ui.DIM)
     private val wide = Prefs.horizontalPosters
-    private val grid = RecyclerView(act).apply { CardGrid.apply(this, act, if (Prefs.horizontalPosters) 208 else 118); visibility = View.GONE }
+    private val grid = RecyclerView(act).apply { CardGrid.apply(this, act, if (Prefs.horizontalPosters) 208 else 118, 22, 40); isNestedScrollingEnabled = false }
+    /** The results: files first, then titles, in one page that scrolls together (so scrolling down pushes the files up). */
+    private val results = android.widget.ScrollView(act).apply { isVerticalScrollBarEnabled = false; clipToPadding = false; visibility = View.GONE }
     private val holder = FrameLayout(act)
     private var trending: RowsList? = null
     /** Files on this box, drives and network shares whose names match, as one row above the catalog results. */
     private val fileRows = ArrayList<RowModel>()
-    private val fileList = RowsList(act, fileRows, Prefs.lite(), { }, { m -> (m.payload as? FileItem)?.let { FilesPlay.play(act, it) } }).apply { visibility = View.GONE }
+    private val fileList = RowsList(act, fileRows, Prefs.lite(), { }, { m -> (m.payload as? FileItem)?.let { FilesPlay.play(act, it) } }).apply { visibility = View.GONE; isNestedScrollingEnabled = false }
 
     val view: View = Ui.vbox(act).also { root ->
         // The field is a rounded pill with a search icon; it lights up with a white ring while you type.
@@ -49,8 +51,11 @@ class SearchScreen(private val act: Activity, private val onMeta: (Meta) -> Unit
         box.setOnFocusChangeListener { _, f -> field.background = Ui.rounded(act, if (f) Ui.ELEVATED else Ui.CARD, Ui.R_PILL, if (f) Ui.TEXT else Ui.CLEAR) }
         root.addView(field, Ui.matchWrap().apply { leftMargin = Ui.dp(act, 48); rightMargin = Ui.dp(act, 48); topMargin = Ui.dp(act, 10) })
         root.addView(status, Ui.wrap().apply { topMargin = Ui.dp(act, 10); leftMargin = Ui.dp(act, 66) })
-        root.addView(fileList, LinearLayout.LayoutParams(-1, Ui.dp(act, 215)))
-        holder.addView(grid, FrameLayout.LayoutParams(-1, -1))
+        val stack = LinearLayout(act).apply { orientation = LinearLayout.VERTICAL; clipChildren = false }
+        stack.addView(fileList, LinearLayout.LayoutParams(-1, -2))
+        stack.addView(grid, LinearLayout.LayoutParams(-1, -2))
+        results.addView(stack)
+        holder.addView(results, FrameLayout.LayoutParams(-1, -1))
         root.addView(holder, LinearLayout.LayoutParams(-1, 0, 1f))
     }
 
@@ -65,7 +70,7 @@ class SearchScreen(private val act: Activity, private val onMeta: (Meta) -> Unit
         val list = RowsList(act, rows, Prefs.lite(), { m -> (m.payload as? Meta)?.let { onBackdrop(it.background ?: it.poster) } }, { m -> (m.payload as? Meta)?.let(onMeta) })
         trending = list
         holder.addView(list, 0, FrameLayout.LayoutParams(-1, -1))
-        list.visibility = if (grid.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        list.visibility = if (results.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         defs.forEachIndexed { i, (_, a, c) ->
             Catalogs.load(a, c) { metas, _ ->
                 if (metas != null) { rows[i].items = metas.filter(Profiles::allows).take(30).map(::card); rows[i].loaded = true; list.changed(i) }
@@ -81,7 +86,7 @@ class SearchScreen(private val act: Activity, private val onMeta: (Meta) -> Unit
                 handler.removeCallbacksAndMessages(null)
                 if (q.length < 2) {
                     status.text = if (trending != null) "Trending now" else "Type at least 2 letters."
-                    grid.visibility = View.GONE; trending?.visibility = View.VISIBLE; fileList.visibility = View.GONE
+                    results.visibility = View.GONE; trending?.visibility = View.VISIBLE; fileList.visibility = View.GONE
                     return
                 }
                 handler.postDelayed({
@@ -90,7 +95,7 @@ class SearchScreen(private val act: Activity, private val onMeta: (Meta) -> Unit
                     Catalogs.search(q) { list ->
                         if (q != wanted) return@search
                         status.text = if (list.isEmpty()) "No matches for “$q”." else "${list.size} results"
-                        grid.visibility = View.VISIBLE; trending?.visibility = View.GONE
+                        results.visibility = View.VISIBLE; trending?.visibility = View.GONE
                         grid.adapter = CardAdapter(if (wide) CardKind.WIDE else CardKind.POSTER, list.filter(Profiles::allows).map(::card), Prefs.lite(),
                             { m -> (m.payload as? Meta)?.let { onBackdrop(it.background ?: it.poster) } }, { m -> (m.payload as? Meta)?.let(onMeta) })
                     }
@@ -105,14 +110,18 @@ class SearchScreen(private val act: Activity, private val onMeta: (Meta) -> Unit
     private fun showFiles(q: String, found: List<FileItem>) {
         fileRows.clear()
         if (found.isEmpty()) { fileList.visibility = View.GONE; fileList.changedAll(); return }
+        // Tall posters or wide pictures, as the rest of the app is set.
+        val wide = Prefs.horizontalPosters
         fun cards() = found.map { f ->
             val m = FileMeta.peek(f.name)
             val name = m?.meta?.name ?: VideoFiles.title(f.name)
-            CardModel(name, m?.meta?.background ?: m?.meta?.poster, VideoFiles.sizeText(f.size).ifEmpty { null }, payload = f)
+            val image = if (wide) m?.meta?.background ?: m?.meta?.poster else m?.meta?.poster
+            CardModel(name, image, VideoFiles.sizeText(f.size).ifEmpty { null }, payload = f)
         }
-        val row = RowModel("On your devices", if (FileIndex.busy()) "Still looking through your network: more may appear" else "Files on this box and your network", CardKind.WIDE, cards())
+        val row = RowModel("On your devices", if (FileIndex.busy()) "Still looking through your network: more may appear" else "Files on this box and your network", if (wide) CardKind.WIDE else CardKind.POSTER, cards())
         fileRows += row
         fileList.visibility = View.VISIBLE; fileList.changedAll()
+        results.visibility = View.VISIBLE; trending?.visibility = View.GONE   // files alone are results too, even when the catalogs are slow or empty
         // Ask for posters for the first few; the row is redrawn once as they arrive.
         found.take(12).forEach { f ->
             val g = FileMeta.guess(f.name) ?: return@forEach
